@@ -1,0 +1,7 @@
+[files]
+extend-exclude = [
+    "target/",
+    "dist/",
+    "Cargo.lock",
+    "terraform/.terraform/",
+]

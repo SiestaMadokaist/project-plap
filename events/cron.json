@@ -1,0 +1,8 @@
+{
+  "pathParameters": {
+    "proxy": "cron/ocr-service"
+  },
+  "requestContext": {
+    "http": { "method": "POST" }
+  }
+}
