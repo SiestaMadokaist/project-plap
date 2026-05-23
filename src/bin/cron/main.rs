@@ -1,6 +1,5 @@
 pub mod routes;
 use lambda_runtime::{run, service_fn, Error, LambdaEvent};
-use rust_api::pkg::types::time::Timestamp;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -27,7 +26,7 @@ async fn handler(event: LambdaEvent<CronEvent>) -> Result<(), Error> {
     Ok(())
 }
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Error> {
     rust_api::init_tracing();
     run(service_fn(handler)).await
