@@ -1,7 +1,11 @@
 #[derive(Debug, thiserror::Error)]
 pub enum TranslateError {
-    #[error("connection  error: {0}")]
-    ConnectionError(i16),
+    #[error("service unavailable: {0}")]
+    ServiceUnavailable(String),
+    #[error("rate limited")]
+    RateLimited,
+    #[error("no translation")]
+    EmptyResponse,
 }
 
 #[allow(async_fn_in_trait)]

@@ -1,5 +1,3 @@
-use std::future::Future;
-
 use crate::domain::user::{User, UserId};
 
 #[derive(Debug, thiserror::Error)]
@@ -10,8 +8,9 @@ pub enum UserRepoError {
     Database(String),
 }
 
+#[warn(async_fn_in_trait)]
 pub trait UserRepository {
-    fn get(&self, id: &UserId) -> impl Future<Output = Result<User, UserRepoError>> + Send;
-    fn put(&self, user: &User) -> impl Future<Output = Result<(), UserRepoError>> + Send;
-    fn delete(&self, id: &UserId) -> impl Future<Output = Result<(), UserRepoError>> + Send;
+    async fn get(&self, id: &UserId) -> Result<User, UserRepoError>;
+    async fn put(&self, user: &User) -> Result<(), UserRepoError>;
+    async fn delete(&self, id: &UserId) -> Result<(), UserRepoError>;
 }

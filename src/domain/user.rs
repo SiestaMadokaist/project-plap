@@ -1,18 +1,12 @@
+use crate::pkg::types::time::Timestamp;
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use crate::pkg::types::time::{Timestamp};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct UserId(pub String);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Email(pub String);
-
-impl UserId {
-    pub fn new(id: impl Into<String>) -> Self {
-        Self(id.into())
-    }
-}
 
 impl fmt::Display for UserId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

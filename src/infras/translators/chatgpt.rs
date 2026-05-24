@@ -41,27 +41,34 @@ impl ChatGPT {
 
 impl TranslatorClient for ChatGPT {
     async fn translate(&self, text: &str) -> Result<String, TranslateError> {
+        let model = self.model().await?;
         let system_prompt = self.system_prompt();
         let user_prompt = ChatCompletionRequestMessage::User(text.into());
         let chat = self.client.chat();
         let prompts = vec![system_prompt, user_prompt];
-        let requests = &mut CreateChatCompletionRequest::default();
+        let mut requests: CreateChatCompletionRequest = CreateChatCompletionRequest::default();
         requests.messages = prompts;
-        let resp = chat.create(requests.clone());
+        requests.model = model.id.clone();
+        let resp = chat.create(requests);
         let data = resp.await?;
-        if data.choices.len() > 0 {
-            let response = &data.choices[0].message.content;
-            return match response {
-                Some(s) => Ok(s.clone()),
-                None => Err(TranslateError::ConnectionError(503)),
-            };
+        if data.choices.len() == 0 {
+            return Err(TranslateError::EmptyResponse);
         }
-        return Err(TranslateError::ConnectionError(500));
+        let response = &data.choices[0].message.content;
+        return match response {
+            Some(s) => Ok(s.clone()),
+            None => Err(TranslateError::EmptyResponse),
+        };
     }
 }
 
 impl From<OpenAIError> for TranslateError {
     fn from(e: OpenAIError) -> Self {
-        TranslateError::ConnectionError(503)
+        match e {
+            OpenAIError::ApiError(ref err) if err.code == Some("rate_limit_exceeded".into()) => {
+                TranslateError::RateLimited
+            }
+            _ => TranslateError::ServiceUnavailable("ChatGPT".into()),
+        }
     }
 }

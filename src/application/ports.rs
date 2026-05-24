@@ -1,2 +1,2 @@
-pub mod repository;
 pub mod clients;
+pub mod repository;
