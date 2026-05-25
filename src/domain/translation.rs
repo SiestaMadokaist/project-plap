@@ -1,4 +1,6 @@
-#[derive(PartialEq, PartialOrd)]
+use crate::domain::storage::StoragePath;
+
+#[derive(PartialEq, PartialOrd, Debug)]
 pub struct ChapterId(pub i32);
 
 impl ChapterId {
@@ -14,8 +16,7 @@ impl ChapterId {
     }
 }
 
-pub type OptionalChapterId = Option<ChapterId>;
-
+#[derive(Debug)]
 pub struct NovelId(pub String);
 
 #[derive(PartialEq, Eq)]
@@ -59,6 +60,19 @@ impl TranslationProgress {
             source: source.unwrap_or(RawSource::Syosetu),
             status: Status::Raw,
         };
+    }
+
+    pub fn title(&self) -> &str {
+        return &self.title;
+    }
+
+    pub fn source(&self) -> &RawSource {
+        return &self.source;
+    }
+
+    pub fn filepath(&self) -> StoragePath {
+        let str = format!("{}/{}.txt", self.novel_id.0, self.latest_chapter.0);
+        return StoragePath(str);
     }
 
     pub fn latest_chapter(&self) -> &ChapterId {

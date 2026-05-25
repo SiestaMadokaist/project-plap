@@ -3,12 +3,12 @@ use tokio::sync::OnceCell;
 
 use crate::{
     application::{
-        dto::{
-            translation::{TranslationDTO, TranslationResponse},
-            void::VoidDTO,
-        },
+        dto::void::VoidDTO,
         ports::{
-            clients::{raws::RawsClient, translator::TranslatorClient},
+            clients::{
+                notification::NotificationClient, raws::RawsClient, storage::StorageClient,
+                translator::TranslatorClient,
+            },
             repository::translation::TranslationRepository,
         },
         usecases::bases::Usecase,
@@ -27,8 +27,12 @@ pub trait Repos {
 pub trait Clients {
     type TC: TranslatorClient;
     type Raw: RawsClient;
+    type Storage: StorageClient;
+    type Notification: NotificationClient;
     fn translator(&self) -> &Self::TC;
     fn raw(&self) -> &Self::Raw;
+    fn storage(&self) -> &Self::Storage;
+    fn notification(&self) -> &Self::Notification;
 }
 
 pub struct Params {
@@ -106,16 +110,23 @@ impl<R: Repos, C: Clients> Usecase<()> for Run<R, C> {
     type Output = VoidDTO;
     async fn exec(self) -> Result<VoidDTO, DomainError> {
         let untranslated = self.untranslated().await?;
-        let translation = self.repo.translation_repo();
+        let tl_repo = self.repo.translation_repo();
+        let storage = self.client.storage();
+        let notification = self.client.notification();
         for chapter in untranslated {
             let raw = self.client.raw().read(chapter).await?;
             let translated = self.client.translator().translate(&raw).await?;
-            // todo: save to s3,
-            translation
-                .set_latest(&self.params.novel_id, chapter)
+            let progress = tl_repo.set_latest(&self.params.novel_id, chapter).await?;
+            storage
+                .write(progress.filepath(), translated.bytes())
                 .await?;
+            let notification_message = format!(
+                "chapter {} of {:?} has just been translated",
+                progress.title(),
+                progress.latest_chapter()
+            );
+            notification.notify(&notification_message).await?;
         }
         return Ok(VoidDTO {});
-        // return Ok(dto);
     }
 }
