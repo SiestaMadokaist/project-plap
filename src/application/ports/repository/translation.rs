@@ -1,6 +1,6 @@
 use aws_sdk_dynamodb::Error;
 
-use crate::domain::translation::{ChapterId, NovelId, TranslationProgress};
+use crate::domain::translation::{ChapterId, NovelId, RawSource, TranslationProgress};
 
 pub trait TranslationRepository {
     async fn latest(&self, id: &NovelId) -> Result<Option<TranslationProgress>, Error>;
@@ -8,5 +8,12 @@ pub trait TranslationRepository {
         &self,
         id: &NovelId,
         chapter: &ChapterId,
+    ) -> Result<TranslationProgress, Error>;
+
+    async fn init(
+        &self,
+        id: &NovelId,
+        chapter: &ChapterId,
+        source: RawSource,
     ) -> Result<TranslationProgress, Error>;
 }

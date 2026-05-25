@@ -8,7 +8,7 @@ pub enum UserRepoError {
     Database(String),
 }
 
-#[warn(async_fn_in_trait)]
+#[allow(async_fn_in_trait)]
 pub trait UserRepository {
     async fn get(&self, id: &UserId) -> Result<User, UserRepoError>;
     async fn put(&self, user: &User) -> Result<(), UserRepoError>;

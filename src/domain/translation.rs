@@ -6,13 +6,15 @@ impl ChapterId {
         return ChapterId(self.0 + 1);
     }
 
-    pub fn until(&self, target: &ChapterId) -> Vec<ChapterId> {
-        let start = self.0;
+    pub fn until(&self, target: &ChapterId) -> impl Iterator<Item = ChapterId> {
+        let start = self.0 + 1;
         let end = target.0;
-        let iter: Vec<ChapterId> = (start..=end).map(ChapterId).collect();
+        let iter = (start..=end).map(ChapterId);
         return iter;
     }
 }
+
+pub type OptionalChapterId = Option<ChapterId>;
 
 pub struct NovelId(pub String);
 
@@ -22,7 +24,7 @@ pub enum RawSource {
 }
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub enum Status {
-    Pending,
+    Raw,
     Processing,
     Translated,
 }
@@ -38,12 +40,27 @@ impl std::fmt::Display for RawSource {
 pub struct TranslationProgress {
     latest_chapter: ChapterId,
     novel_id: NovelId,
-    name: String,
+    title: String,
     source: RawSource,
     status: Status,
 }
 
 impl TranslationProgress {
+    pub fn new(
+        novel_id: NovelId,
+        chapter: ChapterId,
+        title: &str,
+        source: Option<RawSource>,
+    ) -> Self {
+        return TranslationProgress {
+            latest_chapter: chapter,
+            novel_id: novel_id,
+            title: String::from(title),
+            source: source.unwrap_or(RawSource::Syosetu),
+            status: Status::Raw,
+        };
+    }
+
     pub fn latest_chapter(&self) -> &ChapterId {
         return &self.latest_chapter;
     }

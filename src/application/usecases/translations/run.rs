@@ -12,11 +12,6 @@ use crate::{
     domain::translation::{ChapterId, NovelId, TranslationProgress},
 };
 
-pub struct TranslateLatest {
-    pub novel_id: NovelId,
-    pub chapter_id: ChapterId,
-}
-
 pub trait Repos {
     type TR: TranslationRepository;
     fn translation_repo(&self) -> &Self::TR;
@@ -25,17 +20,18 @@ pub trait Repos {
 pub trait Clients {
     type TC: TranslatorClient;
     type Raw: RawsClient;
-    fn translator(&self) -> Self::TC;
-    fn raw(&self) -> Self::Raw;
+    fn translator(&self) -> &Self::TC;
+    fn raw(&self) -> &Self::Raw;
 }
 
 pub struct Params {
-    id: NovelId,
+    novel_id: NovelId,
 }
 struct Memo {
     latest_raw: OnceCell<ChapterId>,
     untranslated_chapters: OnceCell<Vec<ChapterId>>,
 }
+
 impl Memo {
     fn new() -> Self {
         return Memo {
@@ -45,16 +41,16 @@ impl Memo {
     }
 }
 
-pub struct RunTranslation<R: Repos, C: Clients> {
+pub struct Run<R: Repos, C: Clients> {
     repo: Rc<R>,
     client: Rc<C>,
     params: Params,
     memo: Memo,
 }
 
-impl<R: Repos, C: Clients> RunTranslation<R, C> {
+impl<R: Repos, C: Clients> Run<R, C> {
     pub fn new(repo: Rc<R>, client: Rc<C>, params: Params) -> Self {
-        return RunTranslation {
+        return Run {
             repo,
             client,
             params,
@@ -64,7 +60,7 @@ impl<R: Repos, C: Clients> RunTranslation<R, C> {
 
     async fn latest_translation(&self) -> Result<Option<TranslationProgress>, UsecaseError> {
         let translation_repo = self.repo.translation_repo();
-        let result = translation_repo.latest(&self.params.id).await?;
+        let result = translation_repo.latest(&self.params.novel_id).await?;
         return Ok(result);
     }
 
@@ -73,7 +69,7 @@ impl<R: Repos, C: Clients> RunTranslation<R, C> {
             .memo
             .latest_raw
             .get_or_try_init(async || {
-                let ch = self.client.raw().latest(&self.params.id).await;
+                let ch = self.client.raw().latest(&self.params.novel_id).await;
                 return ch;
             })
             .await?;
@@ -92,7 +88,7 @@ impl<R: Repos, C: Clients> RunTranslation<R, C> {
                     .map(|x| x.latest_chapter())
                     .unwrap_or(&ChapterId(0));
                 let iterator = latest_translated_chapter.until(latest_raw);
-                return Ok::<Vec<ChapterId>, UsecaseError>(iterator);
+                return Ok::<Vec<ChapterId>, UsecaseError>(iterator.collect());
             })
             .await?;
         return Ok(result);
@@ -106,23 +102,10 @@ impl<R: Repos, C: Clients> RunTranslation<R, C> {
             let translated = self.client.translator().translate(&raw).await?;
             // todo: save to s3,
             print!("{}", &translated);
-            translation.set_latest(&self.params.id, chapter).await?;
+            translation
+                .set_latest(&self.params.novel_id, chapter)
+                .await?;
         }
         return Ok(());
     }
-
-    // async fn is_untranslated(&self) -> Result<bool, UsecaseError> {
-    //     let latest_chapter  = self.latest_raw().await?;
-    //     let in_db = self.in_db().await?;
-    //     let result: bool = match in_db {
-    //         None => true,
-    //         Some(x) => x.is_untranslated(latest_chapter),
-    //     };
-    //     return Ok(result);
-    // }
-
-    // async fn fetch_raw(&self) -> Result<String, UsecaseError> {
-    //     let latest = self.latest_raw().await?
-
-    // }
 }

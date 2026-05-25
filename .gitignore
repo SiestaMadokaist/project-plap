@@ -2,7 +2,13 @@
 /dist
 .env.*
 !.env.example
-terraform/.terraform
-terraform/.terraform.lock.hcl
+
+# terraform — .terraform.lock.hcl should be committed (like Cargo.lock)
+terraform/.terraform/
 terraform/terraform.tfstate
 terraform/terraform.tfstate.backup
+terraform/*.tfvars
+terraform/*.tfvars.json
+
+# ide / tools
+.claude/

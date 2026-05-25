@@ -12,11 +12,8 @@ pub enum FetchError {
     UnknownError,
 }
 
+static SELECTOR: &'static str = ".p-novel__body";
 impl Syosetu {
-    fn selector() -> String {
-        return String::from(".p-novel__body");
-    }
-
     pub fn new(host: String) -> Self {
         Syosetu {
             host,
@@ -29,7 +26,7 @@ impl Syosetu {
         let body = self.client.get(&url).send().await?;
         let text = body.text().await?;
         let html = scraper::Html::parse_document(&text);
-        let selector = scraper::Selector::parse(&Syosetu::selector())?;
+        let selector = scraper::Selector::parse(SELECTOR)?;
         let content = html.select(&selector).next();
         let source: Result<String, FetchError> = match content {
             None => Err(FetchError::UnknownError),
