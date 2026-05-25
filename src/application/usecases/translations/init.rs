@@ -4,13 +4,17 @@ use tokio::sync::OnceCell;
 
 use crate::{
     application::{
+        dto::translation::{TranslationDTO, TranslationResponse},
         ports::{
             clients::{raws::RawsClient, translator::TranslatorClient},
             repository::translation::TranslationRepository,
         },
-        usecases::errors::UsecaseError,
+        usecases::bases::Usecase,
     },
-    domain::translation::{ChapterId, NovelId, RawSource},
+    domain::{
+        errors::DomainError,
+        translation::{ChapterId, NovelId, RawSource},
+    },
 };
 
 pub struct Params {
@@ -59,7 +63,7 @@ impl<R: Repos, C: Clients> Init<R, C> {
         };
     }
 
-    async fn latest_raw(&self) -> Result<&ChapterId, UsecaseError> {
+    async fn latest_raw(&self) -> Result<&ChapterId, DomainError> {
         let chapter = self
             .memo
             .latest_raw
@@ -71,19 +75,24 @@ impl<R: Repos, C: Clients> Init<R, C> {
         return Ok(chapter);
     }
 
-    async fn starting_chapter(&self) -> Result<&ChapterId, UsecaseError> {
+    async fn starting_chapter(&self) -> Result<&ChapterId, DomainError> {
         let starting_chapter = match self.params.starting_chapter.as_ref() {
             None => self.latest_raw().await,
             Some(x) => Ok(x),
         }?;
         return Ok(starting_chapter);
     }
+}
 
-    pub async fn exec(&self) -> Result<(), UsecaseError> {
+impl<R: Repos, C: Clients> Usecase<TranslationResponse> for Init<R, C> {
+    type Output = TranslationDTO;
+    async fn exec(self) -> Result<TranslationDTO, DomainError> {
         let starting_chapter = self.starting_chapter().await?;
         let repo = self.repo.translation_repo();
-        repo.init(&self.params.novel_id, starting_chapter, RawSource::Syosetu)
+        let init = repo
+            .init(&self.params.novel_id, starting_chapter, RawSource::Syosetu)
             .await?;
-        return Ok(());
+        let dto = TranslationDTO::new(init);
+        return Ok(dto);
     }
 }

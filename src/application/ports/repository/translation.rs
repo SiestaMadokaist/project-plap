@@ -2,6 +2,7 @@ use aws_sdk_dynamodb::Error;
 
 use crate::domain::translation::{ChapterId, NovelId, RawSource, TranslationProgress};
 
+#[allow(async_fn_in_trait)]
 pub trait TranslationRepository {
     async fn latest(&self, id: &NovelId) -> Result<Option<TranslationProgress>, Error>;
     async fn set_latest(

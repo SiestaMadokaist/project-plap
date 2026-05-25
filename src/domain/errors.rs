@@ -3,25 +3,25 @@
 use crate::application::ports::clients::{raws::RawsError, translator::TranslateError};
 
 #[derive(Debug, thiserror::Error)]
-pub enum UsecaseError {
+pub enum DomainError {
     #[error("failed")]
-    Failed,
+    Unhandled,
 }
 
-impl From<aws_sdk_dynamodb::Error> for UsecaseError {
+impl From<aws_sdk_dynamodb::Error> for DomainError {
     fn from(_value: aws_sdk_dynamodb::Error) -> Self {
-        return UsecaseError::Failed;
+        return DomainError::Unhandled;
     }
 }
 
-impl From<RawsError> for UsecaseError {
+impl From<RawsError> for DomainError {
     fn from(_value: RawsError) -> Self {
-        return UsecaseError::Failed;
+        return DomainError::Unhandled;
     }
 }
 
-impl From<TranslateError> for UsecaseError {
+impl From<TranslateError> for DomainError {
     fn from(_value: TranslateError) -> Self {
-        return UsecaseError::Failed;
+        return DomainError::Unhandled;
     }
 }

@@ -3,13 +3,20 @@ use tokio::sync::OnceCell;
 
 use crate::{
     application::{
+        dto::{
+            translation::{TranslationDTO, TranslationResponse},
+            void::VoidDTO,
+        },
         ports::{
             clients::{raws::RawsClient, translator::TranslatorClient},
             repository::translation::TranslationRepository,
         },
-        usecases::errors::UsecaseError,
+        usecases::bases::Usecase,
     },
-    domain::translation::{ChapterId, NovelId, TranslationProgress},
+    domain::{
+        errors::DomainError,
+        translation::{ChapterId, NovelId, TranslationProgress},
+    },
 };
 
 pub trait Repos {
@@ -58,13 +65,13 @@ impl<R: Repos, C: Clients> Run<R, C> {
         };
     }
 
-    async fn latest_translation(&self) -> Result<Option<TranslationProgress>, UsecaseError> {
+    async fn latest_translation(&self) -> Result<Option<TranslationProgress>, DomainError> {
         let translation_repo = self.repo.translation_repo();
         let result = translation_repo.latest(&self.params.novel_id).await?;
         return Ok(result);
     }
 
-    async fn latest_raw(&self) -> Result<&ChapterId, UsecaseError> {
+    async fn latest_raw(&self) -> Result<&ChapterId, DomainError> {
         let chapter = self
             .memo
             .latest_raw
@@ -76,7 +83,7 @@ impl<R: Repos, C: Clients> Run<R, C> {
         return Ok(chapter);
     }
 
-    async fn untranslated(&self) -> Result<&Vec<ChapterId>, UsecaseError> {
+    async fn untranslated(&self) -> Result<&Vec<ChapterId>, DomainError> {
         let result = self
             .memo
             .untranslated_chapters
@@ -88,24 +95,27 @@ impl<R: Repos, C: Clients> Run<R, C> {
                     .map(|x| x.latest_chapter())
                     .unwrap_or(&ChapterId(0));
                 let iterator = latest_translated_chapter.until(latest_raw);
-                return Ok::<Vec<ChapterId>, UsecaseError>(iterator.collect());
+                return Ok::<Vec<ChapterId>, DomainError>(iterator.collect());
             })
             .await?;
         return Ok(result);
     }
+}
 
-    pub async fn exec(&self) -> Result<(), UsecaseError> {
+impl<R: Repos, C: Clients> Usecase<()> for Run<R, C> {
+    type Output = VoidDTO;
+    async fn exec(self) -> Result<VoidDTO, DomainError> {
         let untranslated = self.untranslated().await?;
         let translation = self.repo.translation_repo();
         for chapter in untranslated {
             let raw = self.client.raw().read(chapter).await?;
             let translated = self.client.translator().translate(&raw).await?;
             // todo: save to s3,
-            print!("{}", &translated);
             translation
                 .set_latest(&self.params.novel_id, chapter)
                 .await?;
         }
-        return Ok(());
+        return Ok(VoidDTO {});
+        // return Ok(dto);
     }
 }
