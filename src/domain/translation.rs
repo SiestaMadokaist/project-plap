@@ -1,12 +1,26 @@
 #[derive(PartialEq, PartialOrd)]
 pub struct ChapterId(pub i32);
+
+impl ChapterId {
+    pub fn next(&self) -> ChapterId {
+        return ChapterId(self.0 + 1);
+    }
+
+    pub fn until(&self, target: &ChapterId) -> Vec<ChapterId> {
+        let start = self.0;
+        let end = target.0;
+        let iter: Vec<ChapterId> = (start..=end).map(ChapterId).collect();
+        return iter;
+    }
+}
+
 pub struct NovelId(pub String);
 
 #[derive(PartialEq, Eq)]
 pub enum RawSource {
     Syosetu,
 }
-
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub enum Status {
     Pending,
     Processing,
@@ -21,7 +35,7 @@ impl std::fmt::Display for RawSource {
     }
 }
 
-pub struct Translation {
+pub struct TranslationProgress {
     latest_chapter: ChapterId,
     novel_id: NovelId,
     name: String,
@@ -29,8 +43,18 @@ pub struct Translation {
     status: Status,
 }
 
-impl Translation {
-    pub fn translated(&self, c: ChapterId) -> bool {
-        return self.latest_chapter > c;
+impl TranslationProgress {
+    pub fn latest_chapter(&self) -> &ChapterId {
+        return &self.latest_chapter;
+    }
+
+    pub fn is_untranslated(&self, c: &ChapterId) -> bool {
+        if self.latest_chapter < *c {
+            return true;
+        }
+        if self.latest_chapter == *c {
+            return self.status < Status::Processing;
+        }
+        return false;
     }
 }
