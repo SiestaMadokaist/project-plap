@@ -1,12 +1,11 @@
-use crate::domain::translation::{ChapterId, NovelId};
-#[derive(Debug, thiserror::Error)]
-pub enum RawsError {
-    #[error("failed")]
-    Failed,
-}
+use crate::domain::{
+    errors::DomainError,
+    translation::{ChapterId, NovelId},
+};
 
 #[allow(async_fn_in_trait)]
 pub trait RawsClient {
-    async fn latest(&self, novel_id: &NovelId) -> Result<ChapterId, RawsError>;
-    async fn read(&self, novel_id: &NovelId, chapter_id: &ChapterId) -> Result<String, RawsError>;
+    async fn latest(&self, novel_id: &NovelId) -> Result<ChapterId, DomainError>;
+    async fn read(&self, novel_id: &NovelId, chapter_id: &ChapterId)
+        -> Result<String, DomainError>;
 }

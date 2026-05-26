@@ -1,4 +1,6 @@
-use crate::application::ports::clients::translator::{TranslateError, TranslatorClient};
+use crate::{
+    application::ports::clients::translator::TranslatorClient, domain::errors::DomainError,
+};
 use async_openai::{
     config::OpenAIConfig,
     error::OpenAIError,
@@ -23,15 +25,15 @@ impl ChatGPT {
         }
     }
 
-    pub async fn model(&self) -> Result<&Model, OpenAIError> {
+    pub async fn model(&self) -> Result<&Model, DomainError> {
         let init = self
             .model_cache
             .get_or_try_init(async || {
                 let retrieved = self.client.models().retrieve(&self.model_name).await;
                 return retrieved;
             })
-            .await;
-        return init;
+            .await?;
+        return Ok(init);
     }
 
     fn system_prompt(&self) -> ChatCompletionRequestMessage {
@@ -40,7 +42,7 @@ impl ChatGPT {
 }
 
 impl TranslatorClient for ChatGPT {
-    async fn translate(&self, text: &str) -> Result<String, TranslateError> {
+    async fn translate(&self, text: &str) -> Result<String, DomainError> {
         let model = self.model().await?;
         let system_prompt = self.system_prompt();
         let user_prompt = ChatCompletionRequestMessage::User(text.into());
@@ -52,23 +54,23 @@ impl TranslatorClient for ChatGPT {
         let resp = chat.create(requests);
         let data = resp.await?;
         if data.choices.len() == 0 {
-            return Err(TranslateError::EmptyResponse);
+            return Err(DomainError::Unhandled);
         }
         let response = &data.choices[0].message.content;
         return match response {
             Some(s) => Ok(s.clone()),
-            None => Err(TranslateError::EmptyResponse),
+            None => Err(DomainError::Unhandled),
         };
     }
 }
 
-impl From<OpenAIError> for TranslateError {
+impl From<OpenAIError> for DomainError {
     fn from(e: OpenAIError) -> Self {
         match e {
             OpenAIError::ApiError(ref err) if err.code == Some("rate_limit_exceeded".into()) => {
-                TranslateError::RateLimited
+                DomainError::Unhandled
             }
-            _ => TranslateError::ServiceUnavailable("ChatGPT".into()),
+            _ => DomainError::Unhandled,
         }
     }
 }
