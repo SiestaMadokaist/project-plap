@@ -1,4 +1,4 @@
-pub mod routes;
+pub mod resources;
 use lambda_runtime::{run, service_fn, Error, LambdaEvent};
 use serde::Deserialize;
 

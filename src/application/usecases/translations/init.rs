@@ -6,8 +6,14 @@ use crate::{
     application::{
         dto::translation::{TranslationDTO, TranslationResponse},
         ports::{
-            clients::{raws::RawsClient, translator::TranslatorClient},
-            repository::translation::TranslationRepository,
+            clients::{
+                cc::{self, AllClient},
+                raws::RawsClient,
+            },
+            repository::{
+                rc::{self, AllRepos},
+                translation::TranslationRepository,
+            },
         },
         usecases::bases::Usecase,
     },
@@ -16,22 +22,14 @@ use crate::{
         translation::{ChapterId, NovelId, RawSource},
     },
 };
+pub trait Repos: rc::HasTranslation {}
+impl<T: AllRepos> Repos for T {} // ← add this
+pub trait Clients: cc::HasTranslator + cc::HasRaws {}
+impl<T: AllClient> Clients for T {} // ← add this
 
 pub struct Params {
     pub novel_id: NovelId,
     pub starting_chapter: Option<ChapterId>,
-}
-
-pub trait Repos {
-    type TR: TranslationRepository;
-    fn translation_repo(&self) -> &Self::TR;
-}
-
-pub trait Clients {
-    type TC: TranslatorClient;
-    type Raw: RawsClient;
-    fn translator(&self) -> &Self::TC;
-    fn raw(&self) -> &Self::Raw;
 }
 
 struct Memo {
@@ -45,6 +43,8 @@ impl Memo {
         };
     }
 }
+
+// type Repos = HasTranslation;
 
 pub struct Init<R: Repos, C: Clients> {
     repo: Rc<R>,
@@ -68,7 +68,8 @@ impl<R: Repos, C: Clients> Init<R, C> {
             .memo
             .latest_raw
             .get_or_try_init(async || {
-                let ch = self.client.raw().latest(&self.params.novel_id).await;
+                let raw_client = self.client.raws();
+                let ch = raw_client.latest(&self.params.novel_id).await;
                 return ch;
             })
             .await?;
@@ -88,7 +89,7 @@ impl<R: Repos, C: Clients> Usecase<TranslationResponse> for Init<R, C> {
     type Output = TranslationDTO;
     async fn exec(self) -> Result<TranslationDTO, DomainError> {
         let starting_chapter = self.starting_chapter().await?;
-        let repo = self.repo.translation_repo();
+        let repo = self.repo.translation();
         let init = repo
             .init(&self.params.novel_id, starting_chapter, RawSource::Syosetu)
             .await?;
