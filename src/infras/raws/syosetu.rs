@@ -1,15 +1,12 @@
 use reqwest::Client;
 use scraper::error::SelectorErrorKind;
+
+use crate::domain::errors::DomainError;
 // pub struct Host(String);
 
 pub struct Syosetu {
     host: String,
     client: Client,
-}
-#[derive(Debug, thiserror::Error)]
-pub enum FetchError {
-    #[error("Unknown  Error")]
-    UnknownError,
 }
 
 static SELECTOR: &'static str = ".p-novel__body";
@@ -21,15 +18,15 @@ impl Syosetu {
         }
     }
 
-    pub async fn fetch(&self, novel_id: &str, chapter: i16) -> Result<String, FetchError> {
+    pub async fn fetch(&self, novel_id: &str, chapter: i16) -> Result<String, DomainError> {
         let url = format!("{}/{}/{}", self.host, novel_id, chapter);
         let body = self.client.get(&url).send().await?;
         let text = body.text().await?;
         let html = scraper::Html::parse_document(&text);
         let selector = scraper::Selector::parse(SELECTOR)?;
         let content = html.select(&selector).next();
-        let source: Result<String, FetchError> = match content {
-            None => Err(FetchError::UnknownError),
+        let source: Result<String, DomainError> = match content {
+            None => Err(DomainError::EmptyResponse),
             Some(s) => {
                 let t = s.text();
                 let col: Vec<&str> = t.collect();
@@ -40,14 +37,18 @@ impl Syosetu {
     }
 }
 
-impl From<reqwest::Error> for FetchError {
-    fn from(_: reqwest::Error) -> FetchError {
-        FetchError::UnknownError
+impl From<reqwest::Error> for DomainError {
+    fn from(e: reqwest::Error) -> DomainError {
+        if e.is_connect() || e.is_timeout() {
+            DomainError::HttpConnectionFailed(e.to_string())
+        } else {
+            DomainError::HttpError(e.to_string())
+        }
     }
 }
 
-impl From<SelectorErrorKind<'_>> for FetchError {
-    fn from(_: SelectorErrorKind<'_>) -> FetchError {
-        FetchError::UnknownError
+impl From<SelectorErrorKind<'_>> for DomainError {
+    fn from(e: SelectorErrorKind<'_>) -> DomainError {
+        DomainError::InvalidSelector(e.to_string())
     }
 }

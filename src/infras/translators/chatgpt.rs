@@ -54,12 +54,12 @@ impl TranslatorClient for ChatGPT {
         let resp = chat.create(requests);
         let data = resp.await?;
         if data.choices.len() == 0 {
-            return Err(DomainError::Unhandled);
+            return Err(DomainError::EmptyResponse);
         }
         let response = &data.choices[0].message.content;
         return match response {
             Some(s) => Ok(s.clone()),
-            None => Err(DomainError::Unhandled),
+            None => Err(DomainError::MissingContent),
         };
     }
 }
@@ -68,9 +68,10 @@ impl From<OpenAIError> for DomainError {
     fn from(e: OpenAIError) -> Self {
         match e {
             OpenAIError::ApiError(ref err) if err.code == Some("rate_limit_exceeded".into()) => {
-                DomainError::Unhandled
+                DomainError::RateLimited
             }
-            _ => DomainError::Unhandled,
+            OpenAIError::ApiError(ref err) => DomainError::ApiError(err.message.clone()),
+            _ => DomainError::ApiError(e.to_string()),
         }
     }
 }

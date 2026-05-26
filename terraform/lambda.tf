@@ -15,8 +15,9 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      ENV_PATH = ".env.${var.stage}"
-      RUST_LOG = "info"
+      ENV_PATH     = ".env.${var.stage}"
+      RUST_LOG     = "info"
+      DYNAMO_TABLE = aws_dynamodb_table.translations.name
     }
   }
 
@@ -39,8 +40,9 @@ resource "aws_lambda_function" "ws" {
 
   environment {
     variables = {
-      ENV_PATH = ".env.${var.stage}"
-      RUST_LOG = "info"
+      ENV_PATH     = ".env.${var.stage}"
+      RUST_LOG     = "info"
+      DYNAMO_TABLE = aws_dynamodb_table.translations.name
     }
   }
 
@@ -63,8 +65,9 @@ resource "aws_lambda_function" "cron" {
 
   environment {
     variables = {
-      ENV_PATH = ".env.${var.stage}"
-      RUST_LOG = "info"
+      ENV_PATH     = ".env.${var.stage}"
+      RUST_LOG     = "info"
+      DYNAMO_TABLE = aws_dynamodb_table.translations.name
     }
   }
 

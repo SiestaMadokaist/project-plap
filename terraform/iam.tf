@@ -36,8 +36,8 @@ resource "aws_iam_role_policy" "lambda_policy" {
         Effect = "Allow"
         Action = ["dynamodb:*"]
         Resource = [
-          "arn:aws:dynamodb:${var.region}:${local.account_id}:table/production-*",
-          "arn:aws:dynamodb:${var.region}:${local.account_id}:table/production-*/index/*",
+          "arn:aws:dynamodb:${var.region}:${local.account_id}:table/${var.stage}-*",
+          "arn:aws:dynamodb:${var.region}:${local.account_id}:table/${var.stage}-*/index/*",
         ]
       },
       {

@@ -2,20 +2,16 @@ use crate::{
     application::ports::repository::translation::TranslationRepository,
     domain::{
         errors::DomainError,
-        translation::{
-            ChapterId, NovelId, RawSource, Status, TranslationDomain, TranslationGetter,
-        },
-        user::{Email, User, UserId},
+        translation::{ChapterId, NovelId, RawSource, Status, TranslationDomain, TranslationGetter},
     },
     pkg::types::time::Timestamp,
 };
-use aws_sdk_dynamodb::Client;
+use aws_sdk_dynamodb::{types::AttributeValue, Client};
 use serde::{Deserialize, Serialize};
+use serde_dynamo::{from_item, to_item};
 
-use super::table::{table_name, user_pk, USER_SK};
+use super::table::table_name;
 
-// Internal DynamoDB representation — PK/SK envelope wrapping domain fields.
-// Kept private: callers only see User and UserRepoError.
 #[derive(Debug, Serialize, Deserialize)]
 struct TranslationDDB {
     novel_id: NovelId,
@@ -43,31 +39,31 @@ impl From<&TranslationDomain> for TranslationDDB {
 
 impl TranslationGetter for TranslationDDB {
     fn title(&self) -> &String {
-        return &self.title;
+        &self.title
     }
 
     fn status(&self) -> &Status {
-        return &self.status;
+        &self.status
     }
 
     fn created_at(&self) -> &Timestamp {
-        return &self.created_at;
+        &self.created_at
     }
 
     fn updated_at(&self) -> &Timestamp {
-        return &self.updated_at;
+        &self.updated_at
     }
 
     fn chapter_id(&self) -> &ChapterId {
-        return &self.chapter_id;
+        &self.chapter_id
     }
 
     fn novel_id(&self) -> &NovelId {
-        return &self.novel_id;
+        &self.novel_id
     }
 
     fn source(&self) -> &RawSource {
-        return &self.source;
+        &self.source
     }
 }
 
@@ -83,11 +79,46 @@ impl DDBTranslationRepository {
             table: table_name(),
         }
     }
+
+    async fn put(&self, domain: &TranslationDomain) -> Result<(), DomainError> {
+        let av_map = to_item(TranslationDDB::from(domain))
+            .map_err(|e| DomainError::Serialize(e.to_string()))?;
+
+        self.client
+            .put_item()
+            .table_name(&self.table)
+            .set_item(Some(av_map))
+            .send()
+            .await
+            .map_err(|e| DomainError::Disconnected(e.to_string()))?;
+
+        Ok(())
+    }
 }
 
 impl TranslationRepository for DDBTranslationRepository {
     async fn latest(&self, id: &NovelId) -> Result<Option<TranslationDomain>, DomainError> {
-        Err(DomainError::NotImplemented)
+        let out = self
+            .client
+            .query()
+            .table_name(&self.table)
+            .key_condition_expression("novel_id = :novel_id")
+            .expression_attribute_values(":novel_id", AttributeValue::S(id.0.clone()))
+            .scan_index_forward(false)
+            .limit(1)
+            .send()
+            .await
+            .map_err(|e| DomainError::Disconnected(e.to_string()))?;
+
+        let item = match out.items.and_then(|mut v| v.drain(..).next()) {
+            None => return Ok(None),
+            Some(item) => item,
+        };
+
+        let ddb: TranslationDDB =
+            from_item(item).map_err(|e| DomainError::Serialize(e.to_string()))?;
+
+        Ok(Some(ddb.into()))
     }
 
     async fn init(
@@ -96,7 +127,9 @@ impl TranslationRepository for DDBTranslationRepository {
         chapter: &ChapterId,
         source: RawSource,
     ) -> Result<TranslationDomain, DomainError> {
-        Err(DomainError::NotImplemented)
+        let domain = TranslationDomain::new(id.clone(), *chapter, "", Some(source));
+        self.put(&domain).await?;
+        Ok(domain)
     }
 
     async fn insert(
@@ -104,6 +137,13 @@ impl TranslationRepository for DDBTranslationRepository {
         prev: &TranslationDomain,
         chapter_id: &ChapterId,
     ) -> Result<TranslationDomain, DomainError> {
-        Err(DomainError::NotImplemented)
+        let domain = TranslationDomain::new(
+            prev.novel_id().clone(),
+            *chapter_id,
+            prev.title(),
+            Some(*prev.source()),
+        );
+        self.put(&domain).await?;
+        Ok(domain)
     }
 }

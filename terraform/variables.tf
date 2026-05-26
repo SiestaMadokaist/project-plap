@@ -3,7 +3,7 @@ variable "region" {
 }
 
 variable "stage" {
-  default = "prod"
+  default = "production"
 }
 
 variable "service_name" {

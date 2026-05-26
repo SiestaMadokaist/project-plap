@@ -1,5 +1,3 @@
-// use ;
-
 #[derive(Debug, thiserror::Error)]
 pub enum DomainError {
     #[error("failed")]
@@ -7,10 +5,31 @@ pub enum DomainError {
 
     #[error("not implemented")]
     NotImplemented,
-}
 
-impl From<aws_sdk_dynamodb::Error> for DomainError {
-    fn from(_value: aws_sdk_dynamodb::Error) -> Self {
-        return DomainError::Unhandled;
-    }
+    #[error("disconnected error: {0}")]
+    Disconnected(String),
+
+    #[error("serialization error: {0}")]
+    Serialize(String),
+
+    #[error("rate limited by upstream API")]
+    RateLimited,
+
+    #[error("upstream API error: {0}")]
+    ApiError(String),
+
+    #[error("upstream returned an empty response")]
+    EmptyResponse,
+
+    #[error("upstream response had no content")]
+    MissingContent,
+
+    #[error("http connection failed: {0}")]
+    HttpConnectionFailed(String),
+
+    #[error("http error: {0}")]
+    HttpError(String),
+
+    #[error("invalid selector: {0}")]
+    InvalidSelector(String),
 }
