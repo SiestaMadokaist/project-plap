@@ -29,7 +29,7 @@ impl From<DateTime<Utc>> for TimestampMS {
 /*
  * seconds since epoch
  */
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Copy)]
 pub struct Timestamp(pub i64);
 
 impl Timestamp {

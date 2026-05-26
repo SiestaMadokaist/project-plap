@@ -13,19 +13,25 @@ use rust_api::{
 };
 
 pub struct TranslationController<R: AllRepos, C: AllClient> {
-    repo: Rc<R>,
-    client: Rc<C>,
+    _repo: Rc<R>,
+    _client: Rc<C>,
 }
 
 impl<R: AllRepos, C: AllClient> TranslationController<R, C> {
-    pub fn new(repo: Rc<R>, client: Rc<C>) -> Self {
-        TranslationController { repo, client }
+    pub fn new(_repo: Rc<R>, _client: Rc<C>) -> Self {
+        TranslationController { _repo, _client }
+    }
+
+    fn repo(&self) -> Rc<R> {
+        return self._repo.clone();
+    }
+
+    fn client(&self) -> Rc<C> {
+        return self._client.clone();
     }
 
     pub async fn init(&self, params: init::Params) -> Result<TranslationDTO, DomainError> {
-        let repo = self.repo.clone();
-        let client = self.client.clone();
-        let action = init::Init::new(repo, client, params);
+        let action = init::Init::new(self.repo(), self.client(), params);
         return action.exec().await;
     }
 }

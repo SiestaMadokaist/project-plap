@@ -6,6 +6,9 @@ use crate::application::ports::clients::{raws::RawsError, translator::TranslateE
 pub enum DomainError {
     #[error("failed")]
     Unhandled,
+
+    #[error("not implemented")]
+    NotImplemented,
 }
 
 impl From<aws_sdk_dynamodb::Error> for DomainError {

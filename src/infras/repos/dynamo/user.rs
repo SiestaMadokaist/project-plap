@@ -4,7 +4,8 @@ use serde_dynamo::{from_item, to_item};
 
 use crate::{
     application::ports::repository::user::{UserRepoError, UserRepository},
-    domain::user::{Email, User, UserId}, pkg::types::time::Timestamp,
+    domain::user::{Email, User, UserId},
+    pkg::types::time::Timestamp,
 };
 
 use super::table::{table_name, user_pk, USER_SK};
@@ -50,12 +51,12 @@ impl From<UserItem> for User {
     }
 }
 
-pub struct DynamoUserRepository {
+pub struct DDBUserRepository {
     client: Client,
     table: String,
 }
 
-impl DynamoUserRepository {
+impl DDBUserRepository {
     pub fn new(client: Client) -> Self {
         Self {
             client,
@@ -64,7 +65,7 @@ impl DynamoUserRepository {
     }
 }
 
-impl UserRepository for DynamoUserRepository {
+impl UserRepository for DDBUserRepository {
     async fn get(&self, id: &UserId) -> Result<User, UserRepoError> {
         let out = self
             .client
@@ -76,7 +77,9 @@ impl UserRepository for DynamoUserRepository {
             .await
             .map_err(|e| UserRepoError::Database(e.to_string()))?;
 
-        let item = out.item.ok_or_else(|| UserRepoError::NotFound(id.clone()))?;
+        let item = out
+            .item
+            .ok_or_else(|| UserRepoError::NotFound(id.clone()))?;
         let user_item: UserItem =
             from_item(item).map_err(|e| UserRepoError::Database(e.to_string()))?;
 

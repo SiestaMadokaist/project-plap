@@ -15,7 +15,7 @@ use crate::{
     },
     domain::{
         errors::DomainError,
-        translation::{ChapterId, NovelId, TranslationProgress},
+        translation::{ChapterId, NovelId, TranslationDomain},
     },
 };
 
@@ -69,7 +69,7 @@ impl<R: Repos, C: Clients> Run<R, C> {
         };
     }
 
-    async fn latest_translation(&self) -> Result<Option<TranslationProgress>, DomainError> {
+    async fn latest_translation(&self) -> Result<Option<TranslationDomain>, DomainError> {
         let translation_repo = self.repo.translation_repo();
         let result = translation_repo.latest(&self.params.novel_id).await?;
         return Ok(result);
@@ -96,7 +96,7 @@ impl<R: Repos, C: Clients> Run<R, C> {
                 let latest_translation = self.latest_translation().await?;
                 let latest_translated_chapter = latest_translation
                     .as_ref()
-                    .map(|x| x.latest_chapter())
+                    .map(|x| x.chapter_id())
                     .unwrap_or(&ChapterId(0));
                 let iterator = latest_translated_chapter.until(latest_raw);
                 return Ok::<Vec<ChapterId>, DomainError>(iterator.collect());
@@ -113,17 +113,22 @@ impl<R: Repos, C: Clients> Usecase<()> for Run<R, C> {
         let tl_repo = self.repo.translation_repo();
         let storage = self.client.storage();
         let notification = self.client.notification();
-        for chapter in untranslated {
-            let raw = self.client.raw().read(chapter).await?;
+        for chapter_id in untranslated {
+            let raw = self
+                .client
+                .raw()
+                .read(&self.params.novel_id, chapter_id)
+                .await?;
             let translated = self.client.translator().translate(&raw).await?;
-            let progress = tl_repo.set_latest(&self.params.novel_id, chapter).await?;
+            let inserted = tl_repo.insert(&self.params.novel_id, chapter_id).await?;
+            // let progress = tl_repo.set_latest(&self.params.novel_id, chapter).await?;
             storage
-                .write(progress.filepath(), translated.bytes())
+                .write(inserted.filepath(), translated.bytes())
                 .await?;
             let notification_message = format!(
                 "chapter {} of {:?} has just been translated",
-                progress.title(),
-                progress.latest_chapter()
+                inserted.title(),
+                inserted.chapter_id()
             );
             notification.notify(&notification_message).await?;
         }

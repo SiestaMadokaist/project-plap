@@ -7,6 +7,6 @@ pub enum RawsError {
 
 #[allow(async_fn_in_trait)]
 pub trait RawsClient {
-    async fn latest(&self, id: &NovelId) -> Result<ChapterId, RawsError>;
-    async fn read(&self, id: &ChapterId) -> Result<String, RawsError>;
+    async fn latest(&self, novel_id: &NovelId) -> Result<ChapterId, RawsError>;
+    async fn read(&self, novel_id: &NovelId, chapter_id: &ChapterId) -> Result<String, RawsError>;
 }

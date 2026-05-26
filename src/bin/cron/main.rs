@@ -1,6 +1,14 @@
 pub mod resources;
+use std::any::{self, Any};
+
 use lambda_runtime::{run, service_fn, Error, LambdaEvent};
+use rust_api::{
+    application::ports::{clients::cc::AllClient, repository::rc::AllRepos},
+    domain::errors::DomainError,
+};
 use serde::Deserialize;
+
+use crate::resources::translations::controller::TranslationController;
 
 #[derive(Deserialize)]
 struct CronEvent {
@@ -15,11 +23,11 @@ struct PathParameters {
 
 async fn handler(event: LambdaEvent<CronEvent>) -> Result<(), Error> {
     let proxy = &event.payload.path_parameters.proxy;
+    // let c = controller<Any; Any>();
+    // let translation = TranslationController::new(repo, client);
     tracing::info!(proxy, "cron event");
     match proxy.as_str() {
-        "cron/ocr-service" => {}
-        "cron/mldn" => {}
-        "cron/autosync" => {}
+        "cron/rezero" => {}
         _ => tracing::warn!(proxy, "unknown cron route"),
     }
 

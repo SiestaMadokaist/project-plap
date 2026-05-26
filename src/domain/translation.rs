@@ -1,6 +1,11 @@
-use crate::domain::storage::StoragePath;
+use serde::{Deserialize, Serialize};
 
-#[derive(PartialEq, PartialOrd, Debug)]
+use crate::{
+    domain::storage::StoragePath,
+    pkg::types::time::{self, Timestamp},
+};
+
+#[derive(PartialEq, PartialOrd, Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct ChapterId(pub i32);
 
 impl ChapterId {
@@ -16,14 +21,14 @@ impl ChapterId {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct NovelId(pub String);
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Debug, Serialize, Deserialize, Clone, Copy)]
 pub enum RawSource {
     Syosetu,
 }
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Debug, Serialize, Deserialize)]
 pub enum Status {
     Raw,
     Processing,
@@ -38,32 +43,67 @@ impl std::fmt::Display for RawSource {
     }
 }
 
-pub struct TranslationProgress {
-    latest_chapter: ChapterId,
+pub trait TranslationGetter {
+    fn title(&self) -> &String;
+    fn created_at(&self) -> &Timestamp;
+    fn updated_at(&self) -> &Timestamp;
+    fn chapter_id(&self) -> &ChapterId;
+    fn novel_id(&self) -> &NovelId;
+    fn source(&self) -> &RawSource;
+    fn status(&self) -> &Status;
+}
+
+#[derive(Clone)]
+pub struct TranslationDomain {
+    chapter_id: ChapterId,
     novel_id: NovelId,
     title: String,
     source: RawSource,
     status: Status,
+    created_at: Timestamp,
+    updated_at: Timestamp,
 }
 
-impl TranslationProgress {
+impl TranslationDomain {
     pub fn new(
         novel_id: NovelId,
         chapter: ChapterId,
         title: &str,
         source: Option<RawSource>,
     ) -> Self {
-        return TranslationProgress {
-            latest_chapter: chapter,
+        return TranslationDomain {
+            chapter_id: chapter,
             novel_id: novel_id,
             title: String::from(title),
             source: source.unwrap_or(RawSource::Syosetu),
             status: Status::Raw,
+            created_at: Timestamp::now(),
+            updated_at: Timestamp::now(),
         };
     }
 
-    pub fn title(&self) -> &str {
+    pub fn title(&self) -> &String {
         return &self.title;
+    }
+
+    pub fn status(&self) -> &Status {
+        return &self.status;
+    }
+
+    pub fn created_at(&self) -> &Timestamp {
+        return &self.created_at;
+    }
+
+    pub fn updated_at(&self) -> &Timestamp {
+        return &self.updated_at;
+    }
+
+    pub fn chapter_id(&self) -> &ChapterId {
+        return &self.chapter_id;
+    }
+
+    pub fn novel_id(&self) -> &NovelId {
+        return &self.novel_id;
     }
 
     pub fn source(&self) -> &RawSource {
@@ -71,21 +111,21 @@ impl TranslationProgress {
     }
 
     pub fn filepath(&self) -> StoragePath {
-        let str = format!("{}/{}.txt", self.novel_id.0, self.latest_chapter.0);
+        let str = format!("{}/{}.txt", self.novel_id.0, self.chapter_id.0);
         return StoragePath(str);
     }
+}
 
-    pub fn latest_chapter(&self) -> &ChapterId {
-        return &self.latest_chapter;
-    }
-
-    pub fn is_untranslated(&self, c: &ChapterId) -> bool {
-        if self.latest_chapter < *c {
-            return true;
+impl<T: TranslationGetter> From<T> for TranslationDomain {
+    fn from(tl: T) -> Self {
+        Self {
+            novel_id: tl.novel_id().clone(),
+            chapter_id: *tl.chapter_id(),
+            source: *tl.source(),
+            title: tl.title().clone(),
+            created_at: *tl.created_at(),
+            updated_at: *tl.updated_at(),
+            status: tl.status().clone(),
         }
-        if self.latest_chapter == *c {
-            return self.status < Status::Processing;
-        }
-        return false;
     }
 }
