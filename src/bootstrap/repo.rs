@@ -1,5 +1,5 @@
 use crate::{
-    application::ports::repository::rc::RepositoryContainer,
+    application::ports::repository::rc::{AllRepos, RepositoryContainer},
     infras::repos::dynamo::{translation::DDBTranslationRepository, user::DDBUserRepository},
 };
 
@@ -28,3 +28,5 @@ impl RepositoryContainer for DynamoRepositoryContainer {
         return &self.user;
     }
 }
+
+impl AllRepos for DynamoRepositoryContainer {}

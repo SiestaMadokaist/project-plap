@@ -1,8 +1,13 @@
 use reqwest::Client;
 use scraper::error::SelectorErrorKind;
 
-use crate::domain::errors::DomainError;
-// pub struct Host(String);
+use crate::{
+    application::ports::clients::raws::RawsClient,
+    domain::{
+        errors::DomainError,
+        translation::{ChapterId, NovelId},
+    },
+};
 
 pub struct Syosetu {
     host: String,
@@ -50,5 +55,24 @@ impl From<reqwest::Error> for DomainError {
 impl From<SelectorErrorKind<'_>> for DomainError {
     fn from(e: SelectorErrorKind<'_>) -> DomainError {
         DomainError::InvalidSelector(e.to_string())
+    }
+}
+
+impl RawsClient for Syosetu {
+    async fn latest(&self, novel_id: &NovelId) -> Result<ChapterId, DomainError> {
+        let url = format!(
+            "https://api.syosetu.com/novelapi/api/?of=ga&ncode={}&out=json",
+            novel_id.0
+        );
+        let resp = self.client.get(&url).send().await?;
+        let json: serde_json::Value = resp.json().await?;
+        let count = json[1]["general_all_no"]
+            .as_i64()
+            .ok_or(DomainError::MissingContent)?;
+        Ok(ChapterId(count as i32))
+    }
+
+    async fn read(&self, novel_id: &NovelId, chapter_id: &ChapterId) -> Result<String, DomainError> {
+        self.fetch(&novel_id.0, chapter_id.0 as i16).await
     }
 }

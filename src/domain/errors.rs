@@ -3,6 +3,9 @@ pub enum DomainError {
     #[error("failed")]
     Unhandled,
 
+    #[error("prerequisite not satisfied")]
+    Prerequisite(String),
+
     #[error("not implemented")]
     NotImplemented,
 

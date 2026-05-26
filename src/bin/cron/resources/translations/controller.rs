@@ -2,11 +2,14 @@ use std::rc::Rc;
 
 use rust_api::{
     application::{
-        dto::translation::TranslationDTO,
+        dto::{translation::TranslationDTO, void::VoidDTO},
         ports::{clients::cc::AllClient, repository::rc::AllRepos},
         usecases::{
             bases::Usecase,
-            translations::init::{self},
+            translations::{
+                init::{self},
+                run,
+            },
         }, // usecases::translations::run::{self},
     },
     domain::errors::DomainError,
@@ -32,6 +35,11 @@ impl<R: AllRepos, C: AllClient> TranslationController<R, C> {
 
     pub async fn init(&self, params: init::Params) -> Result<TranslationDTO, DomainError> {
         let action = init::Init::new(self.repo(), self.client(), params);
+        return action.exec().await;
+    }
+
+    pub async fn run(&self, params: run::Params) -> Result<VoidDTO, DomainError> {
+        let action = run::Run::new(self.repo(), self.client(), params);
         return action.exec().await;
     }
 }

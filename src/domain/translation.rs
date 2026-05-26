@@ -1,9 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    domain::storage::StoragePath,
-    pkg::types::time::{self, Timestamp},
-};
+use crate::{domain::storage::StoragePath, pkg::types::time::Timestamp};
 
 #[derive(PartialEq, PartialOrd, Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct ChapterId(pub i32);

@@ -65,9 +65,12 @@ resource "aws_lambda_function" "cron" {
 
   environment {
     variables = {
-      ENV_PATH     = ".env.${var.stage}"
-      RUST_LOG     = "info"
-      DYNAMO_TABLE = aws_dynamodb_table.translations.name
+      ENV_PATH             = ".env.${var.stage}"
+      RUST_LOG             = "info"
+      DYNAMO_TABLE         = aws_dynamodb_table.translations.name
+      TL_BUCKET            = "stardust-frontiers"
+      TL_PREFIX            = "project-translation/"
+      DISCORD_WEBHOOK_URL  = var.discord_webhook_url
     }
   }
 

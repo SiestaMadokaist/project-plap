@@ -34,6 +34,7 @@ chrono = { version = "0.4", features = ["serde"] }
 reqwest = { version = "0.12", features = ["json"] }
 scraper = { version = "0.22" }
 async-trait = "0.1"
+aws-sdk-s3 = "1.133.0"
 
 [dev-dependencies]
 rstest = "0.23"

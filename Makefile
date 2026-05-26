@@ -1,6 +1,12 @@
-STAGE     ?= prod
-FUNCTIONS := api ws cron
-DIST_DIR  := dist
+STAGE               ?= production
+DISCORD_WEBHOOK_URL ?=
+FUNCTIONS           := api ws cron
+DIST_DIR            := dist
+
+TF_VARS := -var="stage=$(STAGE)"
+ifneq ($(DISCORD_WEBHOOK_URL),)
+  TF_VARS += -var="discord_webhook_url=$(DISCORD_WEBHOOK_URL)"
+endif
 
 .PHONY: all verify fmt test build package plan deploy run \
         invoke-api invoke-ws invoke-cron tf-init clean
@@ -55,10 +61,10 @@ tf-init:
 	cd terraform && terraform init
 
 plan: package
-	cd terraform && terraform plan -var="stage=$(STAGE)"
+	cd terraform && terraform plan $(TF_VARS)
 
 deploy: package
-	cd terraform && terraform apply -auto-approve -var="stage=$(STAGE)"
+	cd terraform && terraform apply -auto-approve $(TF_VARS)
 
 # --- cleanup ---
 

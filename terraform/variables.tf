@@ -21,3 +21,8 @@ variable "memory_size" {
 variable "log_retention_days" {
   default = 7
 }
+
+variable "discord_webhook_url" {
+  description = "Discord webhook URL for translation notifications"
+  sensitive   = true
+}

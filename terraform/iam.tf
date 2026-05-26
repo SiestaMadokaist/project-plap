@@ -64,6 +64,8 @@ resource "aws_iam_role_policy" "lambda_policy" {
           "arn:aws:s3:::public.ramadoka.com/*",
           "arn:aws:s3:::private.ramadoka.com",
           "arn:aws:s3:::private.ramadoka.com/*",
+          "arn:aws:s3:::stardust-frontiers",
+          "arn:aws:s3:::stardust-frontiers/project-translation/*",
         ]
       },
       {

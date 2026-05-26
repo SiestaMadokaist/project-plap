@@ -1,4 +1,3 @@
-use aws_sdk_dynamodb::config::retry::ShouldAttempt::No;
 use std::rc::Rc;
 use tokio::sync::OnceCell;
 
@@ -7,10 +6,16 @@ use crate::{
         dto::void::VoidDTO,
         ports::{
             clients::{
-                notification::NotificationClient, raws::RawsClient, storage::StorageClient,
+                cc::{self, AllClient},
+                notification::NotificationClient,
+                raws::RawsClient,
+                storage::StorageClient,
                 translator::TranslatorClient,
             },
-            repository::translation::TranslationRepository,
+            repository::{
+                rc::{self, AllRepos},
+                translation::TranslationRepository,
+            },
         },
         usecases::bases::Usecase,
     },
@@ -20,25 +25,16 @@ use crate::{
     },
 };
 
-pub trait Repos {
-    type TR: TranslationRepository;
-    fn translation_repo(&self) -> &Self::TR;
-}
+pub trait Repos: rc::HasTranslation {}
+impl<T: AllRepos> Repos for T {}
 
-pub trait Clients {
-    type TC: TranslatorClient;
-    type Raw: RawsClient;
-    type Storage: StorageClient;
-    type Notification: NotificationClient;
-    fn translator(&self) -> &Self::TC;
-    fn raw(&self) -> &Self::Raw;
-    fn storage(&self) -> &Self::Storage;
-    fn notification(&self) -> &Self::Notification;
-}
+pub trait Clients: cc::HasTranslator + cc::HasRaws + cc::HasStorage + cc::HasNotification {}
+impl<T: AllClient> Clients for T {}
 
 pub struct Params {
-    novel_id: NovelId,
+    pub novel_id: NovelId,
 }
+
 struct Memo {
     latest_raw: OnceCell<ChapterId>,
     untranslated_chapters: OnceCell<Vec<ChapterId>>,
@@ -46,10 +42,10 @@ struct Memo {
 
 impl Memo {
     fn new() -> Self {
-        return Memo {
+        Memo {
             latest_raw: OnceCell::new(),
             untranslated_chapters: OnceCell::new(),
-        };
+        }
     }
 }
 
@@ -62,17 +58,20 @@ pub struct Run<R: Repos, C: Clients> {
 
 impl<R: Repos, C: Clients> Run<R, C> {
     pub fn new(repo: Rc<R>, client: Rc<C>, params: Params) -> Self {
-        return Run {
+        Run {
             repo,
             client,
             params,
             memo: Memo::new(),
-        };
+        }
     }
 
     async fn latest_translation(&self) -> Result<Option<TranslationDomain>, DomainError> {
-        let translation_repo = self.repo.translation_repo();
-        let result = translation_repo.latest(&self.params.novel_id).await?;
+        let result = self
+            .repo
+            .translation()
+            .latest(&self.params.novel_id)
+            .await?;
         return Ok(result);
     }
 
@@ -80,10 +79,7 @@ impl<R: Repos, C: Clients> Run<R, C> {
         let chapter = self
             .memo
             .latest_raw
-            .get_or_try_init(async || {
-                let ch = self.client.raw().latest(&self.params.novel_id).await;
-                return ch;
-            })
+            .get_or_try_init(async || self.client.raws().latest(&self.params.novel_id).await)
             .await?;
         return Ok(chapter);
     }
@@ -99,8 +95,9 @@ impl<R: Repos, C: Clients> Run<R, C> {
                     .as_ref()
                     .map(|x| x.chapter_id())
                     .unwrap_or(&ChapterId(0));
-                let iterator = latest_translated_chapter.until(latest_raw);
-                return Ok::<Vec<ChapterId>, DomainError>(iterator.collect());
+                Ok::<Vec<ChapterId>, DomainError>(
+                    latest_translated_chapter.until(latest_raw).collect(),
+                )
             })
             .await?;
         return Ok(result);
@@ -108,27 +105,26 @@ impl<R: Repos, C: Clients> Run<R, C> {
 
     async fn run_translation(&self, prev: &TranslationDomain) -> Result<VoidDTO, DomainError> {
         let untranslated = self.untranslated().await?;
-        let tl_repo = self.repo.translation_repo();
+        let tl_repo = self.repo.translation();
         let storage = self.client.storage();
         let notification = self.client.notification();
         for chapter_id in untranslated {
             let raw = self
                 .client
-                .raw()
+                .raws()
                 .read(&self.params.novel_id, chapter_id)
                 .await?;
             let translated = self.client.translator().translate(&raw).await?;
             let inserted = tl_repo.insert(prev, chapter_id).await?;
-            // let progress = tl_repo.set_latest(&self.params.novel_id, chapter).await?;
             storage
                 .write(inserted.filepath(), translated.bytes())
                 .await?;
-            let notification_message = format!(
+            let message = format!(
                 "chapter {} of {:?} has just been translated",
                 inserted.title(),
                 inserted.chapter_id()
             );
-            notification.notify(&notification_message).await?;
+            notification.notify(&message).await?;
         }
         return Ok(VoidDTO {});
     }
@@ -140,11 +136,8 @@ impl<R: Repos, C: Clients> Usecase<()> for Run<R, C> {
     async fn exec(self) -> Result<VoidDTO, DomainError> {
         let latest = self.latest_translation().await?;
         match latest {
-            None => Err(DomainError::NotImplemented),
-            Some(latest) => {
-                let result = self.run_translation(&latest).await?;
-                Ok(result)
-            }
+            None => Err(DomainError::Prerequisite("story not initialized".into())),
+            Some(latest) => self.run_translation(&latest).await,
         }
     }
 }
