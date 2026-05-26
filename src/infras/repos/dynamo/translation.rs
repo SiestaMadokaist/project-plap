@@ -101,7 +101,7 @@ impl TranslationRepository for DDBTranslationRepository {
 
     async fn insert(
         &self,
-        novel_id: &NovelId,
+        prev: &TranslationDomain,
         chapter_id: &ChapterId,
     ) -> Result<TranslationDomain, DomainError> {
         Err(DomainError::NotImplemented)

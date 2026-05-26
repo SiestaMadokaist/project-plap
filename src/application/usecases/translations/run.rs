@@ -1,3 +1,4 @@
+use aws_sdk_dynamodb::config::retry::ShouldAttempt::No;
 use std::rc::Rc;
 use tokio::sync::OnceCell;
 
@@ -104,11 +105,8 @@ impl<R: Repos, C: Clients> Run<R, C> {
             .await?;
         return Ok(result);
     }
-}
 
-impl<R: Repos, C: Clients> Usecase<()> for Run<R, C> {
-    type Output = VoidDTO;
-    async fn exec(self) -> Result<VoidDTO, DomainError> {
+    async fn run_translation(&self, prev: &TranslationDomain) -> Result<VoidDTO, DomainError> {
         let untranslated = self.untranslated().await?;
         let tl_repo = self.repo.translation_repo();
         let storage = self.client.storage();
@@ -120,7 +118,7 @@ impl<R: Repos, C: Clients> Usecase<()> for Run<R, C> {
                 .read(&self.params.novel_id, chapter_id)
                 .await?;
             let translated = self.client.translator().translate(&raw).await?;
-            let inserted = tl_repo.insert(&self.params.novel_id, chapter_id).await?;
+            let inserted = tl_repo.insert(prev, chapter_id).await?;
             // let progress = tl_repo.set_latest(&self.params.novel_id, chapter).await?;
             storage
                 .write(inserted.filepath(), translated.bytes())
@@ -133,5 +131,20 @@ impl<R: Repos, C: Clients> Usecase<()> for Run<R, C> {
             notification.notify(&notification_message).await?;
         }
         return Ok(VoidDTO {});
+    }
+}
+
+impl<R: Repos, C: Clients> Usecase<()> for Run<R, C> {
+    type Output = VoidDTO;
+
+    async fn exec(self) -> Result<VoidDTO, DomainError> {
+        let latest = self.latest_translation().await?;
+        match latest {
+            None => Err(DomainError::NotImplemented),
+            Some(latest) => {
+                let result = self.run_translation(&latest).await?;
+                Ok(result)
+            }
+        }
     }
 }
