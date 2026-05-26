@@ -21,11 +21,11 @@ impl ChapterId {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct NovelId(pub String);
 
-#[derive(PartialEq, Eq, Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum RawSource {
     Syosetu,
 }
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Debug, Serialize, Deserialize)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum Status {
     Raw,
     Processing,
@@ -35,7 +35,17 @@ pub enum Status {
 impl std::fmt::Display for RawSource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            RawSource::Syosetu => write!(f, "syosetu"),
+            RawSource::Syosetu => write!(f, "Syosetu"),
+        }
+    }
+}
+
+impl std::fmt::Display for Status {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Status::Raw => write!(f, "Raw"),
+            Status::Processing => write!(f, "Processing"),
+            Status::Translated => write!(f, "Translated"),
         }
     }
 }
@@ -50,7 +60,7 @@ pub trait TranslationGetter {
     fn status(&self) -> &Status;
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TranslationDomain {
     chapter_id: ChapterId,
     novel_id: NovelId,

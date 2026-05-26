@@ -30,6 +30,7 @@ impl<T: AllClient> Clients for T {} // ← add this
 pub struct Params {
     pub novel_id: NovelId,
     pub starting_chapter: Option<ChapterId>,
+    pub title: String,
 }
 
 struct Memo {
@@ -91,7 +92,12 @@ impl<R: Repos, C: Clients> Usecase<TranslationResponse> for Init<R, C> {
         let starting_chapter = self.starting_chapter().await?;
         let repo = self.repo.translation();
         let init = repo
-            .init(&self.params.novel_id, starting_chapter, RawSource::Syosetu)
+            .init(
+                &self.params.novel_id,
+                starting_chapter,
+                &self.params.title,
+                RawSource::Syosetu,
+            )
             .await?;
         let dto = TranslationDTO::new(init);
         return Ok(dto);

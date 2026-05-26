@@ -1,12 +1,8 @@
-STAGE               ?= production
-DISCORD_WEBHOOK_URL ?=
-FUNCTIONS           := api ws cron
-DIST_DIR            := dist
+STAGE     ?= production
+FUNCTIONS := api ws cron
+DIST_DIR  := dist
 
 TF_VARS := -var="stage=$(STAGE)"
-ifneq ($(DISCORD_WEBHOOK_URL),)
-  TF_VARS += -var="discord_webhook_url=$(DISCORD_WEBHOOK_URL)"
-endif
 
 .PHONY: all verify fmt test build package plan deploy run \
         invoke-api invoke-ws invoke-cron tf-init clean
@@ -35,7 +31,7 @@ build:
 package: build
 	mkdir -p $(DIST_DIR)
 	@for fn in $(FUNCTIONS); do \
-		zip -j $(DIST_DIR)/$$fn.zip target/lambda/$$fn/bootstrap; \
+		zip -j $(DIST_DIR)/$$fn.zip target/lambda/$$fn/bootstrap .env.production; \
 	done
 
 # --- local run ---
@@ -43,7 +39,7 @@ package: build
 # Then use make invoke-* or curl/wscat to test
 
 run:
-	cargo lambda watch
+	cargo lambda watch --env-file .env.local
 
 invoke-api:
 	cargo lambda invoke api --data-file events/api.json

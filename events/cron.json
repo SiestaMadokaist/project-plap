@@ -1,8 +1,11 @@
 {
   "pathParameters": {
-    "proxy": "cron/ocr-service"
+    "proxy": "cron/translate",
+    "novel_id": "n2267be"
   },
   "requestContext": {
-    "http": { "method": "POST" }
+    "http": {
+      "method": "POST"
+    }
   }
 }

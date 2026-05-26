@@ -16,6 +16,7 @@ pub trait TranslationRepository {
         &self,
         id: &NovelId,
         chapter: &ChapterId,
+        title: &str,
         source: RawSource,
     ) -> Result<TranslationDomain, DomainError>;
 }

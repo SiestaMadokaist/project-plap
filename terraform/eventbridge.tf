@@ -1,24 +1,14 @@
 locals {
   cron_schedules = {
-    ocr_service_morning = {
-      schedule    = "cron(0 2 * * ? *)"
-      description = "OCR service 02:00 UTC daily"
-      input       = jsonencode({ pathParameters = { proxy = "cron/ocr-service" }, requestContext = { http = { method = "POST" } } })
+    translate_deathflag = {
+      schedule    = "cron(30 * * * ? *)"
+      description = "Translate deathflag every hour at :30"
+      input       = jsonencode({ pathParameters = { proxy = "cron/translate", novel_id = "n4449cj" } })
     }
-    ocr_service_afternoon = {
-      schedule    = "cron(0 14 * * ? *)"
-      description = "OCR service 14:00 UTC daily"
-      input       = jsonencode({ pathParameters = { proxy = "cron/ocr-service" }, requestContext = { http = { method = "POST" } } })
-    }
-    mldn = {
-      schedule    = "cron(0 1 * * ? *)"
-      description = "MLDN 01:00 UTC daily"
-      input       = jsonencode({ pathParameters = { proxy = "cron/mldn" }, requestContext = { http = { method = "POST" } } })
-    }
-    autosync = {
-      schedule    = "cron(0 13 * * ? *)"
-      description = "Autosync 13:00 UTC daily"
-      input       = jsonencode({ pathParameters = { proxy = "cron/autosync" }, requestContext = { http = { method = "POST" } } })
+    translate_re0 = {
+      schedule    = "cron(0 * * * ? *)"
+      description = "Translate rezero every hour at :00"
+      input       = jsonencode({ pathParameters = { proxy = "cron/translate", novel_id = "n2267be" } })
     }
   }
 }

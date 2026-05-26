@@ -15,6 +15,7 @@ async fn handler(event: Request) -> Result<Response<Body>, Error> {
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
+    rust_api::init_env();
     rust_api::init_tracing();
     run(service_fn(handler)).await
 }

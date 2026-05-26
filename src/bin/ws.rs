@@ -22,6 +22,7 @@ async fn handler(event: LambdaEvent<Value>) -> Result<Value, Error> {
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
+    rust_api::init_env();
     rust_api::init_tracing();
     run(service_fn(handler)).await
 }

@@ -1,10 +1,13 @@
 use reqwest::Client;
 use serde::Serialize;
 
-use crate::{application::ports::clients::notification::NotificationClient, domain::errors::DomainError};
+use crate::{
+    application::ports::clients::notification::NotificationClient, domain::errors::DomainError,
+};
 
 #[derive(Serialize)]
 struct WebhookPayload<'a> {
+    username: &'a str,
     content: &'a str,
 }
 
@@ -24,7 +27,10 @@ impl Discord {
 
 impl NotificationClient for Discord {
     async fn notify(&self, info: &str) -> Result<(), DomainError> {
-        let payload = WebhookPayload { content: info };
+        let payload = WebhookPayload {
+            username: "zero-translation",
+            content: info,
+        };
         self.client
             .post(&self.webhook_url)
             .json(&payload)

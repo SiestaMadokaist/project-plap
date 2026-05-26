@@ -1,10 +1,11 @@
 use crate::domain::user::UserId;
 
-pub const TABLE_NAME_ENV: &str = "DYNAMO_TABLE";
-pub const DEFAULT_TABLE_NAME: &str = "rust-api";
+pub fn translation_table_name() -> String {
+    std::env::var("TRANSLATION_TABLE").unwrap_or_else(|_| "production-translations".to_string())
+}
 
-pub fn table_name() -> String {
-    std::env::var(TABLE_NAME_ENV).unwrap_or_else(|_| DEFAULT_TABLE_NAME.to_string())
+pub fn user_table_name() -> String {
+    std::env::var("USER_TABLE").unwrap_or_else(|_| "production-users".to_string())
 }
 
 // Single-table design key schema: USER#{id} / METADATA

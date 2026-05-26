@@ -104,6 +104,7 @@ impl<R: Repos, C: Clients> Run<R, C> {
     }
 
     async fn run_translation(&self, prev: &TranslationDomain) -> Result<VoidDTO, DomainError> {
+        tracing::info!(item = ?prev, "latest translation");
         let untranslated = self.untranslated().await?;
         let tl_repo = self.repo.translation();
         let storage = self.client.storage();
@@ -119,10 +120,12 @@ impl<R: Repos, C: Clients> Run<R, C> {
             storage
                 .write(inserted.filepath(), translated.bytes())
                 .await?;
+            let public_url = storage.public_url(inserted.filepath());
             let message = format!(
-                "chapter {} of {:?} has just been translated",
+                "chapter {} of {:?} has just been translated here: {}",
                 inserted.title(),
-                inserted.chapter_id()
+                inserted.chapter_id(),
+                public_url,
             );
             notification.notify(&message).await?;
         }

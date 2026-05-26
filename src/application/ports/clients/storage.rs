@@ -11,4 +11,5 @@ pub trait StorageClient {
     fn bucket(&self) -> StorageBucket;
     async fn read(&self, path: StoragePath) -> Result<String, DomainError>;
     async fn write(&self, path: StoragePath, data: Bytes) -> Result<(), DomainError>;
+    fn public_url(&self, path: StoragePath) -> String;
 }

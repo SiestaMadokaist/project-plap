@@ -2,7 +2,9 @@ use crate::{
     application::ports::repository::translation::TranslationRepository,
     domain::{
         errors::DomainError,
-        translation::{ChapterId, NovelId, RawSource, Status, TranslationDomain, TranslationGetter},
+        translation::{
+            ChapterId, NovelId, RawSource, Status, TranslationDomain, TranslationGetter,
+        },
     },
     pkg::types::time::Timestamp,
 };
@@ -10,7 +12,7 @@ use aws_sdk_dynamodb::{types::AttributeValue, Client};
 use serde::{Deserialize, Serialize};
 use serde_dynamo::{from_item, to_item};
 
-use super::table::table_name;
+use super::table::translation_table_name;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct TranslationDDB {
@@ -76,21 +78,25 @@ impl DDBTranslationRepository {
     pub fn new(client: Client) -> Self {
         Self {
             client,
-            table: table_name(),
+            table: translation_table_name(),
         }
     }
 
     async fn put(&self, domain: &TranslationDomain) -> Result<(), DomainError> {
         let av_map = to_item(TranslationDDB::from(domain))
             .map_err(|e| DomainError::Serialize(e.to_string()))?;
-
+        tracing::info!(item = self.table, "tablename");
+        tracing::info!(item = ?av_map, "putting item to dynamo");
         self.client
             .put_item()
             .table_name(&self.table)
             .set_item(Some(av_map))
             .send()
             .await
-            .map_err(|e| DomainError::Disconnected(e.to_string()))?;
+            .map_err(|e| {
+                tracing::error!(error = %e, debug = ?e, "put_item failed");
+                DomainError::Disconnected(e.to_string())
+            })?;
 
         Ok(())
     }
@@ -125,9 +131,10 @@ impl TranslationRepository for DDBTranslationRepository {
         &self,
         id: &NovelId,
         chapter: &ChapterId,
+        title: &str,
         source: RawSource,
     ) -> Result<TranslationDomain, DomainError> {
-        let domain = TranslationDomain::new(id.clone(), *chapter, "", Some(source));
+        let domain = TranslationDomain::new(id.clone(), *chapter, title, Some(source));
         self.put(&domain).await?;
         Ok(domain)
     }

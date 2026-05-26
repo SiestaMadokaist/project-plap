@@ -8,7 +8,7 @@ use crate::{
     pkg::types::time::Timestamp,
 };
 
-use super::table::{table_name, user_pk, USER_SK};
+use super::table::{user_table_name, user_pk, USER_SK};
 
 // Internal DynamoDB representation — PK/SK envelope wrapping domain fields.
 // Kept private: callers only see User and UserRepoError.
@@ -60,7 +60,7 @@ impl DDBUserRepository {
     pub fn new(client: Client) -> Self {
         Self {
             client,
-            table: table_name(),
+            table: user_table_name(),
         }
     }
 }

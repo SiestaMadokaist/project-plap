@@ -1,4 +1,4 @@
-use aws_sdk_s3::{primitives::ByteStream, Client};
+use aws_sdk_s3::{primitives::ByteStream, types::ObjectCannedAcl::PublicRead, Client};
 
 use crate::{
     application::ports::clients::storage::StorageClient,
@@ -16,7 +16,11 @@ pub struct S3Storage {
 
 impl S3Storage {
     pub fn new(client: Client, bucket: String, prefix: String) -> Self {
-        Self { client, bucket, prefix }
+        Self {
+            client,
+            bucket,
+            prefix,
+        }
     }
 
     fn key(&self, path: &StoragePath) -> String {
@@ -53,6 +57,13 @@ impl StorageClient for S3Storage {
         String::from_utf8(bytes.to_vec()).map_err(|e| DomainError::Serialize(e.to_string()))
     }
 
+    fn public_url(&self, path: StoragePath) -> String {
+        return format!(
+            "https://{}.s3.ap-southeast-1.amazonaws.com/{}",
+            self.bucket, path.0,
+        );
+    }
+
     async fn write(&self, path: StoragePath, data: std::str::Bytes<'_>) -> Result<(), DomainError> {
         let bytes: Vec<u8> = data.collect();
         self.client
@@ -60,6 +71,7 @@ impl StorageClient for S3Storage {
             .bucket(&self.bucket)
             .key(self.key(&path))
             .body(ByteStream::from(bytes))
+            .acl(PublicRead)
             .send()
             .await
             .map_err(|e| DomainError::Disconnected(e.to_string()))?;

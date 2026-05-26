@@ -31,9 +31,10 @@ thiserror = "2"
 typos = "0.10.43"
 typos-vars = "0.10.4"
 chrono = { version = "0.4", features = ["serde"] }
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 scraper = { version = "0.22" }
 async-trait = "0.1"
+dotenvy = "0.15"
 aws-sdk-s3 = "1.133.0"
 
 [dev-dependencies]
