@@ -12,8 +12,6 @@ use aws_sdk_dynamodb::{types::AttributeValue, Client};
 use serde::{Deserialize, Serialize};
 use serde_dynamo::{from_item, to_item};
 
-use super::table::translation_table_name;
-
 #[derive(Debug, Serialize, Deserialize)]
 struct TranslationDDB {
     novel_id: NovelId,
@@ -75,11 +73,8 @@ pub struct DDBTranslationRepository {
 }
 
 impl DDBTranslationRepository {
-    pub fn new(client: Client) -> Self {
-        Self {
-            client,
-            table: translation_table_name(),
-        }
+    pub fn new(client: Client, table: String) -> Self {
+        Self { client, table }
     }
 
     async fn put(&self, domain: &TranslationDomain) -> Result<(), DomainError> {

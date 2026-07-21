@@ -1,5 +1,8 @@
+use aws_sdk_dynamodb::Client;
+
 use crate::{
     application::ports::repository::rc::{AllRepos, RepositoryContainer},
+    config::env::Env,
     infras::repos::dynamo::{translation::DDBTranslationRepository, user::DDBUserRepository},
 };
 
@@ -9,10 +12,13 @@ pub struct DynamoRepositoryContainer {
 }
 
 impl DynamoRepositoryContainer {
-    pub fn new(tl: DDBTranslationRepository, u: DDBUserRepository) -> Self {
+    pub fn new(client: &Client, env: &Env) -> Self {
         Self {
-            translation: tl,
-            user: u,
+            translation: DDBTranslationRepository::new(
+                client.clone(),
+                env.translation_table.clone(),
+            ),
+            user: DDBUserRepository::new(client.clone(), env.user_table.clone()),
         }
     }
 }

@@ -6,8 +6,7 @@ use lambda_runtime::{run, service_fn, Error, LambdaEvent};
 use rust_api::{
     application::usecases::translations::{init, run},
     bootstrap::{client::CronClientContainer, repo::DynamoRepositoryContainer},
-    domain::translation::{ChapterId, NovelId},
-    infras::repos::dynamo::{translation::DDBTranslationRepository, user::DDBUserRepository},
+    config::env::Env,
 };
 use serde::Deserialize;
 
@@ -25,45 +24,49 @@ struct PathParameters {
     data: serde_json::Value,
 }
 
-async fn handler(event: LambdaEvent<CronEvent>) -> Result<(), Error> {
+async fn handler(
+    repo: Rc<DynamoRepositoryContainer>,
+    client: Rc<CronClientContainer>,
+    event: LambdaEvent<CronEvent>,
+) -> Result<(), Error> {
     let path_params = &event.payload.path_parameters;
-    let proxy = path_params.proxy;
-    let region = std::env::var("AWS_REGION")
-        .or_else(|_| std::env::var("AWS_DEFAULT_REGION"))
-        .unwrap_or_else(|_| "ap-southeast-1".into());
-    let config = aws_config::from_env()
-        .region(aws_sdk_dynamodb::config::Region::new(region))
-        .load()
-        .await;
-    let dynamo = aws_sdk_dynamodb::Client::new(&config);
-    let s3 = aws_sdk_s3::Client::new(&config);
-    let repo = Rc::new(DynamoRepositoryContainer::new(
-        DDBTranslationRepository::new(dynamo.clone()),
-        DDBUserRepository::new(dynamo),
-    ));
-    let client = Rc::new(CronClientContainer::new(s3));
+    let proxy = &path_params.proxy;
     let controller = TranslationController::new(repo, client);
     match proxy.as_str() {
         "cron/translate" => {
-            let param: run::Params = serde_json::from_value(path_params.data)?;
-            let result = controller.run(param).await?;
-            Ok(())
+            let param: run::Params = serde_json::from_value(path_params.data.clone())?;
+            controller.run(param).await?;
         }
         "cron/init" => {
-            let param: init::Params = serde_json::from_value(path_params.data)?;
-            let result = controller.init(param);
-            Ok(())
+            let param: init::Params = serde_json::from_value(path_params.data.clone())?;
+            controller.init(param).await?;
         }
-        _ => {
-            tracing::warn!(proxy = proxy.as_str(), "unknown cron route");
-            Ok(())
-        }
+        _ => tracing::warn!(proxy = proxy.as_str(), "unknown cron route"),
     }
+    Ok(())
 }
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Error> {
     rust_api::init_env();
     rust_api::init_tracing();
-    run(service_fn(handler)).await
+
+    let env = Env::from_env();
+    let config = aws_config::from_env()
+        .region(aws_sdk_dynamodb::config::Region::new(env.region()))
+        .load()
+        .await;
+    let dynamo = aws_sdk_dynamodb::Client::new(&config);
+
+    let repo = DynamoRepositoryContainer::new(&dynamo, &env);
+    let rc_repo = Rc::new(repo);
+    let client = CronClientContainer::new(env, config);
+    let rc_client = Rc::new(client);
+
+    run(service_fn(move |event| {
+        let r = rc_repo.clone();
+        let c = rc_client.clone();
+        async move { handler(r, c, event).await }
+    }))
+    .await
 }

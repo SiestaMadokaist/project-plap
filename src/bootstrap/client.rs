@@ -1,9 +1,9 @@
-use std::env;
-
 use async_openai::{config::OpenAIConfig, Client as OpenAIClient};
+use aws_config::SdkConfig;
 
 use crate::{
     application::ports::clients::cc::{AllClient, ClientContainer},
+    config::env::Env,
     infras::{
         notifications::discord::Discord,
         raws::syosetu::{ProxyConfig, Syosetu},
@@ -20,18 +20,16 @@ pub struct CronClientContainer {
 }
 
 impl CronClientContainer {
-    pub fn new(s3: aws_sdk_s3::Client) -> Self {
+    pub fn new(env: Env, config: SdkConfig) -> Self {
+        let s3 = aws_sdk_s3::Client::new(&config);
         let openai = OpenAIClient::<OpenAIConfig>::new();
-        let model = env::var("OPENAI_MODEL").unwrap_or_else(|_| "gpt-4o".into());
-        let syosetu_host =
-            env::var("SYOSETU_HOST").unwrap_or_else(|_| "https://ncode.syosetu.com".into());
         let proxy = match (
-            env::var("PROXY_HOST"),
-            env::var("PROXY_PORT"),
-            env::var("PROXY_USERNAME"),
-            env::var("PROXY_PASSWORD"),
+            env.proxy_host,
+            env.proxy_port,
+            env.proxy_username,
+            env.proxy_password,
         ) {
-            (Ok(host), Ok(port), Ok(username), Ok(password)) => Some(ProxyConfig {
+            (Some(host), Some(port), Some(username), Some(password)) => Some(ProxyConfig {
                 host,
                 port: port.parse().expect("PROXY_PORT must be a number"),
                 username,
@@ -39,15 +37,12 @@ impl CronClientContainer {
             }),
             _ => None,
         };
-        let bucket = env::var("TL_BUCKET").expect("TL_BUCKET must be set");
-        let prefix = env::var("TL_PREFIX").unwrap_or_else(|_| "".into());
-        let webhook_url = env::var("DISCORD_WEBHOOK_URL").expect("DISCORD_WEBHOOK_URL must be set");
 
         Self {
-            translator: ChatGPT::new(openai, &model),
-            raws: Syosetu::new(syosetu_host, proxy),
-            storage: S3Storage::new(s3, bucket, prefix),
-            notification: Discord::new(webhook_url),
+            translator: ChatGPT::new(openai, &env.openai_model),
+            raws: Syosetu::new(env.syosetu_host, proxy),
+            storage: S3Storage::new(s3, env.tl_bucket, env.tl_prefix),
+            notification: Discord::new(env.discord_webhook_url),
         }
     }
 }
