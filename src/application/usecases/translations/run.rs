@@ -1,3 +1,4 @@
+use serde::Deserialize;
 use std::rc::Rc;
 use tokio::sync::OnceCell;
 
@@ -31,6 +32,7 @@ impl<T: AllRepos> Repos for T {}
 pub trait Clients: cc::HasTranslator + cc::HasRaws + cc::HasStorage + cc::HasNotification {}
 impl<T: AllClient> Clients for T {}
 
+#[derive(Deserialize)]
 pub struct Params {
     pub novel_id: NovelId,
 }
