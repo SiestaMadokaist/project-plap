@@ -6,28 +6,17 @@ use tokio::sync::OnceCell;
 use crate::{
     application::{
         dto::translation::{TranslationDTO, TranslationResponse},
-        ports::{
-            clients::{
-                cc::{self, AllClient},
-                raws::RawsClient,
-            },
-            repository::{
-                rc::{self, AllRepos},
-                translation::TranslationRepository,
-            },
+        ports::{clients::raws::RawsClient, repository::translation::TranslationRepository},
+        usecases::{
+            bases::Usecase,
+            translations::traits::{TLClients, TLRepos},
         },
-        usecases::bases::Usecase,
     },
     domain::{
         errors::DomainError,
         translation::{ChapterId, NovelId, RawSource},
     },
 };
-pub trait Repos: rc::HasTranslation {}
-impl<T: AllRepos> Repos for T {} // ← add this
-pub trait Clients: cc::HasTranslator + cc::HasRaws {}
-impl<T: AllClient> Clients for T {} // ← add this
-
 #[derive(Deserialize)]
 pub struct Params {
     pub novel_id: NovelId,
@@ -47,16 +36,14 @@ impl Memo {
     }
 }
 
-// type Repos = HasTranslation;
-
-pub struct Init<R: Repos, C: Clients> {
+pub struct Init<R: TLRepos, C: TLClients> {
     repo: Rc<R>,
     client: Rc<C>,
     params: Params,
     memo: Memo,
 }
 
-impl<R: Repos, C: Clients> Init<R, C> {
+impl<R: TLRepos, C: TLClients> Init<R, C> {
     pub fn new(repo: Rc<R>, client: Rc<C>, params: Params) -> Self {
         return Init {
             repo,
@@ -88,7 +75,7 @@ impl<R: Repos, C: Clients> Init<R, C> {
     }
 }
 
-impl<R: Repos, C: Clients> Usecase<TranslationResponse> for Init<R, C> {
+impl<R: TLRepos, C: TLClients> Usecase<TranslationResponse> for Init<R, C> {
     type Output = TranslationDTO;
     async fn exec(self) -> Result<TranslationDTO, DomainError> {
         let starting_chapter = self.starting_chapter().await?;

@@ -62,4 +62,4 @@ impl<CC: ClientContainer> HasNotification for CC {
     }
 }
 
-pub trait AllClient: HasNotification + HasRaws + HasStorage + HasTranslator {}
+pub trait AllClients: HasNotification + HasRaws + HasStorage + HasTranslator {}

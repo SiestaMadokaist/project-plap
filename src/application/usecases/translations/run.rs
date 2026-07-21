@@ -7,30 +7,21 @@ use crate::{
         dto::void::VoidDTO,
         ports::{
             clients::{
-                cc::{self, AllClient},
-                notification::NotificationClient,
-                raws::RawsClient,
-                storage::StorageClient,
+                notification::NotificationClient, raws::RawsClient, storage::StorageClient,
                 translator::TranslatorClient,
             },
-            repository::{
-                rc::{self, AllRepos},
-                translation::TranslationRepository,
-            },
+            repository::translation::TranslationRepository,
         },
-        usecases::bases::Usecase,
+        usecases::{
+            bases::Usecase,
+            translations::traits::{TLClients, TLRepos},
+        },
     },
     domain::{
         errors::DomainError,
         translation::{ChapterId, NovelId, TranslationDomain},
     },
 };
-
-pub trait Repos: rc::HasTranslation {}
-impl<T: AllRepos> Repos for T {}
-
-pub trait Clients: cc::HasTranslator + cc::HasRaws + cc::HasStorage + cc::HasNotification {}
-impl<T: AllClient> Clients for T {}
 
 #[derive(Deserialize)]
 pub struct Params {
@@ -51,14 +42,14 @@ impl Memo {
     }
 }
 
-pub struct Run<R: Repos, C: Clients> {
+pub struct Run<R: TLRepos, C: TLClients> {
     repo: Rc<R>,
     client: Rc<C>,
     params: Params,
     memo: Memo,
 }
 
-impl<R: Repos, C: Clients> Run<R, C> {
+impl<R: TLRepos, C: TLClients> Run<R, C> {
     pub fn new(repo: Rc<R>, client: Rc<C>, params: Params) -> Self {
         Run {
             repo,
@@ -135,7 +126,7 @@ impl<R: Repos, C: Clients> Run<R, C> {
     }
 }
 
-impl<R: Repos, C: Clients> Usecase<()> for Run<R, C> {
+impl<R: TLRepos, C: TLClients> Usecase<()> for Run<R, C> {
     type Output = VoidDTO;
 
     async fn exec(self) -> Result<VoidDTO, DomainError> {

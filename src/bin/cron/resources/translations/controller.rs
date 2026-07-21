@@ -3,7 +3,7 @@ use std::rc::Rc;
 use rust_api::{
     application::{
         dto::{translation::TranslationDTO, void::VoidDTO},
-        ports::{clients::cc::AllClient, repository::rc::AllRepos},
+        ports::{clients::cc::AllClients, repository::rc::AllRepos},
         usecases::{
             bases::Usecase,
             translations::{
@@ -15,12 +15,12 @@ use rust_api::{
     domain::errors::DomainError,
 };
 
-pub struct TranslationController<R: AllRepos, C: AllClient> {
+pub struct TranslationController<R: AllRepos, C: AllClients> {
     _repo: Rc<R>,
     _client: Rc<C>,
 }
 
-impl<R: AllRepos, C: AllClient> TranslationController<R, C> {
+impl<R: AllRepos, C: AllClients> TranslationController<R, C> {
     pub fn new(_repo: Rc<R>, _client: Rc<C>) -> Self {
         TranslationController { _repo, _client }
     }
