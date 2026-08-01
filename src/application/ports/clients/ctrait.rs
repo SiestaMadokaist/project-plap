@@ -1,6 +1,6 @@
 use crate::application::ports::clients::{
-    notification::NotificationClient, raws::RawsClient, storage::StorageClient,
-    translator::TranslatorClient,
+    diffusions::DiffusionClient, notification::NotificationClient, raws::RawsClient,
+    storage::StorageClient, translator::TranslatorClient,
 };
 
 pub trait ClientContainer {
@@ -8,10 +8,12 @@ pub trait ClientContainer {
     type Raws: RawsClient;
     type Storage: StorageClient;
     type Notification: NotificationClient;
+    type Diffusion: DiffusionClient;
     fn translator(&self) -> &Self::Translator;
     fn raws(&self) -> &Self::Raws;
     fn storage(&self) -> &Self::Storage;
     fn notification(&self) -> &Self::Notification;
+    fn diffusion(&self) -> &Self::Diffusion;
 }
 
 pub trait HasTranslator {
@@ -62,4 +64,19 @@ impl<CC: ClientContainer> HasNotification for CC {
     }
 }
 
-pub trait AllClients: HasNotification + HasRaws + HasStorage + HasTranslator {}
+pub trait HasDiffusion {
+    type Diffusion: DiffusionClient;
+    fn diffusion(&self) -> &Self::Diffusion;
+}
+
+impl<CC: ClientContainer> HasDiffusion for CC {
+    type Diffusion = CC::Diffusion;
+    fn diffusion(&self) -> &Self::Diffusion {
+        ClientContainer::diffusion(self)
+    }
+}
+
+pub trait AllClients:
+    HasNotification + HasRaws + HasStorage + HasTranslator + HasDiffusion
+{
+}

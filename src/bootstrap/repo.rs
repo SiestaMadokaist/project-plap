@@ -1,7 +1,7 @@
 use aws_sdk_dynamodb::Client;
 
 use crate::{
-    application::ports::repository::rc::{AllRepos, RepositoryContainer},
+    application::ports::repository::rtrait::{AllRepos, RepositoryContainer},
     config::env::Env,
     infras::repos::dynamo::{translation::DDBTranslationRepository, user::DDBUserRepository},
 };

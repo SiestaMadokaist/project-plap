@@ -31,6 +31,7 @@ build:
 package: build
 	mkdir -p $(DIST_DIR)
 	@for fn in $(FUNCTIONS); do \
+		echo "unzipped size $$fn: $$(du -h target/lambda/$$fn/bootstrap | cut -f1)"; \
 		zip -j $(DIST_DIR)/$$fn.zip target/lambda/$$fn/bootstrap .env.production; \
 	done
 

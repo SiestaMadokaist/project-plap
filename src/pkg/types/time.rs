@@ -50,3 +50,12 @@ impl From<DateTime<Utc>> for Timestamp {
         Self(ts.timestamp())
     }
 }
+
+#[derive(Serialize, Deserialize)]
+pub enum TimeUnit {
+    MilliSecond(i64),
+    Second(i64),
+    Minute(i64),
+    Hour(i64),
+    Day(i64),
+}

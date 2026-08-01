@@ -2,7 +2,7 @@ use async_openai::{config::OpenAIConfig, Client as OpenAIClient};
 use aws_config::SdkConfig;
 
 use crate::{
-    application::ports::clients::cc::{AllClients, ClientContainer},
+    application::ports::clients::ctrait::{AllClients, ClientContainer},
     config::env::Env,
     infras::{
         notifications::discord::Discord,
