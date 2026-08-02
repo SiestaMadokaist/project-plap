@@ -4,11 +4,11 @@ use serde::{Deserialize, Serialize};
 pub struct Px(pub i32);
 
 /** 0-based-index eg array */
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub struct Index0(pub i32);
 
 /** 1-based-index */
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub struct Index1(pub i32);
 
 impl Index1 {

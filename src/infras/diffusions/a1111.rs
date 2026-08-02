@@ -1,0 +1,22 @@
+use crate::{
+    application::ports::clients::diffusions::DiffusionClient,
+    domain::commands::inference::InferenceConfig,
+};
+
+pub struct A1111 {
+    base_url: String,
+}
+
+impl A1111 {
+    pub fn new(base_url: String) -> Self {
+        A1111 { base_url }
+    }
+}
+
+#[async_trait::async_trait(?Send)]
+impl DiffusionClient for A1111 {
+    async fn generate(&self, _params: &InferenceConfig) -> anyhow::Result<()> {
+        let _ = &self.base_url;
+        todo!()
+    }
+}

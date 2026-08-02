@@ -1,16 +1,22 @@
 use crate::application::ports::{
-    clients::ctrait::{self},
-    repository::rtrait::{self},
+    clients::container as client_container, repository::container as repo_container,
 };
 
-pub trait TLRepos: rtrait::HasTranslation {}
-impl<T: rtrait::HasTranslation> TLRepos for T {}
+pub trait TLRepos: repo_container::HasTranslation {}
+impl<T: repo_container::HasTranslation> TLRepos for T {}
 
 pub trait TLClients:
-    ctrait::HasTranslator + ctrait::HasRaws + ctrait::HasStorage + ctrait::HasNotification
+    client_container::HasTranslator
+    + client_container::HasRaws
+    + client_container::HasStorage
+    + client_container::HasNotification
 {
 }
-impl<T: ctrait::HasTranslator + ctrait::HasRaws + ctrait::HasStorage + ctrait::HasNotification>
-    TLClients for T
+impl<
+        T: client_container::HasTranslator
+            + client_container::HasRaws
+            + client_container::HasStorage
+            + client_container::HasNotification,
+    > TLClients for T
 {
 }

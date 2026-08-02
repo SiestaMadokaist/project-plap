@@ -1,4 +1,4 @@
-use crate::application::ports::{clients::ctrait, repository::rtrait};
+use crate::application::ports::{clients, repository};
 
-pub trait AgentRepos: rtrait::HasUser {}
-pub trait AgentClients: ctrait::HasDiffusion {}
+pub trait AgentRepos: repository::container::HasAgentCommand {}
+pub trait AgentClients: clients::container::HasDiffusion {}

@@ -3,7 +3,7 @@ use std::rc::Rc;
 use rust_api::{
     application::{
         dto::{translation::TranslationDTO, void::VoidDTO},
-        ports::{clients::ctrait::AllClients, repository::rtrait::AllRepos},
+        ports::{clients::container::AllClients, repository::container::AllRepos},
         usecases::{
             bases::Usecase,
             translations::{

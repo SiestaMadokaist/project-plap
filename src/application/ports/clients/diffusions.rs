@@ -1,6 +1,6 @@
-use crate::domain::{commands::inference::InferenceArgs, errors::DomainError};
+use crate::domain::commands::inference::InferenceConfig;
 
-#[allow(async_fn_in_trait)]
+#[async_trait::async_trait(?Send)]
 pub trait DiffusionClient {
-    async fn generate(&self, params: InferenceArgs) -> anyhow::Result<()>;
+    async fn generate(&self, params: &InferenceConfig) -> anyhow::Result<()>;
 }

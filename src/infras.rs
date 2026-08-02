@@ -1,3 +1,4 @@
+pub mod diffusions;
 pub mod notifications;
 pub mod raws;
 pub mod repos;

@@ -3,7 +3,10 @@ use serde::{Deserialize, Serialize};
 use serde_dynamo::{from_item, to_item};
 
 use crate::{
-    application::ports::repository::user::{UserRepoError, UserRepository},
+    application::ports::repository::{
+        error::RepositoryError,
+        user::{UserError, UserRepository},
+    },
     domain::user::{Email, User, UserId},
     pkg::types::time::Timestamp,
 };
@@ -63,7 +66,7 @@ impl DDBUserRepository {
 }
 
 impl UserRepository for DDBUserRepository {
-    async fn get(&self, id: &UserId) -> Result<User, UserRepoError> {
+    async fn get(&self, id: &UserId) -> Result<User, UserError> {
         let out = self
             .client
             .get_item()
@@ -72,21 +75,19 @@ impl UserRepository for DDBUserRepository {
             .key("SK", AttributeValue::S(USER_SK.to_string()))
             .send()
             .await
-            .map_err(|e| UserRepoError::Database(e.to_string()))?;
+            .map_err(|e| RepositoryError::Database(e.to_string()))?;
 
-        let item = out
-            .item
-            .ok_or_else(|| UserRepoError::NotFound(id.clone()))?;
+        let item = out.item.ok_or_else(|| UserError::NotFound(id.clone()))?;
         let user_item: UserItem =
-            from_item(item).map_err(|e| UserRepoError::Database(e.to_string()))?;
+            from_item(item).map_err(|e| RepositoryError::Database(e.to_string()))?;
 
         let user: User = user_item.into();
         Ok(user)
     }
 
-    async fn put(&self, user: &User) -> Result<(), UserRepoError> {
+    async fn put(&self, user: &User) -> Result<(), UserError> {
         let av_map =
-            to_item(UserItem::from(user)).map_err(|e| UserRepoError::Database(e.to_string()))?;
+            to_item(UserItem::from(user)).map_err(|e| RepositoryError::Database(e.to_string()))?;
 
         self.client
             .put_item()
@@ -94,12 +95,12 @@ impl UserRepository for DDBUserRepository {
             .set_item(Some(av_map))
             .send()
             .await
-            .map_err(|e| UserRepoError::Database(e.to_string()))?;
+            .map_err(|e| RepositoryError::Database(e.to_string()))?;
 
         Ok(())
     }
 
-    async fn delete(&self, id: &UserId) -> Result<(), UserRepoError> {
+    async fn delete(&self, id: &UserId) -> Result<(), UserError> {
         self.client
             .delete_item()
             .table_name(&self.table)
@@ -107,7 +108,7 @@ impl UserRepository for DDBUserRepository {
             .key("SK", AttributeValue::S(USER_SK.to_string()))
             .send()
             .await
-            .map_err(|e| UserRepoError::Database(e.to_string()))?;
+            .map_err(|e| RepositoryError::Database(e.to_string()))?;
 
         Ok(())
     }
