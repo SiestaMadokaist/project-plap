@@ -4,7 +4,7 @@ use anyhow::Ok;
 
 use crate::{
     application::usecases::agent::traits::AgentClients,
-    domain::commands::inference::InferenceConfig, pkg::types::progress::Progression,
+    domain::commands::{command::Progression, inference::InferenceConfig},
 };
 
 pub struct RunInference<'a, C: AgentClients> {

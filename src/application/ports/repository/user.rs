@@ -3,13 +3,7 @@ use crate::{
     domain::user::{User, UserId},
 };
 
-#[derive(Debug, thiserror::Error)]
-pub enum UserError {
-    #[error("user not found: {0}")]
-    NotFound(UserId),
-    #[error(transparent)]
-    Repo(#[from] RepositoryError),
-}
+pub type UserError = RepositoryError<UserId>;
 
 #[allow(async_fn_in_trait)]
 pub trait UserRepository {

@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{domain::storage::StoragePath, pkg::types::time::Timestamp};
+use crate::{
+    domain::storage::StoragePath,
+    pkg::{macros::id_type, types::time::Timestamp},
+};
 
 #[derive(PartialEq, PartialOrd, Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct ChapterId(pub i32);
@@ -18,8 +21,7 @@ impl ChapterId {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct NovelId(pub String);
+id_type!(NovelId);
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum RawSource {

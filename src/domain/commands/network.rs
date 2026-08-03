@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use crate::pkg::types::id::ModelProvider;
+use crate::domain::commands::command::ModelProvider;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct NetworkArgs {
     provider: ModelProvider,
     /**

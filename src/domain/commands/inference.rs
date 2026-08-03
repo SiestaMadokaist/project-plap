@@ -2,7 +2,7 @@ use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 
 use crate::pkg::types::unit;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct InferenceConfig {
     positive: String,
     negative: String,
@@ -26,7 +26,7 @@ where
     Ok(n_iter)
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct InferenceArgs {
     pub config: InferenceConfig,
 }

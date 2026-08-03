@@ -9,10 +9,9 @@ use crate::{
         },
     },
     domain::commands::{
-        command::{Action::Inference, CommandDomain},
+        command::{Action::Inference, CommandDomain, Progression},
         inference::InferenceArgs,
     },
-    pkg::types::progress::Progression,
 };
 
 pub struct AgentRunner<R: AgentRepos, C: AgentClients> {
