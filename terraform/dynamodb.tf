@@ -44,3 +44,42 @@ resource "aws_dynamodb_table" "translations" {
     Stage   = var.stage
   }
 }
+
+resource "aws_dynamodb_table" "agent_commands" {
+  name         = "${var.stage}-agent-commands"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "action_id"
+
+  attribute {
+    name = "action_id"
+    type = "S"
+  }
+
+  attribute {
+    name = "stage"
+    type = "S"
+  }
+
+  attribute {
+    name = "priority"
+    type = "N"
+  }
+
+  # Query commands by stage (e.g. in_progress), ordered by priority within that stage
+  global_secondary_index {
+    name            = "stage-priority"
+    hash_key        = "stage"
+    range_key       = "priority"
+    projection_type = "ALL"
+  }
+
+  ttl {
+    attribute_name = "ttl"
+    enabled        = true
+  }
+
+  tags = {
+    Service = var.service_name
+    Stage   = var.stage
+  }
+}

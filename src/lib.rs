@@ -4,6 +4,7 @@ pub mod config;
 pub mod domain;
 pub mod infras;
 pub mod pkg;
+pub mod trigger;
 
 pub fn init_env() {
     if let Ok(path) = std::env::var("ENV_PATH") {

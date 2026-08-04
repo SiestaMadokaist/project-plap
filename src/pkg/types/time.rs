@@ -36,6 +36,11 @@ impl Timestamp {
     pub fn now() -> Self {
         Self(Utc::now().timestamp())
     }
+
+    pub fn sub(&self, other: &Timestamp) -> Second {
+        let dt = self.0 - other.0;
+        return Second(dt);
+    }
 }
 
 impl TryFrom<Timestamp> for DateTime<Utc> {
@@ -51,11 +56,10 @@ impl From<DateTime<Utc>> for Timestamp {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-pub enum TimeUnit {
-    MilliSecond(i64),
-    Second(i64),
-    Minute(i64),
-    Hour(i64),
-    Day(i64),
+pub struct Second(pub i64);
+
+impl Second {
+    pub fn gt(&self, other: &Second) -> bool {
+        self.0 > other.0
+    }
 }

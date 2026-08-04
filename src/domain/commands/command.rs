@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{
     domain::commands::{compute::ComputeArgs, inference::InferenceArgs, network::NetworkArgs},
@@ -64,13 +64,28 @@ impl Progression {
     }
 }
 
+const DEFAULT_TTL_SECONDS: i64 = 86400;
+
+fn default_ttl() -> Option<Timestamp> {
+    Some(Timestamp(Timestamp::now().0 + DEFAULT_TTL_SECONDS))
+}
+
+fn deserialize_ttl<'de, D>(deserializer: D) -> Result<Option<Timestamp>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let ttl = Option::<Timestamp>::deserialize(deserializer)?;
+    Ok(ttl.or_else(default_ttl))
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CommandDomain {
+    #[serde(default = "default_ttl", deserialize_with = "deserialize_ttl")]
+    ttl: Option<Timestamp>,
     pub action_id: ActionID,
     pub priority: u64,
     pub stage: CommandStage,
     pub created_at: Timestamp,
-    pub ttl: Timestamp,
     #[serde(flatten)]
     pub action: Action,
     pub progress: Progression,
