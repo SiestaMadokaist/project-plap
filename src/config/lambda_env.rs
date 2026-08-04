@@ -1,7 +1,9 @@
 use std::env;
 
-pub struct Env {
-    pub aws_region: String,
+use crate::config::helper::var_or;
+
+pub struct LambdaEnv {
+    aws_region: String,
     pub aws_default_region: String,
     pub translation_table: String,
     pub user_table: String,
@@ -17,7 +19,7 @@ pub struct Env {
     pub discord_webhook_url: String,
 }
 
-impl Env {
+impl LambdaEnv {
     pub fn from_env() -> Self {
         Self {
             aws_region: var_or("AWS_REGION", ""),
@@ -47,8 +49,4 @@ impl Env {
             "ap-southeast-1".to_string()
         }
     }
-}
-
-fn var_or(key: &str, default: &str) -> String {
-    env::var(key).unwrap_or_else(|_| default.to_string())
 }

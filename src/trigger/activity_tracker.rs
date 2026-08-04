@@ -11,14 +11,14 @@ use crate::{
     pkg::types::time::Timestamp,
 };
 
-pub struct DiffusionActivity<C: AgentClients, R: AgentRepos> {
+pub struct ActivityTracker<C: AgentClients, R: AgentRepos> {
     clients: Rc<C>,
     repos: Rc<R>,
     dir: String,
     last_active: Rc<Cell<Timestamp>>,
 }
 
-impl<C: AgentClients, R: AgentRepos> DiffusionActivity<C, R> {
+impl<C: AgentClients, R: AgentRepos> ActivityTracker<C, R> {
     pub fn new(
         clients: Rc<C>,
         repos: Rc<R>,
@@ -39,8 +39,6 @@ impl<C: AgentClients, R: AgentRepos> DiffusionActivity<C, R> {
     }
 
     /**
-     * @todo:
-     * upload to s3
      */
     async fn handle_change(&self, event: &Event) -> anyhow::Result<()> {
         let extensions = vec![".png", ".jpg", ".jpeg"];

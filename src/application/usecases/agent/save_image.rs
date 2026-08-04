@@ -1,9 +1,12 @@
-use std::{
-    path::{Path, PathBuf},
-    rc::Rc,
-};
+use std::{path::PathBuf, rc::Rc};
 
-use crate::application::usecases::agent::traits::{AgentClients, AgentRepos};
+use crate::{
+    application::{
+        ports::clients::storage::StorageClient,
+        usecases::agent::traits::{AgentClients, AgentRepos},
+    },
+    domain::{errors::DomainError, storage::StoragePath},
+};
 
 pub struct SaveImage<C: AgentClients, R: AgentRepos> {
     clients: Rc<C>,
@@ -28,7 +31,20 @@ impl<C: AgentClients, R: AgentRepos> SaveImage<C, R> {
         todo!();
     }
 
+    async fn ioreader(&self) -> anyhow::Result<Vec<u8>> {
+        let bytes = tokio::fs::read(&self.path).await?;
+        Ok(bytes)
+    }
+
     async fn store_image(&self) -> anyhow::Result<()> {
+        let c = self.clients.clone();
+        let storage = c.storage();
+        let data = self.ioreader().await?;
+        let path = self.path.to_str().map(String::from).unwrap_or_default();
+        if path == "" {
+            todo!(); // return Err;
+        }
+        storage.write(StoragePath(path), data).await?;
         todo!();
     }
 

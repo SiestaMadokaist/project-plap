@@ -64,13 +64,12 @@ impl StorageClient for S3Storage {
         );
     }
 
-    async fn write(&self, path: StoragePath, data: std::str::Bytes<'_>) -> Result<(), DomainError> {
-        let bytes: Vec<u8> = data.collect();
+    async fn write(&self, path: StoragePath, data: Vec<u8>) -> Result<(), DomainError> {
         self.client
             .put_object()
             .bucket(&self.bucket)
             .key(self.key(&path))
-            .body(ByteStream::from(bytes))
+            .body(ByteStream::from(data))
             .acl(PublicRead)
             .send()
             .await

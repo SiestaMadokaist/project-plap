@@ -6,7 +6,7 @@ use lambda_runtime::{run, service_fn, Error, LambdaEvent};
 use rust_api::{
     application::usecases::translations::{init, run},
     bootstrap::{client::GeneralClients, repo::GeneralRepositories},
-    config::env::Env,
+    config::lambda_env::LambdaEnv,
 };
 use serde::Deserialize;
 
@@ -51,7 +51,7 @@ async fn main() -> Result<(), Error> {
     rust_api::init_env();
     rust_api::init_tracing();
 
-    let env = Env::from_env();
+    let env = LambdaEnv::from_env();
     let config = aws_config::from_env()
         .region(aws_sdk_dynamodb::config::Region::new(env.region()))
         .load()

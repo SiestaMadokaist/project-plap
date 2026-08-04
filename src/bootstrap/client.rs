@@ -8,7 +8,7 @@ use crate::{
         container::{AllClients, ClientContainer},
         diffusions::DiffusionClient,
     },
-    config::env::Env,
+    config::lambda_env::LambdaEnv,
     infras::{
         compute::ec2::EC2Compute,
         diffusions::a1111::A1111,
@@ -29,11 +29,11 @@ pub struct GeneralClients {
 }
 
 impl GeneralClients {
-    pub fn rc(env: Env, config: SdkConfig) -> Rc<Self> {
+    pub fn rc(env: LambdaEnv, config: SdkConfig) -> Rc<Self> {
         Rc::new(Self::new(env, config))
     }
 
-    fn new(env: Env, config: SdkConfig) -> Self {
+    fn new(env: LambdaEnv, config: SdkConfig) -> Self {
         let s3 = aws_sdk_s3::Client::new(&config);
         let openai = OpenAIClient::<OpenAIConfig>::new();
         let proxy = match (

@@ -2,19 +2,19 @@ use std::{cell::Cell, rc::Rc};
 
 use rust_api::{
     bootstrap::{client::GeneralClients, repo::GeneralRepositories},
-    config::env::Env,
+    config::lambda_env::LambdaEnv,
     pkg::types::{
         peek::Peek,
         time::{Second, Timestamp},
     },
-    trigger::{diffusion_activity::DiffusionActivity, diffusion_terminate::DiffusionTerminate},
+    trigger::{activity_tracker::ActivityTracker, idle_terminator::IdleTerminator},
 };
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> anyhow::Result<()> {
     rust_api::init_env();
     rust_api::init_tracing();
-    let env = Env::from_env();
+    let env = LambdaEnv::from_env();
     let config = aws_config::from_env()
         .region(aws_sdk_dynamodb::config::Region::new(env.region()))
         .load()
@@ -29,10 +29,10 @@ async fn main() -> anyhow::Result<()> {
     let rc_start_peek = Peek::new(rc_start_at.clone());
     let interval = Second(5);
     let tolerance = Second(60);
-    let filewatch =
-        DiffusionActivity::new(clients.clone(), repos.clone(), dir, rc_start_at.clone());
-    let terminator = DiffusionTerminate::new(clients.clone(), rc_start_peek, tolerance, interval);
-    tokio::try_join!(filewatch.run(), terminator.run())?;
+    let activity_tracker =
+        ActivityTracker::new(clients.clone(), repos.clone(), dir, rc_start_at.clone());
+    let idle_terminator = IdleTerminator::new(clients.clone(), rc_start_peek, tolerance, interval);
+    tokio::try_join!(activity_tracker.run(), idle_terminator.run())?;
 
     Ok(())
 }

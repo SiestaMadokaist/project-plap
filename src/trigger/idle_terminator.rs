@@ -1,8 +1,5 @@
 use crate::{
-    application::usecases::agent::{
-        manage_compute::ManageCompute,
-        traits::{AgentClients, AgentRepos},
-    },
+    application::usecases::agent::{manage_compute::ManageCompute, traits::AgentClients},
     domain::commands::compute::{ComputeArgs, ComputeCommand},
     pkg::types::{
         peek::Peek,
@@ -15,14 +12,14 @@ use std::rc::Rc;
  * auto terminator that check if last_ok timestamp has passed its threshold
  * it'll automatically request to shutdown the compute instance
  */
-pub struct DiffusionTerminate<C: AgentClients> {
+pub struct IdleTerminator<C: AgentClients> {
     clients: Rc<C>,
     last_active: Peek<Timestamp>,
     tolerance: Second,
     interval: Second,
 }
 
-impl<C: AgentClients> DiffusionTerminate<C> {
+impl<C: AgentClients> IdleTerminator<C> {
     pub fn new(
         clients: Rc<C>,
         start_at: Peek<Timestamp>,

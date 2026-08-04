@@ -1,3 +1,3 @@
+pub mod activity_tracker;
 pub mod commandq;
-pub mod diffusion_activity;
-pub mod diffusion_terminate;
+pub mod idle_terminator;

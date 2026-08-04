@@ -1,2 +1,4 @@
-pub struct StorageBucket(pub String);
-pub struct StoragePath(pub String);
+use crate::pkg::macros::id_type;
+
+id_type!(StorageBucket);
+id_type!(StoragePath);

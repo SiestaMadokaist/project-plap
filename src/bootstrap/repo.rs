@@ -4,7 +4,7 @@ use aws_sdk_dynamodb::Client;
 
 use crate::{
     application::ports::repository::container::{AllRepos, RepositoryContainer},
-    config::env::Env,
+    config::lambda_env::LambdaEnv,
     infras::repos::dynamo::{
         agent_command::DDBAgentCommandRepository, translation::DDBTranslationRepository,
         user::DDBUserRepository,
@@ -18,11 +18,11 @@ pub struct GeneralRepositories {
 }
 
 impl GeneralRepositories {
-    pub fn rc(client: &Client, env: &Env) -> Rc<Self> {
+    pub fn rc(client: &Client, env: &LambdaEnv) -> Rc<Self> {
         Rc::new(Self::new(client, env))
     }
 
-    pub fn new(client: &Client, env: &Env) -> Self {
+    pub fn new(client: &Client, env: &LambdaEnv) -> Self {
         Self {
             translation: DDBTranslationRepository::new(
                 client.clone(),
