@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use aws_sdk_dynamodb::Client;
 
 use crate::{
@@ -9,13 +11,17 @@ use crate::{
     },
 };
 
-pub struct DynamoRepositoryContainer {
+pub struct GeneralRepositories {
     translation: DDBTranslationRepository,
     user: DDBUserRepository,
     agent_command: DDBAgentCommandRepository,
 }
 
-impl DynamoRepositoryContainer {
+impl GeneralRepositories {
+    pub fn rc(client: &Client, env: &Env) -> Rc<Self> {
+        Rc::new(Self::new(client, env))
+    }
+
     pub fn new(client: &Client, env: &Env) -> Self {
         Self {
             translation: DDBTranslationRepository::new(
@@ -31,7 +37,7 @@ impl DynamoRepositoryContainer {
     }
 }
 
-impl RepositoryContainer for DynamoRepositoryContainer {
+impl RepositoryContainer for GeneralRepositories {
     type Translation = DDBTranslationRepository;
     type User = DDBUserRepository;
     type AgentCommand = DDBAgentCommandRepository;
@@ -48,4 +54,4 @@ impl RepositoryContainer for DynamoRepositoryContainer {
     }
 }
 
-impl AllRepos for DynamoRepositoryContainer {}
+impl AllRepos for GeneralRepositories {}

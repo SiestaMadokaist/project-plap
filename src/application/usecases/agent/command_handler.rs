@@ -14,15 +14,15 @@ use crate::{
     },
 };
 
-pub struct AgentRunner<R: AgentRepos, C: AgentClients> {
+pub struct CommandHandler<R: AgentRepos, C: AgentClients> {
     repo: Rc<R>,
     client: Rc<C>,
     params: CommandDomain,
 }
 
-impl<R: AgentRepos, C: AgentClients> AgentRunner<R, C> {
+impl<R: AgentRepos, C: AgentClients> CommandHandler<R, C> {
     pub fn new(repo: Rc<R>, client: Rc<C>, params: CommandDomain) -> Self {
-        AgentRunner {
+        CommandHandler {
             repo,
             client,
             params,

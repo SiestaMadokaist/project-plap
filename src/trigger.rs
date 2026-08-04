@@ -1,3 +1,3 @@
 pub mod commandq;
-pub mod filewatch;
-pub mod terminator;
+pub mod diffusion_activity;
+pub mod diffusion_terminate;

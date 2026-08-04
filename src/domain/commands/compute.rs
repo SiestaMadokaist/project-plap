@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ComputeArgs {
-    instance_id: String,
-    command: ComputeCommand,
+    pub instance_id: String,
+    pub command: ComputeCommand,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -15,7 +15,7 @@ pub struct RunInference<'a, C: AgentClients> {
 
 impl<'a, C: AgentClients> RunInference<'a, C> {
     pub fn new(clients: Rc<C>, progress: Progression, config: &'a InferenceConfig) -> Self {
-        RunInference {
+        Self {
             clients,
             progress,
             config,

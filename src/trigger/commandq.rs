@@ -6,7 +6,3 @@ pub struct CommandQ {
     loader: DDBAgentCommandRepository,
     interval: Second,
 }
-
-// impl CommandQ {
-//     run()
-// }

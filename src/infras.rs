@@ -1,3 +1,4 @@
+pub mod compute;
 pub mod diffusions;
 pub mod notifications;
 pub mod raws;

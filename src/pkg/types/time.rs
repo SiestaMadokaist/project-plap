@@ -62,4 +62,12 @@ impl Second {
     pub fn gt(&self, other: &Second) -> bool {
         self.0 > other.0
     }
+
+    pub fn lt(&self, other: &Second) -> bool {
+        self.0 < other.0
+    }
+
+    pub fn eq(&self, other: &Second) -> bool {
+        self.0 == other.0
+    }
 }

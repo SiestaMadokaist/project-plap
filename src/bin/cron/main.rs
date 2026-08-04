@@ -5,7 +5,7 @@ use std::rc::Rc;
 use lambda_runtime::{run, service_fn, Error, LambdaEvent};
 use rust_api::{
     application::usecases::translations::{init, run},
-    bootstrap::{client::CronClientContainer, repo::DynamoRepositoryContainer},
+    bootstrap::{client::GeneralClients, repo::GeneralRepositories},
     config::env::Env,
 };
 use serde::Deserialize;
@@ -25,8 +25,8 @@ struct PathParameters {
 }
 
 async fn handler(
-    repo: Rc<DynamoRepositoryContainer>,
-    client: Rc<CronClientContainer>,
+    repo: Rc<GeneralRepositories>,
+    client: Rc<GeneralClients>,
     event: LambdaEvent<CronEvent>,
 ) -> Result<(), Error> {
     let path_params = &event.payload.path_parameters;
@@ -58,14 +58,12 @@ async fn main() -> Result<(), Error> {
         .await;
     let dynamo = aws_sdk_dynamodb::Client::new(&config);
 
-    let repo = DynamoRepositoryContainer::new(&dynamo, &env);
-    let rc_repo = Rc::new(repo);
-    let client = CronClientContainer::new(env, config);
-    let rc_client = Rc::new(client);
+    let repo = GeneralRepositories::rc(&dynamo, &env);
+    let client = GeneralClients::rc(env, config);
 
     run(service_fn(move |event| {
-        let r = rc_repo.clone();
-        let c = rc_client.clone();
+        let r = repo.clone();
+        let c = client.clone();
         async move { handler(r, c, event).await }
     }))
     .await
