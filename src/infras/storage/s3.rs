@@ -1,11 +1,17 @@
-use aws_sdk_s3::{primitives::ByteStream, types::ObjectCannedAcl::PublicRead, Client};
+use aws_sdk_s3::{
+    primitives::ByteStream,
+    types::{ObjectCannedAcl::PublicRead, ObjectVersion},
+    Client,
+};
+use chrono::DateTime;
 
 use crate::{
     application::ports::clients::storage::StorageClient,
     domain::{
         errors::DomainError,
-        storage::{StorageBucket, StoragePath},
+        storage::{ItemVersion, StorageBucket, StoragePath},
     },
+    pkg::types::time::TimestampMS,
 };
 
 pub struct S3Storage {
@@ -64,16 +70,39 @@ impl StorageClient for S3Storage {
         );
     }
 
-    async fn write(&self, path: StoragePath, data: Vec<u8>) -> Result<(), DomainError> {
+    async fn ls(&self, prefix: crate::domain::storage::StoragePrefix) -> Vec<String> {
+        todo!();
+    }
+
+    async fn versions(&self, path: StoragePath) -> Result<ItemVersion, DomainError> {
+        todo!();
+    }
+
+    async fn write(&self, path: StoragePath, data: &Vec<u8>) -> Result<(), DomainError> {
+        let bytes = ByteStream::from(data.clone());
         self.client
             .put_object()
             .bucket(&self.bucket)
             .key(self.key(&path))
-            .body(ByteStream::from(data))
+            .body(bytes)
             .acl(PublicRead)
             .send()
             .await
             .map_err(|e| DomainError::Disconnected(e.to_string()))?;
         Ok(())
+    }
+}
+
+impl From<ObjectVersion> for ItemVersion {
+    fn from(value: ObjectVersion) -> Self {
+        ItemVersion {
+            key: value.key,
+            version_id: value.version_id,
+            last_modified: value
+                .last_modified
+                .and_then(|x| DateTime::from_timestamp(x.secs(), 0)),
+            size: value.size,
+            e_tag: value.e_tag,
+        }
     }
 }
