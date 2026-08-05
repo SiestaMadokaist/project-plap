@@ -56,6 +56,7 @@ impl From<DateTime<Utc>> for Timestamp {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Second(pub i64);
 
 impl Second {

@@ -5,6 +5,7 @@ use crate::{
 
 pub type AgentCommandError = RepositoryError<ActionID>;
 
+#[allow(async_fn_in_trait)]
 pub trait AgentCommandRepository {
     async fn insert(&self, command: CommandDomain) -> Result<ActionID, AgentCommandError>;
     async fn in_progress(&self, limit: i32) -> Result<Vec<CommandDomain>, AgentCommandError>;
