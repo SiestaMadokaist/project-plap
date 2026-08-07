@@ -1,5 +1,7 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
+use crate::pkg::macros::id_type;
+
 #[derive(Debug, Clone, Copy)]
 pub enum ComputeRegion {
     ApSoutheast2,
@@ -34,12 +36,14 @@ impl<'de> Deserialize<'de> for ComputeRegion {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ComputeArgs {
-    pub instance_id: String,
+    pub instance_id: ComputeInstanceID,
     pub command: ComputeCommand,
     pub region: ComputeRegion,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+id_type!(ComputeInstanceID);
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
 pub enum ComputeCommand {
     Terminate,

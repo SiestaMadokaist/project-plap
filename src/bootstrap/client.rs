@@ -9,6 +9,7 @@ use crate::{
         diffusions::DiffusionClient,
     },
     config::lambda_env::LambdaEnv,
+    domain::commands::compute::ComputeRegion,
     infras::{
         compute::ec2::EC2Compute,
         diffusions::a1111::A1111,
@@ -25,7 +26,7 @@ pub struct GeneralClients {
     storage: S3Storage,
     notification: Discord,
     diffusion: Box<dyn DiffusionClient>,
-    compute: EC2Compute,
+    computes: Vec<EC2Compute>,
 }
 
 impl GeneralClients {
@@ -51,6 +52,13 @@ impl GeneralClients {
             _ => None,
         };
 
+        let regions: Vec<ComputeRegion> = vec![];
+        let ec2sdk = aws_sdk_ec2::Client::new(&config);
+        let computes = regions
+            .iter()
+            .map(|r| EC2Compute::new(r.clone(), ec2sdk.clone()))
+            .collect();
+
         let s = Self {
             translator: ChatGPT::new(openai, &env.openai_model),
             raws: Syosetu::new(env.syosetu_host, proxy),
@@ -59,7 +67,7 @@ impl GeneralClients {
             // TODO: pick A1111 vs ComfyUI at runtime (e.g. from Env), not wired yet
             diffusion: Box::new(A1111::new(String::new())),
             // TODO: not wired to Env yet, stub only
-            compute: EC2Compute::new(aws_sdk_ec2::Client::new(&config), String::new()),
+            computes,
         };
         s
     }
@@ -88,8 +96,8 @@ impl ClientContainer for GeneralClients {
         self.diffusion.as_ref()
     }
 
-    fn compute(&self) -> &Self::Compute {
-        &self.compute
+    fn computes(&self) -> &Vec<Self::Compute> {
+        &self.computes
     }
 }
 

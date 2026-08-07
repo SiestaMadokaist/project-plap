@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use crate::{
     application::{ports::clients::compute::ComputeClient, usecases::agent::traits::AgentClients},
-    domain::commands::compute::ComputeArgs,
+    domain::commands::compute::{ComputeArgs, ComputeCommand},
 };
 
 pub struct ManageCompute<C: AgentClients> {
@@ -15,13 +15,15 @@ impl<C: AgentClients> ManageCompute<C> {
         Self { clients, args }
     }
 
-    async fn launch(&self) -> anyhow::Result<()> {
-        let compute = self.clients.compute();
-        let result = compute.launch().await?;
-        todo!();
-    }
-
     pub async fn exec(&self) -> anyhow::Result<()> {
-        todo!();
+        let compute = self.clients.compute();
+        let command = &self.args.command;
+        let id = &self.args.instance_id;
+        match command {
+            ComputeCommand::Terminate => compute.terminate(id).await?,
+            ComputeCommand::Reboot => compute.reboot(id).await?,
+            ComputeCommand::Stop => compute.stop(id).await?,
+        };
+        Ok(())
     }
 }

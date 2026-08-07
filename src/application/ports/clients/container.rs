@@ -9,7 +9,7 @@ pub trait ClientContainer {
     type Storage: StorageClient;
     type Notification: NotificationClient;
     type Compute: ComputeClient;
-    fn compute(&self) -> &Self::Compute;
+    fn computes(&self) -> &Vec<Self::Compute>;
     fn translator(&self) -> &Self::Translator;
     fn raws(&self) -> &Self::Raws;
     fn storage(&self) -> &Self::Storage;

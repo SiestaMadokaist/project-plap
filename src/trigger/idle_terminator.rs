@@ -1,5 +1,8 @@
 use crate::{
-    application::usecases::agent::{manage_compute::ManageCompute, traits::AgentClients},
+    application::{
+        ports::clients::compute::ComputeClient,
+        usecases::agent::{manage_compute::ManageCompute, traits::AgentClients},
+    },
     domain::commands::compute::{ComputeArgs, ComputeCommand, ComputeRegion},
     pkg::types::{
         peek::Peek,
@@ -14,7 +17,6 @@ use std::rc::Rc;
  */
 pub struct IdleTerminator<C: AgentClients> {
     clients: Rc<C>,
-    region: ComputeRegion,
     last_active: Peek<Timestamp>,
     tolerance: Second,
     interval: Second,
@@ -23,14 +25,12 @@ pub struct IdleTerminator<C: AgentClients> {
 impl<C: AgentClients> IdleTerminator<C> {
     pub fn new(
         clients: Rc<C>,
-        region: ComputeRegion,
         start_at: Peek<Timestamp>,
         tolerance: Second,
         interval: Second,
     ) -> Self {
         Self {
             clients,
-            region,
             last_active: start_at,
             tolerance,
             interval,
@@ -42,10 +42,15 @@ impl<C: AgentClients> IdleTerminator<C> {
         todo!();
     }
 
+    fn region(&self) -> ComputeRegion {
+        let compute = self.clients.compute().clone();
+        compute.region()
+    }
+
     fn compute_args(&self, instance_id: String) -> ComputeArgs {
         let command = ComputeCommand::Stop;
         ComputeArgs {
-            region: self.region.clone(),
+            region: self.region(),
             instance_id,
             command,
         }
