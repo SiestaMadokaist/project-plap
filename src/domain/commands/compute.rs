@@ -2,19 +2,31 @@ use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::pkg::macros::id_type;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ComputeRegion {
-    ApSoutheast2,
-    UsEast1,
+    AWSApSoutheast2,
+    AWSUsEast1,
 }
 
 impl ComputeRegion {
     fn as_str(&self) -> &'static str {
         match self {
-            ComputeRegion::ApSoutheast2 => "ap-southeast-2",
-            ComputeRegion::UsEast1 => "us-east-1",
+            ComputeRegion::AWSApSoutheast2 => "ap-southeast-2",
+            ComputeRegion::AWSUsEast1 => "us-east-1",
         }
     }
+}
+
+impl From<&ComputeRegion> for String {
+    fn from(value: &ComputeRegion) -> Self {
+        String::from(value.as_str())
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, thiserror::Error)]
+pub enum ComputeError {
+    #[error("Region is not configured")]
+    InvalidRegion(String),
 }
 
 impl Serialize for ComputeRegion {
@@ -27,8 +39,8 @@ impl<'de> Deserialize<'de> for ComputeRegion {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let s = String::deserialize(deserializer)?;
         match s.as_str() {
-            "ap-southeast-2" => Ok(ComputeRegion::ApSoutheast2),
-            "us-east-1" => Ok(ComputeRegion::UsEast1),
+            "ap-southeast-2" => Ok(ComputeRegion::AWSApSoutheast2),
+            "us-east-1" => Ok(ComputeRegion::AWSUsEast1),
             _ => Err(D::Error::custom(format!("unknown compute region: {s}"))),
         }
     }

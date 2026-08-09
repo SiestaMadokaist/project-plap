@@ -11,14 +11,14 @@ use crate::{
     pkg::types::time::Timestamp,
 };
 
-pub struct ActivityTracker<C: AgentClients, R: AgentRepos> {
+pub struct NewImageListener<C: AgentClients, R: AgentRepos> {
     clients: Rc<C>,
     repos: Rc<R>,
     dir: String,
     last_active: Rc<Cell<Timestamp>>,
 }
 
-impl<C: AgentClients, R: AgentRepos> ActivityTracker<C, R> {
+impl<C: AgentClients, R: AgentRepos> NewImageListener<C, R> {
     pub fn new(
         clients: Rc<C>,
         repos: Rc<R>,

@@ -11,7 +11,7 @@ use crate::{
     config::lambda_env::LambdaEnv,
     domain::commands::compute::ComputeRegion,
     infras::{
-        compute::ec2::EC2Compute,
+        compute::ec2::EC2MultiRegion,
         diffusions::a1111::A1111,
         notifications::discord::Discord,
         raws::syosetu::{ProxyConfig, Syosetu},
@@ -26,7 +26,7 @@ pub struct GeneralClients {
     storage: S3Storage,
     notification: Discord,
     diffusion: Box<dyn DiffusionClient>,
-    computes: Vec<EC2Compute>,
+    engines: EC2MultiRegion,
 }
 
 impl GeneralClients {
@@ -54,12 +54,9 @@ impl GeneralClients {
 
         let regions: Vec<ComputeRegion> = vec![];
         let ec2sdk = aws_sdk_ec2::Client::new(&config);
-        let computes = regions
-            .iter()
-            .map(|r| EC2Compute::new(r.clone(), ec2sdk.clone()))
-            .collect();
+        let engines = EC2MultiRegion::new(regions, ec2sdk.clone());
 
-        let s = Self {
+        let general_clients = Self {
             translator: ChatGPT::new(openai, &env.openai_model),
             raws: Syosetu::new(env.syosetu_host, proxy),
             storage: S3Storage::new(s3, env.tl_bucket, env.tl_prefix),
@@ -67,9 +64,9 @@ impl GeneralClients {
             // TODO: pick A1111 vs ComfyUI at runtime (e.g. from Env), not wired yet
             diffusion: Box::new(A1111::new(String::new())),
             // TODO: not wired to Env yet, stub only
-            computes,
+            engines,
         };
-        s
+        general_clients
     }
 }
 
@@ -78,7 +75,7 @@ impl ClientContainer for GeneralClients {
     type Raws = Syosetu;
     type Storage = S3Storage;
     type Notification = Discord;
-    type Compute = EC2Compute;
+    type Engines = EC2MultiRegion;
 
     fn translator(&self) -> &Self::Translator {
         &self.translator
@@ -95,9 +92,8 @@ impl ClientContainer for GeneralClients {
     fn diffusion(&self) -> &dyn DiffusionClient {
         self.diffusion.as_ref()
     }
-
-    fn computes(&self) -> &Vec<Self::Compute> {
-        &self.computes
+    fn engines(&self) -> &Self::Engines {
+        &self.engines
     }
 }
 

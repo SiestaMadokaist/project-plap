@@ -7,7 +7,7 @@ impl<T: repository::container::HasAgentCommand> AgentRepos for T {}
 pub trait AgentClients:
     clients::container::HasDiffusion
     + clients::container::HasStorage
-    + clients::container::HasCompute
+    + clients::container::HasEngines
     + clients::container::HasNotification
 {
 }
@@ -15,7 +15,7 @@ pub trait AgentClients:
 impl<
         T: clients::container::HasDiffusion
             + clients::container::HasStorage
-            + clients::container::HasCompute
+            + clients::container::HasEngines
             + clients::container::HasNotification,
     > AgentClients for T
 {

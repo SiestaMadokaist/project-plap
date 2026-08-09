@@ -72,3 +72,9 @@ impl Second {
         self.0 == other.0
     }
 }
+
+impl From<&Second> for core::time::Duration {
+    fn from(value: &Second) -> Self {
+        std::time::Duration::from_secs(value.0 as u64)
+    }
+}

@@ -7,7 +7,7 @@ use rust_api::{
         peek::Peek,
         time::{Second, Timestamp},
     },
-    trigger::{activity_tracker::ActivityTracker, idle_terminator::IdleTerminator},
+    trigger::{idle_terminator::IdleTerminator, newimage_listener::NewImageListener},
 };
 
 #[tokio::main(flavor = "current_thread")]
@@ -30,8 +30,14 @@ async fn main() -> anyhow::Result<()> {
     let interval = Second(5);
     let tolerance = Second(60);
     let activity_tracker =
-        ActivityTracker::new(clients.clone(), repos.clone(), dir, rc_start_at.clone());
-    let idle_terminator = IdleTerminator::new(clients.clone(), rc_start_peek, tolerance, interval);
+        NewImageListener::new(clients.clone(), repos.clone(), dir, rc_start_at.clone());
+    let idle_terminator = IdleTerminator::new(
+        clients.clone(),
+        repos.clone(),
+        rc_start_peek,
+        tolerance,
+        interval,
+    );
     tokio::try_join!(activity_tracker.run(), idle_terminator.run())?;
 
     Ok(())

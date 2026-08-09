@@ -1,5 +1,5 @@
 use crate::application::ports::clients::{
-    compute::ComputeClient, diffusions::DiffusionClient, notification::NotificationClient,
+    compute::ComputeEngines, diffusions::DiffusionClient, notification::NotificationClient,
     r#macro::impl_has, raws::RawsClient, storage::StorageClient, translator::TranslatorClient,
 };
 
@@ -8,8 +8,9 @@ pub trait ClientContainer {
     type Raws: RawsClient;
     type Storage: StorageClient;
     type Notification: NotificationClient;
-    type Compute: ComputeClient;
-    fn computes(&self) -> &Vec<Self::Compute>;
+    type Engines: ComputeEngines;
+
+    fn engines(&self) -> &Self::Engines;
     fn translator(&self) -> &Self::Translator;
     fn raws(&self) -> &Self::Raws;
     fn storage(&self) -> &Self::Storage;
@@ -41,11 +42,11 @@ pub trait HasNotification {
 }
 impl_has!(HasNotification, Notification, notification, ClientContainer);
 
-pub trait HasCompute {
-    type Compute: ComputeClient;
-    fn compute(&self) -> &Self::Compute;
+pub trait HasEngines {
+    type Engines: ComputeEngines;
+    fn engines(&self) -> &Self::Engines;
 }
-impl_has!(HasCompute, Compute, compute, ClientContainer);
+impl_has!(HasEngines, Engines, engines, ClientContainer);
 
 // Doesn't fit impl_has!: no associated type, returns a trait object instead
 // (see the "runtime-chosen A1111 vs ComfyUI" discussion).
@@ -60,6 +61,6 @@ impl<CC: ClientContainer> HasDiffusion for CC {
 }
 
 pub trait AllClients:
-    HasNotification + HasRaws + HasStorage + HasTranslator + HasDiffusion + HasCompute
+    HasNotification + HasRaws + HasStorage + HasTranslator + HasDiffusion + HasEngines
 {
 }

@@ -16,5 +16,4 @@ macro_rules! id_type {
         }
     };
 }
-
 pub(crate) use id_type;
