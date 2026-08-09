@@ -1,15 +1,17 @@
 use crate::application::ports::repository::{
-    agent_command::AgentCommandRepository, r#macro::impl_has, translation::TranslationRepository,
-    user::UserRepository,
+    agent_command::AgentCommandRepository, hot_reload::HotReloadRepository, r#macro::impl_has,
+    translation::TranslationRepository, user::UserRepository,
 };
 
 pub trait RepositoryContainer {
     type User: UserRepository;
     type Translation: TranslationRepository;
     type AgentCommand: AgentCommandRepository;
+    type HotReload: HotReloadRepository;
     fn user(&self) -> &Self::User;
     fn translation(&self) -> &Self::Translation;
     fn agent_command(&self) -> &Self::AgentCommand;
+    fn hotreload(&self) -> &Self::HotReload;
 }
 
 pub trait HasAgentCommand {
@@ -41,4 +43,11 @@ impl_has!(
     RepositoryContainer
 );
 
-pub trait AllRepos: HasTranslation + HasUser + HasAgentCommand {}
+pub trait HasHotReload {
+    type HotReload: HotReloadRepository;
+    fn hotreload(&self) -> &Self::HotReload;
+}
+
+impl_has!(HasHotReload, HotReload, hotreload, RepositoryContainer);
+
+pub trait AllRepos: HasTranslation + HasUser + HasAgentCommand + HasHotReload {}

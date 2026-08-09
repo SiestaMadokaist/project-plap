@@ -39,10 +39,8 @@ impl ChatGPT {
     fn system_prompt(&self) -> ChatCompletionRequestMessage {
         return ChatCompletionRequestMessage::System(SYSTEM_PROMPT.into());
     }
-}
 
-impl TranslatorClient for ChatGPT {
-    async fn translate(&self, text: &str) -> Result<String, DomainError> {
+    async fn translate_partial(&self, text: &str) -> Result<String, DomainError> {
         let model = self.model().await?;
         let system_prompt = self.system_prompt();
         let user_prompt = ChatCompletionRequestMessage::User(text.into());
@@ -61,6 +59,32 @@ impl TranslatorClient for ChatGPT {
             Some(s) => Ok(s.clone()),
             None => Err(DomainError::MissingContent),
         };
+    }
+}
+
+const PARTITION_COUNT: usize = 3;
+impl TranslatorClient for ChatGPT {
+    async fn translate(&self, text: &str) -> Result<String, DomainError> {
+        let paragraphs = text.split("\n");
+        let p_count = paragraphs.clone().count();
+        if p_count < PARTITION_COUNT {
+            let result = self.translate_partial(text).await?;
+            return Ok(result);
+        }
+        let partition_size = (p_count / PARTITION_COUNT) + 1; // ceil, or whatever
+        let mut groups: Vec<Vec<&str>> = vec![vec![]; PARTITION_COUNT];
+        for (i, p) in paragraphs.enumerate() {
+            let group = &mut groups[i / partition_size];
+            group.push(p);
+        }
+        let grouped_paragraphs: Vec<String> = groups.iter().map(|x| x.join("\n")).collect();
+        let mut translations: Vec<String> = vec![];
+        for g in grouped_paragraphs {
+            let translated = self.translate_partial(&g).await?;
+            translations.push(translated);
+        }
+        let full_translation = translations.join("\n");
+        return Ok(full_translation);
     }
 }
 

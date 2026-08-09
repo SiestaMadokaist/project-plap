@@ -78,7 +78,10 @@ impl<C: AgentClients, R: AgentRepos> IdleTerminator<C, R> {
 
     async fn action(&self) -> anyhow::Result<&ComputeCommand> {
         // read action to perform from dynamodb
-        let command = self.memo.action.get_or_init(|| todo!());
+        let command = self.memo.action.get_or_init(|| {
+            // let table = self.repos.bi
+            todo!()
+        });
         Ok(command)
     }
 

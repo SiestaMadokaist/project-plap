@@ -5,7 +5,7 @@ use crate::{
     pkg::types::time::Second,
 };
 #[derive(Serialize, Deserialize)]
-struct BillOptimization {
+pub struct BillOptimization {
     idle_tolerance: Second,
     check_interval: Second,
     action: ComputeCommand,
@@ -18,7 +18,7 @@ pub enum LaunchConfigCtx {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct LaunchDiffusionDomain {
+pub struct DiffusionConfigDomain {
     checkpoint: String,
     username: UserId,
     context: LaunchConfigCtx,

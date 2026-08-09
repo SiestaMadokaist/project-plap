@@ -1,6 +1,7 @@
 use crate::{
     application::ports::repository::error::RepositoryError,
     domain::{prompts::ImagePromptDomain, storage::StoragePath},
+    pkg::types::strings::CommaSeparated,
 };
 
 pub type PromptHistoryError = RepositoryError<StoragePath>;
@@ -22,5 +23,8 @@ pub trait PromptHistoryRepository {
        WHERE match_count >= ${minimum}
        ORDER BY match_count DESC`;
     */
-    async fn fuzzy_search(&self, tags: Vec<&str>) -> Result<Vec<StoragePath>, PromptHistoryError>;
+    async fn fuzzy_search(
+        &self,
+        tags: &CommaSeparated,
+    ) -> Result<Vec<StoragePath>, PromptHistoryError>;
 }

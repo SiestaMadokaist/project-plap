@@ -1,3 +1,4 @@
 pub mod peek;
+pub mod strings;
 pub mod time;
 pub mod unit;

@@ -16,4 +16,23 @@ macro_rules! id_type {
         }
     };
 }
+
+macro_rules! displayable {
+    ($name:ident) => {
+        impl std::fmt::Display for $name {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                let s = serde_json::to_string(self).map_err(|_| std::fmt::Error)?;
+                write!(f, "{}", s.trim_matches('"'))
+            }
+        }
+
+        impl From<$name> for String {
+            fn from(value: $name) -> String {
+                value.to_string()
+            }
+        }
+    };
+}
+
+pub(crate) use displayable;
 pub(crate) use id_type;

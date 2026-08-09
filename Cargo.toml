@@ -15,6 +15,10 @@ path = "src/bin/ws.rs"
 name = "cron"
 path = "src/bin/cron/main.rs"
 
+[[bin]]
+name = "diffusion-idle-killer"
+path = "src/bin/diffusions/main.rs"
+
 [dependencies]
 lambda_runtime = "0.13"
 lambda_http = "0.13"

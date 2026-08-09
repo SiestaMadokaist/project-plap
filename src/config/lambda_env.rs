@@ -1,6 +1,6 @@
 use std::env;
 
-use crate::{config::helper::var_or, domain::commands::compute::ComputeRegion};
+use crate::config::helper::var_or;
 
 pub struct LambdaEnv {
     aws_region: String,

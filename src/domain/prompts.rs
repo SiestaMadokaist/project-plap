@@ -24,3 +24,8 @@ pub struct ImagePromptDomain {
      */
     pub recorded_at: DateTime<Utc>,
 }
+
+pub struct FuzzySearch {
+    // comma separated string,
+    tags: String,
+}

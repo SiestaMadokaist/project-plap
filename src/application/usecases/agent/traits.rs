@@ -1,6 +1,9 @@
 use crate::application::ports::{clients, repository};
 
-pub trait AgentRepos: repository::container::HasAgentCommand {}
+pub trait AgentRepos:
+    repository::container::HasAgentCommand + repository::container::HasAgentCommand
+{
+}
 
 impl<T: repository::container::HasAgentCommand> AgentRepos for T {}
 

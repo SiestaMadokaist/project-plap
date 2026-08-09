@@ -7,8 +7,8 @@ use crate::{
         error::RepositoryError,
         user::{UserError, UserRepository},
     },
-    domain::user::{Email, User, UserId},
-    pkg::types::time::Timestamp,
+    domain::user::{User, UserId},
+    pkg::types::{strings::Email, time::Timestamp},
 };
 
 use super::table::{user_pk, USER_SK};
