@@ -1,10 +1,8 @@
 use std::env;
 
-use crate::config::helper::var_or;
-
+use crate::{config::helper::var_or, pkg::enums::stage::Stage};
 pub struct LambdaEnv {
-    aws_region: String,
-    pub aws_default_region: String,
+    stage: String,
     pub translation_table: String,
     pub user_table: String,
     pub agent_command_table: String,
@@ -17,13 +15,15 @@ pub struct LambdaEnv {
     pub tl_bucket: String,
     pub tl_prefix: String,
     pub discord_webhook_url: String,
+    pub max_data_transfer: i64,
 }
+
+const LAMBDA_MAX_DATA_TRANSFER_BYTES: i64 = 1 * 1024 * 1024 * 1024;
 
 impl LambdaEnv {
     pub fn from_env() -> Self {
         Self {
-            aws_region: var_or("AWS_REGION", ""),
-            aws_default_region: var_or("AWS_DEFAULT_REGION", ""),
+            stage: var_or("STAGE", "production"),
             translation_table: var_or("TRANSLATION_TABLE", "production-translations"),
             user_table: var_or("USER_TABLE", "production-users"),
             agent_command_table: var_or("AGENT_COMMAND_TABLE", "production-agent-commands"),
@@ -37,16 +37,19 @@ impl LambdaEnv {
             tl_prefix: var_or("TL_PREFIX", ""),
             discord_webhook_url: env::var("DISCORD_WEBHOOK_URL")
                 .expect("DISCORD_WEBHOOK_URL must be set"),
+            max_data_transfer: env::var("MAX_DATA_TRANSFER")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(LAMBDA_MAX_DATA_TRANSFER_BYTES),
         }
     }
 
-    pub fn region(&self) -> String {
-        if !self.aws_region.is_empty() {
-            self.aws_region.clone()
-        } else if !self.aws_default_region.is_empty() {
-            self.aws_default_region.clone()
-        } else {
-            "ap-southeast-1".to_string()
+    pub fn stage(&self) -> Stage {
+        match self.stage.as_str() {
+            "development" => Stage::Development,
+            "staging" => Stage::Staging,
+            "production" => Stage::Staging,
+            _ => Stage::Development,
         }
     }
 }

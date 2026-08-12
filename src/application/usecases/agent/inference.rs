@@ -3,17 +3,20 @@ use std::rc::Rc;
 use anyhow::Ok;
 
 use crate::{
-    application::usecases::agent::traits::AgentClients,
+    application::ports::clients::container::HasDiffusion,
     domain::commands::{command::Progression, inference::InferenceConfig},
+    pkg::macros::trait_clients,
 };
 
-pub struct RunInference<'a, C: AgentClients> {
+trait_clients!(RunInferenceClient, HasDiffusion);
+
+pub struct RunInference<'a, C: RunInferenceClient> {
     clients: Rc<C>,
     progress: Progression,
     config: &'a InferenceConfig,
 }
 
-impl<'a, C: AgentClients> RunInference<'a, C> {
+impl<'a, C: RunInferenceClient> RunInference<'a, C> {
     pub fn new(clients: Rc<C>, progress: Progression, config: &'a InferenceConfig) -> Self {
         Self {
             clients,

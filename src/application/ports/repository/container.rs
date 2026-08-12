@@ -1,6 +1,7 @@
 use crate::application::ports::repository::{
-    agent_command::AgentCommandRepository, hot_reload::HotReloadRepository, r#macro::impl_has,
-    translation::TranslationRepository, user::UserRepository,
+    agent_command::AgentCommandRepository, hot_reload::HotReloadRepository,
+    prompt_history::PromptHistoryRepository, r#macro::impl_has, translation::TranslationRepository,
+    user::UserRepository,
 };
 
 pub trait RepositoryContainer {
@@ -8,10 +9,12 @@ pub trait RepositoryContainer {
     type Translation: TranslationRepository;
     type AgentCommand: AgentCommandRepository;
     type HotReload: HotReloadRepository;
+    type PromptHistory: PromptHistoryRepository;
     fn user(&self) -> &Self::User;
     fn translation(&self) -> &Self::Translation;
     fn agent_command(&self) -> &Self::AgentCommand;
     fn hotreload(&self) -> &Self::HotReload;
+    fn prompt(&self) -> &Self::PromptHistory;
 }
 
 pub trait HasAgentCommand {
@@ -50,4 +53,14 @@ pub trait HasHotReload {
 
 impl_has!(HasHotReload, HotReload, hotreload, RepositoryContainer);
 
-pub trait AllRepos: HasTranslation + HasUser + HasAgentCommand + HasHotReload {}
+pub trait HasPromptHistory {
+    type PromptHistory: PromptHistoryRepository;
+    fn prompt(&self) -> &Self::PromptHistory;
+}
+
+impl_has!(HasPromptHistory, PromptHistory, prompt, RepositoryContainer);
+
+pub trait AllRepos:
+    HasTranslation + HasUser + HasAgentCommand + HasHotReload + HasPromptHistory
+{
+}

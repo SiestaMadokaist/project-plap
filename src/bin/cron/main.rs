@@ -5,7 +5,7 @@ use std::rc::Rc;
 use lambda_runtime::{run, service_fn, Error, LambdaEvent};
 use rust_api::{
     application::usecases::translations::{init, run},
-    bootstrap::{client::GeneralClients, repo::GeneralRepositories},
+    bootstrap::lambda::{self, client::LambdaClients, repo::LambdaRepos},
     config::lambda_env::LambdaEnv,
 };
 use serde::Deserialize;
@@ -25,8 +25,8 @@ struct PathParameters {
 }
 
 async fn handler(
-    repo: Rc<GeneralRepositories>,
-    client: Rc<GeneralClients>,
+    repo: Rc<LambdaRepos>,
+    client: Rc<LambdaClients>,
     event: LambdaEvent<CronEvent>,
 ) -> Result<(), Error> {
     let path_params = &event.payload.path_parameters;
@@ -52,14 +52,11 @@ async fn main() -> Result<(), Error> {
     rust_api::init_tracing();
 
     let env = LambdaEnv::from_env();
-    let config = aws_config::from_env()
-        .region(aws_sdk_dynamodb::config::Region::new(env.region()))
-        .load()
-        .await;
+    let config = aws_config::from_env().load().await;
     let dynamo = aws_sdk_dynamodb::Client::new(&config);
 
-    let repo = GeneralRepositories::rc(&dynamo, &env);
-    let client = GeneralClients::rc(env, config);
+    let repo = LambdaRepos::rc(&dynamo, env.stage());
+    let client = LambdaClients::rc(env, config);
 
     run(service_fn(move |event| {
         let r = repo.clone();

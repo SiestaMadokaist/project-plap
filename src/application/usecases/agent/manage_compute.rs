@@ -1,21 +1,26 @@
 use std::rc::Rc;
 
-use serde::{Deserialize, Serialize};
-
 use crate::{
-    application::{
-        ports::clients::compute::{ComputeEngine, ComputeEngines},
-        usecases::agent::traits::AgentClients,
+    application::ports::clients::{
+        self,
+        compute::{ComputeEngine, ComputeEngines},
     },
     domain::commands::compute::{ComputeArgs, ComputeCommand, ComputeError},
+    pkg::macros::trait_clients,
 };
 
-pub struct ManageCompute<C: AgentClients> {
+trait_clients!(
+    ManageComputeClients,
+    clients::container::HasEngines,
+    clients::container::HasNotification
+);
+
+pub struct ManageCompute<C: ManageComputeClients> {
     clients: Rc<C>,
     args: ComputeArgs,
 }
 
-impl<C: AgentClients> ManageCompute<C> {
+impl<C: ManageComputeClients> ManageCompute<C> {
     pub fn new(clients: Rc<C>, args: ComputeArgs) -> Self {
         Self { clients, args }
     }

@@ -1,47 +1,30 @@
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 
-use crate::pkg::macros::id_type;
+use crate::pkg::macros::{displayable, id_type};
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum ComputeRegion {
+    #[serde(rename = "ap-southeast-2")]
     AWSApSoutheast2,
+    #[serde(rename = "us-east-1")]
     AWSUsEast1,
 }
-
-impl ComputeRegion {
-    fn as_str(&self) -> &'static str {
-        match self {
-            ComputeRegion::AWSApSoutheast2 => "ap-southeast-2",
-            ComputeRegion::AWSUsEast1 => "us-east-1",
-        }
-    }
-}
-
-impl From<&ComputeRegion> for String {
-    fn from(value: &ComputeRegion) -> Self {
-        String::from(value.as_str())
-    }
-}
+displayable!(ComputeRegion);
 
 #[derive(Debug, Serialize, Deserialize, thiserror::Error)]
 pub enum ComputeError {
-    #[error("Region is not configured")]
+    #[error("Region {0} is not configured")]
     InvalidRegion(String),
 }
 
-impl Serialize for ComputeRegion {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(self.as_str())
-    }
-}
+impl TryFrom<&str> for ComputeRegion {
+    type Error = ComputeError;
 
-impl<'de> Deserialize<'de> for ComputeRegion {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let s = String::deserialize(deserializer)?;
-        match s.as_str() {
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
             "ap-southeast-2" => Ok(ComputeRegion::AWSApSoutheast2),
             "us-east-1" => Ok(ComputeRegion::AWSUsEast1),
-            _ => Err(D::Error::custom(format!("unknown compute region: {s}"))),
+            other => Err(ComputeError::InvalidRegion(other.to_string())),
         }
     }
 }
@@ -52,7 +35,6 @@ pub struct ComputeArgs {
     pub command: ComputeCommand,
     pub region: ComputeRegion,
 }
-
 id_type!(ComputeInstanceID);
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]

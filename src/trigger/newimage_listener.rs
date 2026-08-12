@@ -49,18 +49,18 @@ impl<C: AgentClients, R: AgentRepos> NewImageListener<C, R> {
         let mut image_count = 0;
         for image_path in images {
             image_count += 1;
-
             let clients = self.clients.clone();
             let repos = self.repos.clone();
             let path = image_path.clone();
-            let saveimage = SaveImage::new(clients, repos, path);
+            let now = Timestamp::now();
+            let saveimage = SaveImage::new(clients, repos, path, now);
             saveimage.exec().await?;
         }
         if image_count == 0 {
             return Ok(());
         }
         self.record_ok();
-        todo!()
+        Ok(())
     }
 
     fn record_ok(&self) -> () {

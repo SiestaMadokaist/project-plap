@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::domain::{
     errors::DomainError,
     storage::{ItemVersion, StorageBucket, StoragePath, StoragePrefix},
@@ -9,6 +11,8 @@ pub trait StorageClient {
     fn bucket(&self) -> StorageBucket;
     async fn read(&self, path: StoragePath) -> Result<String, DomainError>;
     async fn write(&self, path: StoragePath, data: &Vec<u8>) -> Result<(), DomainError>;
+    async fn upload(&self, local: &PathBuf, remote: &StoragePath) -> Result<(), DomainError>;
+    async fn download(&self, remote: &StoragePath, local: &PathBuf) -> Result<(), DomainError>;
     fn public_url(&self, path: StoragePath) -> String;
     async fn ls(&self, prefix: StoragePrefix) -> Vec<String>;
     async fn versions(&self, path: StoragePath) -> Result<ItemVersion, DomainError>;

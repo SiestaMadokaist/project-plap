@@ -41,6 +41,11 @@ impl Timestamp {
         let dt = self.0 - other.0;
         return Second(dt);
     }
+
+    pub fn to_datestring(&self) -> String {
+        // todo: return DDDD-MM-YY
+        todo!();
+    }
 }
 
 impl TryFrom<Timestamp> for DateTime<Utc> {

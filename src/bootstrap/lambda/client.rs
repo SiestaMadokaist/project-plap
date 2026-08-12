@@ -12,7 +12,6 @@ use crate::{
     domain::commands::compute::ComputeRegion,
     infras::{
         compute::ec2::EC2MultiRegion,
-        diffusions::a1111::A1111,
         notifications::discord::Discord,
         raws::syosetu::{ProxyConfig, Syosetu},
         storage::s3::S3Storage,
@@ -20,22 +19,27 @@ use crate::{
     },
 };
 
-pub struct GeneralClients {
+pub struct LambdaClients {
     translator: ChatGPT,
     raws: Syosetu,
     storage: S3Storage,
     notification: Discord,
-    diffusion: Box<dyn DiffusionClient>,
     engines: EC2MultiRegion,
 }
 
-impl GeneralClients {
+impl LambdaClients {
     pub fn rc(env: LambdaEnv, config: SdkConfig) -> Rc<Self> {
         Rc::new(Self::new(env, config))
     }
 
     fn new(env: LambdaEnv, config: SdkConfig) -> Self {
         let s3 = aws_sdk_s3::Client::new(&config);
+        let own_region = config
+            .region()
+            .expect("AWS region could not be resolved (env var, profile, or EC2 IMDS)")
+            .as_ref()
+            .try_into()
+            .expect("resolved AWS region is not a ComputeRegion this app knows about");
         let openai = OpenAIClient::<OpenAIConfig>::new();
         let proxy = match (
             env.proxy_host,
@@ -59,10 +63,14 @@ impl GeneralClients {
         let general_clients = Self {
             translator: ChatGPT::new(openai, &env.openai_model),
             raws: Syosetu::new(env.syosetu_host, proxy),
-            storage: S3Storage::new(s3, env.tl_bucket, env.tl_prefix),
+            storage: S3Storage::new(
+                s3,
+                own_region,
+                env.tl_bucket,
+                env.tl_prefix,
+                env.max_data_transfer,
+            ),
             notification: Discord::new(env.discord_webhook_url),
-            // TODO: pick A1111 vs ComfyUI at runtime (e.g. from Env), not wired yet
-            diffusion: Box::new(A1111::new(String::new())),
             // TODO: not wired to Env yet, stub only
             engines,
         };
@@ -70,7 +78,7 @@ impl GeneralClients {
     }
 }
 
-impl ClientContainer for GeneralClients {
+impl ClientContainer for LambdaClients {
     type Translator = ChatGPT;
     type Raws = Syosetu;
     type Storage = S3Storage;
@@ -89,12 +97,13 @@ impl ClientContainer for GeneralClients {
     fn notification(&self) -> &Self::Notification {
         &self.notification
     }
-    fn diffusion(&self) -> &dyn DiffusionClient {
-        self.diffusion.as_ref()
-    }
     fn engines(&self) -> &Self::Engines {
         &self.engines
     }
+
+    fn diffusion(&self) -> &dyn DiffusionClient {
+        todo!()
+    }
 }
 
-impl AllClients for GeneralClients {}
+impl AllClients for LambdaClients {}

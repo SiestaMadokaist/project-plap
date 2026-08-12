@@ -5,19 +5,22 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     application::ports::repository::container::{AllRepos, RepositoryContainer},
-    config::stage::Stage,
-    infras::repos::dynamo::{
-        agent_command::DDBAgentCommandRepository, hotreload::DDBHotReloadRepository,
-        translation::DDBTranslationRepository, user::DDBUserRepository,
+    infras::repos::{
+        dynamo::{
+            agent_command::DDBAgentCommandRepository, hotreload::DDBHotReloadRepository,
+            translation::DDBTranslationRepository, user::DDBUserRepository,
+        },
+        prompts::PromptRepository,
     },
-    pkg::macros::displayable,
+    pkg::{enums::stage::Stage, macros::displayable},
 };
 
-pub struct GeneralRepositories {
+pub struct LambdaRepos {
     translation: DDBTranslationRepository,
     user: DDBUserRepository,
     agent_command: DDBAgentCommandRepository,
     hotreload: DDBHotReloadRepository,
+    prompt: PromptRepository,
 }
 
 /**
@@ -35,7 +38,7 @@ enum TableName {
 }
 displayable!(TableName);
 
-impl GeneralRepositories {
+impl LambdaRepos {
     pub fn rc(client: &Client, stage: Stage) -> Rc<Self> {
         Rc::new(Self::new(client, stage))
     }
@@ -60,15 +63,17 @@ impl GeneralRepositories {
                 client.clone(),
                 Self::to_table(stage, TableName::HotReloads),
             ),
+            prompt: PromptRepository::new(),
         }
     }
 }
 
-impl RepositoryContainer for GeneralRepositories {
+impl RepositoryContainer for LambdaRepos {
     type Translation = DDBTranslationRepository;
     type User = DDBUserRepository;
     type AgentCommand = DDBAgentCommandRepository;
     type HotReload = DDBHotReloadRepository;
+    type PromptHistory = PromptRepository;
     fn translation(&self) -> &Self::Translation {
         &self.translation
     }
@@ -84,6 +89,10 @@ impl RepositoryContainer for GeneralRepositories {
     fn hotreload(&self) -> &Self::HotReload {
         &self.hotreload
     }
+
+    fn prompt(&self) -> &Self::PromptHistory {
+        &self.prompt
+    }
 }
 
-impl AllRepos for GeneralRepositories {}
+impl AllRepos for LambdaRepos {}

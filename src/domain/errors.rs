@@ -35,4 +35,10 @@ pub enum DomainError {
 
     #[error("invalid selector: {0}")]
     InvalidSelector(String),
+
+    #[error("Bill Optimization: {0}")]
+    BillOptimization(String),
+
+    #[error("transfer size {size} bytes exceeds the {limit} byte limit")]
+    TransferTooLarge { size: u64, limit: u64 },
 }

@@ -1,14 +1,26 @@
+use std::path::PathBuf;
+
 use serde::{Deserialize, Serialize};
 
-use crate::domain::commands::command::ModelProvider;
+use crate::domain::{commands::command::ModelProvider, storage::StoragePath};
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum NetworkAction {
+    Download,
+    Upload,
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NetworkArgs {
-    provider: ModelProvider,
+    pub provider: ModelProvider,
+    pub action: NetworkAction,
     /**
      * e.g: s3://<bucket>/path
      * modelId
      * https://something/endpoint
      */
-    path: String,
+    pub remote: StoragePath,
+    // relative path since workdir
+    pub local: PathBuf,
 }

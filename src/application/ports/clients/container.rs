@@ -41,7 +41,6 @@ pub trait HasNotification {
     fn notification(&self) -> &Self::Notification;
 }
 impl_has!(HasNotification, Notification, notification, ClientContainer);
-
 pub trait HasEngines {
     type Engines: ComputeEngines;
     fn engines(&self) -> &Self::Engines;

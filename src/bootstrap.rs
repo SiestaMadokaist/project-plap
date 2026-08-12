@@ -1,2 +1,2 @@
-pub mod client;
-pub mod repo;
+pub mod ec2diffusion;
+pub mod lambda;

@@ -31,8 +31,30 @@ macro_rules! displayable {
                 value.to_string()
             }
         }
+
+        impl From<&$name> for String {
+            fn from(value: &$name) -> String {
+                value.to_string()
+            }
+        }
+    };
+}
+
+macro_rules! trait_clients {
+    ($name:ident, $($bound:path),+ $(,)?) => {
+        pub trait $name: $($bound +)+ {}
+        impl<T: $($bound +)+> $name for T {}
+    };
+}
+
+macro_rules! trait_repos {
+    ($name:ident, $($bound:path),+ $(,)?) => {
+        pub trait $name: $($bound +)+ {}
+        impl<T: $($bound +)+> $name for T {}
     };
 }
 
 pub(crate) use displayable;
 pub(crate) use id_type;
+pub(crate) use trait_clients;
+pub(crate) use trait_repos;

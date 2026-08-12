@@ -1,9 +1,13 @@
 use crate::{
-    application::{
-        ports::clients::storage::StorageClient,
-        usecases::agent::traits::{AgentClients, AgentRepos},
+    application::ports::{
+        clients::{self, storage::StorageClient},
+        repository::{self},
     },
     domain::storage::StoragePath,
+    pkg::{
+        macros::{trait_clients, trait_repos},
+        types::time::Timestamp,
+    },
 };
 use std::{path::PathBuf, rc::Rc};
 use tokio::sync::OnceCell;
@@ -20,30 +24,52 @@ impl Memo {
     }
 }
 
-pub struct SaveImage<C: AgentClients, R: AgentRepos> {
+trait_clients!(
+    SaveImageClient,
+    clients::container::HasStorage,
+    clients::container::HasNotification
+);
+trait_repos!(
+    SaveImageRepos,
+    repository::container::HasHotReload,
+    repository::container::HasPromptHistory
+);
+pub struct SaveImage<C: SaveImageClient, R: SaveImageRepos> {
     clients: Rc<C>,
     repos: Rc<R>,
     path: PathBuf,
+    now: Timestamp,
     memo: Memo,
 }
 
-impl<C: AgentClients, R: AgentRepos> SaveImage<C, R> {
-    pub fn new(clients: Rc<C>, repos: Rc<R>, path: PathBuf) -> Self {
+impl<C: SaveImageClient, R: SaveImageRepos> SaveImage<C, R> {
+    pub fn new(clients: Rc<C>, repos: Rc<R>, path: PathBuf, now: Timestamp) -> Self {
         Self {
             clients,
             repos,
             path,
+            now,
             memo: Memo::new(),
         }
     }
 
     /**
+     * @todo!()
      * extract exif from image
      * store exif to bigquery
      */
     async fn read_exif(&self) -> anyhow::Result<()> {
         let data = self.ioread().await;
-        todo!();
+        Ok(())
+    }
+
+    fn store_path(&self) -> StoragePath {
+        let now = self.now;
+        let ds = now.to_datestring();
+        let date_string = ds.as_str();
+        let path = self.path.to_str().unwrap_or("todo!(now)");
+        let s = format!("{}/{}", date_string, path);
+        StoragePath(s)
     }
 
     async fn ioread(&self) -> anyhow::Result<&Vec<u8>> {
@@ -59,14 +85,8 @@ impl<C: AgentClients, R: AgentRepos> SaveImage<C, R> {
         let c = self.clients.clone();
         let storage = c.storage();
         let data = self.ioread().await?;
-        let path = self.path.to_str().map(String::from).unwrap_or_default();
-        if path == "" {
-            todo!(); // return Err;
-        }
-        storage
-            .write(StoragePath(path), data)
-            .await
-            .map_err(|_| todo!())
+        let path = self.store_path();
+        storage.write(path, data).await.map_err(|_| todo!())
     }
 
     pub async fn exec(&self) -> anyhow::Result<()> {
