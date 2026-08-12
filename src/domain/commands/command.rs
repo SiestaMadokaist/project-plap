@@ -60,7 +60,7 @@ impl Progression {
     }
 
     pub fn is_started(&self) -> bool {
-        return self.started_at == None;
+        return self.started_at != None;
     }
 }
 
