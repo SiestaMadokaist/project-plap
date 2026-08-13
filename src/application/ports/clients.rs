@@ -1,4 +1,5 @@
 pub mod compute;
+pub mod compute_agent;
 pub mod container;
 pub mod diffusions;
 pub mod r#macro;

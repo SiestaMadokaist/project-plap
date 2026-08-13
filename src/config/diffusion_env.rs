@@ -6,6 +6,7 @@ use std::env;
 
 pub struct DiffusionEnv {
     stage: String,
+    pub localhost: bool,
     pub max_data_transfer: i64,
     pub watch_dir: String,
     pub aws_region: String,
@@ -21,6 +22,7 @@ const DEFAULT_MAX_DATA_TRANSFER_BYTES: i64 = 30 * 1024 * 1024 * 1024;
 impl DiffusionEnv {
     pub fn from_env() -> Self {
         Self {
+            localhost: true, // @todo
             stage: var_or("STAGE", "production"),
             watch_dir: env::var("WATCH_DIR").expect("WATCH_DIR must be set"),
             max_data_transfer: env::var("MAX_DATA_TRANSFER")

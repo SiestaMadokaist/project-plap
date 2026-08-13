@@ -9,6 +9,12 @@ macro_rules! id_type {
             }
         }
 
+        impl From<String> for $name {
+            fn from(value: String) -> $name {
+                $name(value)
+            }
+        }
+
         impl From<$name> for String {
             fn from(value: $name) -> String {
                 value.0

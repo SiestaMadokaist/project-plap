@@ -4,9 +4,7 @@ use rust_api::{
     bootstrap::ec2diffusion::{client::EC2DiffusionClients, repo::EC2DiffusionRepo},
     config::diffusion_env::DiffusionEnv,
     pkg::types::{peek::Peek, time::Timestamp},
-    trigger::{
-        commandq::CommandQ, idle_terminator::IdleTerminator, newimage_listener::NewImageListener,
-    },
+    trigger::{idle_terminator::IdleTerminator, newimage_listener::NewImageListener},
 };
 
 #[tokio::main(flavor = "current_thread")]
@@ -21,7 +19,7 @@ async fn main() -> anyhow::Result<()> {
     let dynamo = aws_sdk_dynamodb::Client::new(&config);
     let watch_dir = env.watch_dir.clone();
     let repos = EC2DiffusionRepo::rc(&dynamo, env.stage());
-    let clients = EC2DiffusionClients::rc(env, config);
+    let clients = EC2DiffusionClients::rc(&env, config);
     let start_at = Timestamp::now();
     let rc_start_at = Rc::new(Cell::new(start_at));
     let rc_start_peek = Peek::new(rc_start_at.clone());

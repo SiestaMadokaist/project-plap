@@ -15,5 +15,6 @@ trait_clients!(
     clients::container::HasDiffusion,
     clients::container::HasStorage,
     clients::container::HasEngines,
-    clients::container::HasNotification
+    clients::container::HasNotification,
+    clients::container::HasComputeAgent,
 );

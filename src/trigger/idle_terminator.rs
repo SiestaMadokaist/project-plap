@@ -1,7 +1,10 @@
 use crate::{
-    application::usecases::agent::{
-        manage_compute::ManageCompute,
-        traits::{AgentClients, AgentRepos},
+    application::{
+        ports::clients::{compute::ComputeEngines, compute_agent::ComputeAgent},
+        usecases::agent::{
+            manage_compute::ManageCompute,
+            traits::{AgentClients, AgentRepos},
+        },
     },
     domain::commands::compute::{ComputeArgs, ComputeCommand, ComputeInstanceID, ComputeRegion},
     pkg::types::{
@@ -14,7 +17,7 @@ pub struct Memo {
     ip: OnceCell<String>,
     instance_id: OnceCell<ComputeInstanceID>,
     action: OnceCell<ComputeCommand>,
-    region: OnceCell<ComputeRegion>,
+    document: OnceCell<()>,
 }
 
 /**
@@ -48,31 +51,26 @@ impl<C: AgentClients, R: AgentRepos> IdleTerminator<C, R> {
                 ip: OnceCell::new(),
                 instance_id: OnceCell::new(),
                 action: OnceCell::new(),
-                region: OnceCell::new(),
+                document: OnceCell::new(),
             },
         }
     }
 
-    /** @deprecated fallback if direct instance_id not a thing(?) */
-    async fn ip(&self) -> anyhow::Result<&String> {
-        let memoized = self.memo.ip.get_or_init(|| todo!());
-        Ok(memoized)
+    // async fn ip(&self) -> anyhow::Result<String> {
+    //     let agent = self.clients.agent();
+    //     let ip = agent.ip().await?;
+    //     Ok(ip)
+    // }
+
+    async fn instance_id(&self) -> anyhow::Result<ComputeInstanceID> {
+        let agent = self.clients.agent();
+        let id = agent.instance_id().await?;
+        Ok(id)
     }
 
-    // call aws internal route
-    // GET http://169.254.169.254/latest/meta-data/instance-id
-    // There is a more efficient single-call option worth using instead, though, if you want both in one shot: /latest/dynamic/instance-identity/document — this returns one JSON document containing instanceId, region, availabilityZone, instanceType, accountId, imageId, privateIp, and a few other fields, all together. Given you want both instance_id and region specifically, this is probably the better fit — one request instead of two, and you get both fields directly out of the same JSON response rather than stitching together separate calls.
-    async fn document(&self) -> anyhow::Result<()> {
-        todo!();
-    }
-
-    async fn instance_id(&self) -> anyhow::Result<&ComputeInstanceID> {
-        let id = self.memo.instance_id.get_or_init(|| todo!());
-        Ok(&id)
-    }
-
-    async fn region(&self) -> anyhow::Result<&ComputeRegion> {
-        let region = self.memo.region.get_or_init(|| todo!());
+    async fn region(&self) -> anyhow::Result<ComputeRegion> {
+        let agent = self.clients.agent();
+        let region = agent.region().await?;
         Ok(region)
     }
 
