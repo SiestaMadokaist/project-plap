@@ -43,8 +43,10 @@ impl Timestamp {
     }
 
     pub fn to_datestring(&self) -> String {
-        // todo: return DDDD-MM-YY
-        todo!();
+        let dt: DateTime<Utc> = (*self)
+            .try_into()
+            .expect("timestamp out of range for DateTime<Utc>");
+        dt.format("%Y-%m-%d").to_string()
     }
 }
 

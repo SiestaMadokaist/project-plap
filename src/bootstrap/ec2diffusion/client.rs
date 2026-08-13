@@ -6,7 +6,10 @@ use aws_config::SdkConfig;
 use crate::{
     application::ports::clients::{
         compute_agent::ComputeAgent,
-        container::{HasComputeAgent, HasDiffusion, HasEngines, HasNotification, HasStorage},
+        container::{
+            HasComputeAgent, HasDiffusion, HasEngines, HasModelStorage, HasNotification,
+            HasOutputStorage,
+        },
         diffusions::DiffusionClient,
     },
     config::diffusion_env::DiffusionEnv,
@@ -21,7 +24,8 @@ use crate::{
 };
 
 pub struct EC2DiffusionClients {
-    storage: S3Storage,
+    output_storage: S3Storage,
+    model_storage: S3Storage,
     notification: Discord,
     diffusion: Box<dyn DiffusionClient>,
     engines: EC2MultiRegion,
@@ -42,22 +46,28 @@ impl EC2DiffusionClients {
     }
 
     fn new(env: &DiffusionEnv, config: SdkConfig) -> Self {
-        let s3 = aws_sdk_s3::Client::new(&config);
-        let own_region = config
-            .region()
-            .expect("AWS region could not be resolved (env var, profile, or EC2 IMDS)")
-            .as_ref()
-            .try_into()
-            .expect("resolved AWS region is not a ComputeRegion this app knows about");
         let regions: Vec<ComputeRegion> = vec![];
         let ec2sdk = aws_sdk_ec2::Client::new(&config);
         let engines = EC2MultiRegion::new(regions, ec2sdk.clone());
         let general_clients = Self {
-            storage: S3Storage::new(
-                s3,
-                own_region,
+            output_storage: S3Storage::new(
+                config.clone(),
+                env.output_region
+                    .as_str()
+                    .try_into()
+                    .expect("env.output_region must be a valid region"),
                 env.output_bucket.clone(),
                 env.output_prefix.clone(),
+                env.max_data_transfer,
+            ),
+            model_storage: S3Storage::new(
+                config.clone(),
+                env.model_region
+                    .as_str()
+                    .try_into()
+                    .expect("env.model_region must be a valid region"),
+                env.model_bucket.clone(),
+                env.model_prefix.clone(),
                 env.max_data_transfer,
             ),
             notification: Discord::new(env.discord_webhook_url.clone()),
@@ -90,11 +100,17 @@ impl HasDiffusion for EC2DiffusionClients {
     }
 }
 
-impl HasStorage for EC2DiffusionClients {
-    type Storage = S3Storage;
-    // type Engines = EC2MultiRegion;
-    fn storage(&self) -> &Self::Storage {
-        &self.storage
+impl HasModelStorage for EC2DiffusionClients {
+    type ModelStorage = S3Storage;
+    fn model_storage(&self) -> &Self::ModelStorage {
+        &self.model_storage
+    }
+}
+
+impl HasOutputStorage for EC2DiffusionClients {
+    type OutputStorage = S3Storage;
+    fn output_storage(&self) -> &Self::OutputStorage {
+        &self.output_storage
     }
 }
 

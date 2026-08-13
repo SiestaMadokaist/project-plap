@@ -14,9 +14,14 @@ pub trait HasRaws {
     fn raws(&self) -> &Self::Raws;
 }
 
-pub trait HasStorage {
-    type Storage: StorageClient;
-    fn storage(&self) -> &Self::Storage;
+pub trait HasModelStorage {
+    type ModelStorage: StorageClient;
+    fn model_storage(&self) -> &Self::ModelStorage;
+}
+
+pub trait HasOutputStorage {
+    type OutputStorage: StorageClient;
+    fn output_storage(&self) -> &Self::OutputStorage;
 }
 
 pub trait HasNotification {

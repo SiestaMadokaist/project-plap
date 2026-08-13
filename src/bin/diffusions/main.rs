@@ -4,7 +4,7 @@ use rust_api::{
     bootstrap::ec2diffusion::{client::EC2DiffusionClients, repo::EC2DiffusionRepo},
     config::diffusion_env::DiffusionEnv,
     pkg::types::{peek::Peek, time::Timestamp},
-    trigger::{idle_terminator::IdleTerminator, newimage_listener::NewImageListener},
+    trigger::{idle_terminator::IdleTerminator, newoutput_listener::NewOutputListener},
 };
 
 #[tokio::main(flavor = "current_thread")]
@@ -24,7 +24,7 @@ async fn main() -> anyhow::Result<()> {
     let rc_start_at = Rc::new(Cell::new(start_at));
     let rc_start_peek = Peek::new(rc_start_at.clone());
     // let queue_handler = CommandQ::new(clients.clone(), repos.clone(), queue_interval);
-    let activity_tracker = NewImageListener::new(
+    let activity_tracker = NewOutputListener::new(
         clients.clone(),
         repos.clone(),
         watch_dir,

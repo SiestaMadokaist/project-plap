@@ -100,7 +100,7 @@ impl<R: TLRepos, C: TLClients> Run<R, C> {
         tracing::info!(item = ?prev, "latest translation");
         let untranslated = self.untranslated().await?;
         let tl_repo = self.repo.translation();
-        let storage = self.client.storage();
+        let storage = self.client.model_storage();
         let notification = self.client.notification();
         for chapter_id in untranslated {
             let raw = self

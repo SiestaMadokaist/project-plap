@@ -12,3 +12,5 @@ terraform/*.tfvars.json
 
 # ide / tools
 .claude/
+o.txt
+samples/output

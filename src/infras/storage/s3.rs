@@ -4,6 +4,7 @@ use std::{
     process::Stdio,
 };
 
+use aws_config::SdkConfig;
 use aws_sdk_s3::{
     primitives::ByteStream,
     types::{ObjectCannedAcl::PublicRead, ObjectVersion},
@@ -17,13 +18,13 @@ use crate::{
     domain::{
         commands::compute::ComputeRegion,
         errors::DomainError,
-        storage::{ItemVersion, StorageBucket, StoragePath},
+        storage::{ItemVersion, StorageBucket, StoragePath, StoragePrefix},
     },
 };
 
 pub struct S3Storage {
     client: Client,
-    own_region: ComputeRegion,
+    region: ComputeRegion,
     bucket: String,
     bucket_region: OnceCell<String>,
     prefix: String,
@@ -32,15 +33,20 @@ pub struct S3Storage {
 
 impl S3Storage {
     pub fn new(
-        client: Client,
-        own_region: ComputeRegion,
+        config: SdkConfig,
+        region: ComputeRegion,
         bucket: String,
         prefix: String,
         max_size: i64,
     ) -> Self {
+        let mut builder = config.to_builder();
+        let sregion: String = region.into();
+        builder.set_region(aws_config::Region::new(sregion));
+        let reconfigured = builder.build();
+        let client = aws_sdk_s3::Client::new(&reconfigured);
         Self {
             client,
-            own_region,
+            region,
             bucket,
             bucket_region: OnceCell::new(),
             prefix,
@@ -82,7 +88,7 @@ impl S3Storage {
 
     async fn is_same_region(&self) -> Result<bool, DomainError> {
         let bucket_region = self.bucket_region().await?;
-        Ok(bucket_region == self.own_region)
+        Ok(bucket_region == self.region)
     }
 
     fn key(&self, path: &StoragePath) -> String {
@@ -230,7 +236,7 @@ impl StorageClient for S3Storage {
         let src = local
             .to_str()
             .ok_or_else(|| DomainError::Serialize("local path is not valid UTF-8".into()))?;
-        let dst = format!("s3://{}/{key}", self.bucket);
+        let dst = format!("s3://{}/{}/{key}", self.bucket, self.prefix);
         self.spawn_cp(src, &dst, recursive).await
     }
 
@@ -261,8 +267,16 @@ impl StorageClient for S3Storage {
         );
     }
 
-    async fn ls(&self, prefix: crate::domain::storage::StoragePrefix) -> Vec<String> {
+    async fn ls(&self, prefix: StoragePrefix) -> Vec<String> {
+        let result = self
+            .client
+            .list_objects()
+            .bucket(&self.bucket)
+            .prefix(prefix.0)
+            .send()
+            .await;
         todo!();
+        // vec![]
     }
 
     async fn versions(&self, path: StoragePath) -> Result<ItemVersion, DomainError> {

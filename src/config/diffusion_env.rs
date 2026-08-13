@@ -11,8 +11,15 @@ pub struct DiffusionEnv {
     pub watch_dir: String,
     pub aws_region: String,
     pub discord_webhook_url: String,
+
+    pub output_region: String,
     pub output_bucket: String,
     pub output_prefix: String,
+
+    pub model_region: String,
+    pub model_bucket: String,
+    pub model_prefix: String,
+
     pub watch_interval: Second,
     pub queue_interval: Second,
     pub idle_tolerance: Second,
@@ -32,13 +39,21 @@ impl DiffusionEnv {
             aws_region: var_or("AWS_REGION", "us-east-1"),
             discord_webhook_url: env::var("DISCORD_WEBHOOK_URL")
                 .expect("DISCORD_WEBHOOK_URL must be set"),
+
+            model_region: env::var("MODEL_REGION").expect("MODEL REGION must not be empty"),
+            model_bucket: env::var("MODEL_BUCKET").expect("MODEL BUCKET must not be empty"),
+            model_prefix: var_or("MODEL_PREFIX", ""),
+
+            output_region: var_or("OUTPUT_REGION", "ap-southeast-1"),
             output_bucket: env::var("OUTPUT_BUCKET").expect("OUTPUT_BUCKET must be set"),
             output_prefix: var_or("OUTPUT_PREFIX", ""),
+
             watch_interval: var_second("WATCH_INTERVAL"),
             queue_interval: var_second("QUEUE_INTERVAL"),
             idle_tolerance: var_second("IDLE_TOLERANCE"),
         }
     }
+
     pub fn stage(&self) -> Stage {
         match self.stage.as_str() {
             "development" => Stage::Development,

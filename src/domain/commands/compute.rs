@@ -4,6 +4,8 @@ use crate::pkg::macros::{displayable, id_type};
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum ComputeRegion {
+    #[serde(rename = "ap-southeast-1")]
+    AwsApSoutheast1,
     #[serde(rename = "ap-southeast-2")]
     AWSApSoutheast2,
     #[serde(rename = "us-east-1")]
@@ -22,6 +24,7 @@ impl TryFrom<&str> for ComputeRegion {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
+            "ap-southeast-1" => Ok(ComputeRegion::AwsApSoutheast1),
             "ap-southeast-2" => Ok(ComputeRegion::AWSApSoutheast2),
             "us-east-1" => Ok(ComputeRegion::AWSUsEast1),
             other => Err(ComputeError::InvalidRegion(other.to_string())),

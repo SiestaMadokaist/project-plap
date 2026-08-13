@@ -25,7 +25,7 @@ use crate::{
 trait_clients!(
     CommandHandlerClients,
     clients::container::HasDiffusion,
-    clients::container::HasStorage
+    clients::container::HasModelStorage
 );
 trait_repos!(CommandHandlerRepos, repository::container::HasAgentCommand);
 
@@ -60,7 +60,7 @@ impl<R: CommandHandlerRepos, C: CommandHandlerClients> CommandHandler<R, C> {
     }
 
     async fn handle_network(&self, arg: &NetworkArgs) -> anyhow::Result<()> {
-        let storage = self.client.storage();
+        let storage = self.client.model_storage();
         match arg.action {
             Download => storage.download(&arg.remote, &arg.local).await?,
             Upload => storage.upload(&arg.local, &arg.remote).await?,

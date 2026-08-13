@@ -2,10 +2,13 @@ STAGE     ?= production
 FUNCTIONS := api ws cron
 DIST_DIR  := dist
 
+BINS         := api ws cron diffusion-agent
+S3_BIN_BUCKET := s3://virginia-ramadoka/bin
+
 TF_VARS := -var="stage=$(STAGE)"
 
 .PHONY: all verify fmt test build package plan deploy run \
-        invoke-api invoke-ws invoke-cron tf-init clean
+        invoke-api invoke-ws invoke-cron tf-init clean deploy-bin
 
 all: verify test build
 
@@ -33,6 +36,14 @@ package: build
 	@for fn in $(FUNCTIONS); do \
 		echo "unzipped size $$fn: $$(du -h target/lambda/$$fn/bootstrap | cut -f1)"; \
 		zip -j $(DIST_DIR)/$$fn.zip target/lambda/$$fn/bootstrap .env.production; \
+	done
+
+# --- standalone binary deploy (e.g. diffusion-agent on EC2) ---
+
+deploy-bin:
+	cargo build --release
+	@for bin in $(BINS); do \
+		aws s3 cp target/release/$$bin $(S3_BIN_BUCKET)/$$bin; \
 	done
 
 # --- local run ---

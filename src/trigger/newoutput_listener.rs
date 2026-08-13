@@ -1,24 +1,29 @@
-use std::{cell::Cell, path::Path, rc::Rc};
+use std::{
+    cell::{Cell, OnceCell},
+    path::{Path, PathBuf},
+    rc::Rc,
+};
 
-use notify::{Event, RecursiveMode, Watcher};
+use notify::{Event, INotifyWatcher, RecursiveMode, Watcher};
 use tokio::sync::mpsc::{self, UnboundedReceiver};
 
 use crate::{
     application::usecases::agent::{
-        save_image::SaveImage,
+        save_image::SaveOutput,
         traits::{AgentClients, AgentRepos},
     },
     pkg::types::time::Timestamp,
 };
 
-pub struct NewImageListener<C: AgentClients, R: AgentRepos> {
+pub struct NewOutputListener<C: AgentClients, R: AgentRepos> {
     clients: Rc<C>,
     repos: Rc<R>,
     dir: String,
     last_active: Rc<Cell<Timestamp>>,
+    watcher: OnceCell<INotifyWatcher>,
 }
 
-impl<C: AgentClients, R: AgentRepos> NewImageListener<C, R> {
+impl<C: AgentClients, R: AgentRepos> NewOutputListener<C, R> {
     pub fn new(
         clients: Rc<C>,
         repos: Rc<R>,
@@ -30,6 +35,7 @@ impl<C: AgentClients, R: AgentRepos> NewImageListener<C, R> {
             repos,
             dir,
             last_active,
+            watcher: OnceCell::new(),
         }
     }
 
@@ -38,25 +44,30 @@ impl<C: AgentClients, R: AgentRepos> NewImageListener<C, R> {
         event.kind.is_create()
     }
 
+    fn watchdir(&self) -> PathBuf {
+        PathBuf::from(self.dir.clone())
+    }
+
     /**
      */
     async fn handle_change(&self, event: &Event) -> anyhow::Result<()> {
-        let extensions = vec![".png", ".jpg", ".jpeg"];
-        let images = event
+        let extensions = vec![".png", ".jpg", ".jpeg", ".mp4", ".webp"];
+        let files = event
             .paths
             .iter()
-            .filter(|x| extensions.iter().any(|e| x.ends_with(e)));
-        let mut image_count = 0;
-        for image_path in images {
-            image_count += 1;
+            .filter(|x| extensions.iter().any(|e| x.to_string_lossy().ends_with(e)));
+        let mut output_count = 0;
+        for output_path in files {
+            tracing::info!("detected change for: {}", output_path.display());
+            output_count += 1;
             let clients = self.clients.clone();
             let repos = self.repos.clone();
-            let path = image_path.clone();
+            let path = output_path.clone();
             let now = Timestamp::now();
-            let saveimage = SaveImage::new(clients, repos, path, now);
-            saveimage.exec().await?;
+            let saveoutput = SaveOutput::new(clients, repos, self.watchdir(), path, now);
+            saveoutput.exec().await?;
         }
-        if image_count == 0 {
+        if output_count == 0 {
             return Ok(());
         }
         self.record_ok();
@@ -80,11 +91,12 @@ impl<C: AgentClients, R: AgentRepos> NewImageListener<C, R> {
         // no polling. The watcher must stay alive for as long as we want events, so it
         // lives in this stack frame for the duration of the loop below.
         let (tx, rx) = mpsc::unbounded_channel::<notify::Result<Event>>();
-
         let mut watcher = notify::recommended_watcher(move |res| {
             let _ = tx.send(res);
         })?;
+        tracing::debug!("listening to changes in: {}", &self.dir);
         watcher.watch(Path::new(&self.dir), RecursiveMode::Recursive)?;
+        self.watcher.set(watcher).expect("should succeed");
         Ok(rx)
     }
 

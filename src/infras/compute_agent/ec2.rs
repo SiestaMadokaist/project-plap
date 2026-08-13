@@ -1,11 +1,12 @@
-use std::cell::OnceCell;
-
 use serde::{Deserialize, Serialize};
+use tokio::sync::OnceCell;
 
 use crate::{
     application::ports::clients::compute_agent::ComputeAgent,
     domain::commands::compute::{ComputeInstanceID, ComputeRegion},
 };
+
+const METADATA: &str = "http://169.254.169.254/latest";
 
 // pub trait ComputeEngine<Client> {
 //     // {
@@ -36,27 +37,53 @@ struct Document {
 }
 struct Memo {
     document: OnceCell<Document>,
+    ip: OnceCell<String>,
 }
 pub struct EC2Agent {
+    client: reqwest::Client,
     memo: Memo,
 }
 
 impl EC2Agent {
     pub fn new() -> Self {
         Self {
+            client: reqwest::Client::new(),
             memo: Memo {
                 document: OnceCell::new(),
+                ip: OnceCell::new(),
             },
         }
     }
+
+    async fn token(&self) -> anyhow::Result<String> {
+        let token = self
+            .client
+            .put(format!("{METADATA}/api/token"))
+            .header("X-aws-ec2-metadata-token-ttl-seconds", "21600")
+            .send()
+            .await?
+            .text()
+            .await?;
+        Ok(token)
+    }
+
     async fn document(&self) -> anyhow::Result<Document> {
-        //  const { data: token } = await axios.put<string>(`${METADATA}/api/token`, null, {
-        //     headers: { "X-aws-ec2-metadata-token-ttl-seconds": "21600" },
-        // });
-        // const { data: region } = await axios.get<string>(`${METADATA}/dynamic/instance-identity/document`, {
-        //     headers: { "X-aws-ec2-metadata-token": token },
-        // });
-        let memoized = self.memo.document.get_or_init(|| todo!());
+        let memoized = self
+            .memo
+            .document
+            .get_or_try_init(async || {
+                let token = self.token().await?;
+
+                self.client
+                    .get(format!("{METADATA}/dynamic/instance-identity/document"))
+                    .header("X-aws-ec2-metadata-token", token)
+                    .send()
+                    .await?
+                    .json::<Document>()
+                    .await
+                    .map_err(anyhow::Error::from)
+            })
+            .await?;
         Ok(memoized.clone())
     }
 }
@@ -64,7 +91,23 @@ impl EC2Agent {
 #[async_trait::async_trait(?Send)]
 impl ComputeAgent for EC2Agent {
     async fn ip(&self) -> anyhow::Result<String> {
-        todo!();
+        let memoized = self
+            .memo
+            .ip
+            .get_or_try_init(async || {
+                let token = self.token().await?;
+
+                self.client
+                    .get(format!("{METADATA}/meta-data/public-ipv4"))
+                    .header("X-aws-ec2-metadata-token", token)
+                    .send()
+                    .await?
+                    .text()
+                    .await
+                    .map_err(anyhow::Error::from)
+            })
+            .await?;
+        Ok(memoized.clone())
     }
     async fn instance_id(&self) -> anyhow::Result<ComputeInstanceID> {
         let doc = self.document().await?;

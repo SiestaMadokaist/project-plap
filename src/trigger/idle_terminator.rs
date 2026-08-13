@@ -1,10 +1,7 @@
 use crate::{
-    application::{
-        ports::clients::{compute::ComputeEngines, compute_agent::ComputeAgent},
-        usecases::agent::{
-            manage_compute::ManageCompute,
-            traits::{AgentClients, AgentRepos},
-        },
+    application::usecases::agent::{
+        manage_compute::ManageCompute,
+        traits::{AgentClients, AgentRepos},
     },
     domain::commands::compute::{ComputeArgs, ComputeCommand, ComputeInstanceID, ComputeRegion},
     pkg::types::{
@@ -14,10 +11,7 @@ use crate::{
 };
 use std::{cell::OnceCell, rc::Rc};
 pub struct Memo {
-    ip: OnceCell<String>,
-    instance_id: OnceCell<ComputeInstanceID>,
     action: OnceCell<ComputeCommand>,
-    document: OnceCell<()>,
 }
 
 /**
@@ -48,19 +42,10 @@ impl<C: AgentClients, R: AgentRepos> IdleTerminator<C, R> {
             tolerance,
             interval,
             memo: Memo {
-                ip: OnceCell::new(),
-                instance_id: OnceCell::new(),
                 action: OnceCell::new(),
-                document: OnceCell::new(),
             },
         }
     }
-
-    // async fn ip(&self) -> anyhow::Result<String> {
-    //     let agent = self.clients.agent();
-    //     let ip = agent.ip().await?;
-    //     Ok(ip)
-    // }
 
     async fn instance_id(&self) -> anyhow::Result<ComputeInstanceID> {
         let agent = self.clients.agent();
@@ -76,10 +61,7 @@ impl<C: AgentClients, R: AgentRepos> IdleTerminator<C, R> {
 
     async fn action(&self) -> anyhow::Result<&ComputeCommand> {
         // read action to perform from dynamodb
-        let command = self.memo.action.get_or_init(|| {
-            // let table = self.repos.bi
-            todo!()
-        });
+        let command = self.memo.action.get_or_init(|| ComputeCommand::Stop);
         Ok(command)
     }
 
@@ -111,7 +93,13 @@ impl<C: AgentClients, R: AgentRepos> IdleTerminator<C, R> {
         );
         let args = self.compute_args().await?;
         let manage = ManageCompute::new(self.clients.clone(), args);
-        manage.exec().await.expect("failed to terminate instance");
+        let termination = manage.exec().await;
+        match termination {
+            Err(x) => {
+                tracing::error!("termination failed with error: {}", x);
+            }
+            Ok(_) => {}
+        };
         Ok(())
     }
 

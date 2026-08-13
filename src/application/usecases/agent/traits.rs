@@ -13,7 +13,8 @@ trait_repos!(
 trait_clients!(
     AgentClients,
     clients::container::HasDiffusion,
-    clients::container::HasStorage,
+    clients::container::HasModelStorage,
+    clients::container::HasOutputStorage,
     clients::container::HasEngines,
     clients::container::HasNotification,
     clients::container::HasComputeAgent,

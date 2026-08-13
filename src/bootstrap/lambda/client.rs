@@ -5,7 +5,7 @@ use aws_config::SdkConfig;
 
 use crate::{
     application::ports::clients::container::{
-        HasEngines, HasNotification, HasRaws, HasStorage, HasTranslator,
+        HasEngines, HasModelStorage, HasNotification, HasOutputStorage, HasRaws, HasTranslator,
     },
     config::lambda_env::LambdaEnv,
     domain::commands::compute::ComputeRegion,
@@ -21,7 +21,8 @@ use crate::{
 pub struct LambdaClients {
     translator: ChatGPT,
     raws: Syosetu,
-    storage: S3Storage,
+    model_storage: S3Storage,
+    output_storage: S3Storage,
     notification: Discord,
     engines: EC2MultiRegion,
 }
@@ -33,12 +34,6 @@ impl LambdaClients {
 
     fn new(env: LambdaEnv, config: SdkConfig) -> Self {
         let s3 = aws_sdk_s3::Client::new(&config);
-        let own_region = config
-            .region()
-            .expect("AWS region could not be resolved (env var, profile, or EC2 IMDS)")
-            .as_ref()
-            .try_into()
-            .expect("resolved AWS region is not a ComputeRegion this app knows about");
         let openai = OpenAIClient::<OpenAIConfig>::new();
         let proxy = match (
             env.proxy_host,
@@ -62,11 +57,24 @@ impl LambdaClients {
         let general_clients = Self {
             translator: ChatGPT::new(openai, &env.openai_model),
             raws: Syosetu::new(env.syosetu_host, proxy),
-            storage: S3Storage::new(
-                s3,
-                own_region,
-                env.tl_bucket,
-                env.tl_prefix,
+            output_storage: S3Storage::new(
+                config.clone(),
+                env.tl_region
+                    .as_str()
+                    .try_into()
+                    .expect("env.tl_region must be a valid REGION"),
+                env.tl_bucket.clone(),
+                env.tl_prefix.clone(),
+                env.max_data_transfer,
+            ),
+            model_storage: S3Storage::new(
+                config.clone(),
+                env.tl_region
+                    .as_str()
+                    .try_into()
+                    .expect("env.tl_region must be a valid REGION"),
+                env.tl_bucket.clone(),
+                env.tl_prefix.clone(),
                 env.max_data_transfer,
             ),
             notification: Discord::new(env.discord_webhook_url),
@@ -91,10 +99,17 @@ impl HasRaws for LambdaClients {
     }
 }
 
-impl HasStorage for LambdaClients {
-    type Storage = S3Storage;
-    fn storage(&self) -> &Self::Storage {
-        &self.storage
+impl HasModelStorage for LambdaClients {
+    type ModelStorage = S3Storage;
+    fn model_storage(&self) -> &Self::ModelStorage {
+        &self.model_storage
+    }
+}
+
+impl HasOutputStorage for LambdaClients {
+    type OutputStorage = S3Storage;
+    fn output_storage(&self) -> &Self::OutputStorage {
+        &self.output_storage
     }
 }
 
