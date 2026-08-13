@@ -1,4 +1,7 @@
-use crate::{config::helper::var_or, pkg::enums::stage::Stage};
+use crate::{
+    config::helper::{var_or, var_second},
+    pkg::{enums::stage::Stage, types::time::Second},
+};
 use std::env;
 
 pub struct DiffusionEnv {
@@ -9,6 +12,9 @@ pub struct DiffusionEnv {
     pub discord_webhook_url: String,
     pub output_bucket: String,
     pub output_prefix: String,
+    pub watch_interval: Second,
+    pub queue_interval: Second,
+    pub idle_tolerance: Second,
 }
 const DEFAULT_MAX_DATA_TRANSFER_BYTES: i64 = 30 * 1024 * 1024 * 1024;
 
@@ -16,7 +22,7 @@ impl DiffusionEnv {
     pub fn from_env() -> Self {
         Self {
             stage: var_or("STAGE", "production"),
-            watch_dir: var_or("WATCH_DIR", "./"),
+            watch_dir: env::var("WATCH_DIR").expect("WATCH_DIR must be set"),
             max_data_transfer: env::var("MAX_DATA_TRANSFER")
                 .ok()
                 .and_then(|v| v.parse().ok())
@@ -26,6 +32,9 @@ impl DiffusionEnv {
                 .expect("DISCORD_WEBHOOK_URL must be set"),
             output_bucket: env::var("OUTPUT_BUCKET").expect("OUTPUT_BUCKET must be set"),
             output_prefix: var_or("OUTPUT_PREFIX", ""),
+            watch_interval: var_second("WATCH_INTERVAL"),
+            queue_interval: var_second("QUEUE_INTERVAL"),
+            idle_tolerance: var_second("IDLE_TOLERANCE"),
         }
     }
     pub fn stage(&self) -> Stage {

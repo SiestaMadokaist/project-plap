@@ -4,7 +4,9 @@ use aws_sdk_dynamodb::Client;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    application::ports::repository::container::{AllRepos, RepositoryContainer},
+    application::ports::repository::container::{
+        HasAgentCommand, HasHotReload, HasPromptHistory, HasTranslation, HasUser,
+    },
     infras::repos::{
         dynamo::{
             agent_command::DDBAgentCommandRepository, hotreload::DDBHotReloadRepository,
@@ -68,31 +70,37 @@ impl LambdaRepos {
     }
 }
 
-impl RepositoryContainer for LambdaRepos {
+impl HasTranslation for LambdaRepos {
     type Translation = DDBTranslationRepository;
-    type User = DDBUserRepository;
-    type AgentCommand = DDBAgentCommandRepository;
-    type HotReload = DDBHotReloadRepository;
-    type PromptHistory = PromptRepository;
     fn translation(&self) -> &Self::Translation {
         &self.translation
     }
+}
 
+impl HasUser for LambdaRepos {
+    type User = DDBUserRepository;
     fn user(&self) -> &Self::User {
         &self.user
     }
+}
 
+impl HasAgentCommand for LambdaRepos {
+    type AgentCommand = DDBAgentCommandRepository;
     fn agent_command(&self) -> &Self::AgentCommand {
         &self.agent_command
     }
+}
 
+impl HasHotReload for LambdaRepos {
+    type HotReload = DDBHotReloadRepository;
     fn hotreload(&self) -> &Self::HotReload {
         &self.hotreload
     }
+}
 
+impl HasPromptHistory for LambdaRepos {
+    type PromptHistory = PromptRepository;
     fn prompt(&self) -> &Self::PromptHistory {
         &self.prompt
     }
 }
-
-impl AllRepos for LambdaRepos {}

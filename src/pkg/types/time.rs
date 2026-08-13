@@ -61,7 +61,7 @@ impl From<DateTime<Utc>> for Timestamp {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Second(pub i64);
 
 impl Second {
@@ -75,6 +75,12 @@ impl Second {
 
     pub fn eq(&self, other: &Second) -> bool {
         self.0 == other.0
+    }
+}
+
+impl From<i64> for Second {
+    fn from(value: i64) -> Self {
+        Second(value)
     }
 }
 

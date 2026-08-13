@@ -103,11 +103,17 @@ impl<C: AgentClients, R: AgentRepos> IdleTerminator<C, R> {
         let last_ok = &self.last_active.get();
         let delta = now.sub(last_ok);
         if delta.lt(tolerance) {
+            tracing::trace!("inactive for {} second tolerable", delta.0);
             return Ok(());
         }
+        tracing::info!(
+            "inactive for {} second, beyond tolerance of {} second, terminating",
+            delta.0,
+            tolerance.0
+        );
         let args = self.compute_args().await?;
         let manage = ManageCompute::new(self.clients.clone(), args);
-        manage.exec().await?;
+        manage.exec().await.expect("failed to terminate instance");
         Ok(())
     }
 

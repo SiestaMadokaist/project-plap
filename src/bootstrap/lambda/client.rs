@@ -4,9 +4,8 @@ use async_openai::{config::OpenAIConfig, Client as OpenAIClient};
 use aws_config::SdkConfig;
 
 use crate::{
-    application::ports::clients::{
-        container::{AllClients, ClientContainer},
-        diffusions::DiffusionClient,
+    application::ports::clients::container::{
+        HasEngines, HasNotification, HasRaws, HasStorage, HasTranslator,
     },
     config::lambda_env::LambdaEnv,
     domain::commands::compute::ComputeRegion,
@@ -78,32 +77,37 @@ impl LambdaClients {
     }
 }
 
-impl ClientContainer for LambdaClients {
+impl HasTranslator for LambdaClients {
     type Translator = ChatGPT;
-    type Raws = Syosetu;
-    type Storage = S3Storage;
-    type Notification = Discord;
-    type Engines = EC2MultiRegion;
-
     fn translator(&self) -> &Self::Translator {
         &self.translator
     }
+}
+
+impl HasRaws for LambdaClients {
+    type Raws = Syosetu;
     fn raws(&self) -> &Self::Raws {
         &self.raws
     }
+}
+
+impl HasStorage for LambdaClients {
+    type Storage = S3Storage;
     fn storage(&self) -> &Self::Storage {
         &self.storage
     }
+}
+
+impl HasNotification for LambdaClients {
+    type Notification = Discord;
     fn notification(&self) -> &Self::Notification {
         &self.notification
     }
+}
+
+impl HasEngines for LambdaClients {
+    type Engines = EC2MultiRegion;
     fn engines(&self) -> &Self::Engines {
         &self.engines
     }
-
-    fn diffusion(&self) -> &dyn DiffusionClient {
-        todo!()
-    }
 }
-
-impl AllClients for LambdaClients {}

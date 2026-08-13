@@ -3,24 +3,24 @@ use std::rc::Rc;
 use rust_api::{
     application::{
         dto::{translation::TranslationDTO, void::VoidDTO},
-        ports::{clients::container::AllClients, repository::container::AllRepos},
         usecases::{
             bases::Usecase,
             translations::{
                 init::{self},
                 run,
+                traits::{TLClients, TLRepos},
             },
-        }, // usecases::translations::run::{self},
+        },
     },
     domain::errors::DomainError,
 };
 
-pub struct TranslationController<R: AllRepos, C: AllClients> {
+pub struct TranslationController<R: TLRepos, C: TLClients> {
     _repo: Rc<R>,
     _client: Rc<C>,
 }
 
-impl<R: AllRepos, C: AllClients> TranslationController<R, C> {
+impl<R: TLRepos, C: TLClients> TranslationController<R, C> {
     pub fn new(_repo: Rc<R>, _client: Rc<C>) -> Self {
         TranslationController { _repo, _client }
     }

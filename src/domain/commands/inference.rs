@@ -2,8 +2,12 @@ use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 
 use crate::pkg::types::unit;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WorkflowId(pub String);
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct InferenceConfig {
+    workflow_id: Option<WorkflowId>,
     positive: String,
     negative: String,
     width: unit::Px,
