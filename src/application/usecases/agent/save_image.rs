@@ -106,11 +106,16 @@ impl<C: SaveOutputClient, R: SaveOutputRepos> SaveOutput<C, R> {
         let data = self.ioread().await?;
         let remote_path = self.store_path();
         let local_path = self.relative_path();
-        tracing::debug!("uploading {}", local_path.display());
+        tracing::debug!("uploading {} to {}", local_path.display(), storage.bucket());
+        let err_msg = format!(
+            "file transfer failure when uploading {} to {}",
+            local_path.display(),
+            storage.bucket()
+        );
         storage
             .write(remote_path, data)
             .await
-            .map_err(|_| DomainError::ApiError("file transfer failure".into()).into())
+            .map_err(|_| DomainError::ApiError(err_msg).into())
     }
 
     pub async fn exec(&self) -> anyhow::Result<()> {

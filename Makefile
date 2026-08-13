@@ -2,7 +2,7 @@ STAGE     ?= production
 FUNCTIONS := api ws cron
 DIST_DIR  := dist
 
-BINS         := api ws cron diffusion-agent
+BINS         := diffusion-agent
 S3_BIN_BUCKET := s3://virginia-ramadoka/bin
 
 TF_VARS := -var="stage=$(STAGE)"

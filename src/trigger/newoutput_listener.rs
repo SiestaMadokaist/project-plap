@@ -4,7 +4,10 @@ use std::{
     rc::Rc,
 };
 
-use notify::{Event, INotifyWatcher, RecursiveMode, Watcher};
+use notify::{
+    event::{AccessKind, AccessMode},
+    Event, EventKind, INotifyWatcher, RecursiveMode, Watcher,
+};
 use tokio::sync::mpsc::{self, UnboundedReceiver};
 
 use crate::{
@@ -41,7 +44,10 @@ impl<C: AgentClients, R: AgentRepos> NewOutputListener<C, R> {
 
     // filter if the change is something we care about.
     fn changed(&self, event: &Event) -> bool {
-        event.kind.is_create()
+        matches!(
+            event.kind,
+            EventKind::Access(AccessKind::Close(AccessMode::Write))
+        )
     }
 
     fn watchdir(&self) -> PathBuf {

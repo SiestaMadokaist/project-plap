@@ -173,13 +173,11 @@ impl S3Storage {
         if recursive {
             cmd.arg("--recursive");
         }
-
         let output = cmd
             .stdin(Stdio::null())
             .output()
             .await
             .map_err(|e| DomainError::Disconnected(e.to_string()))?;
-
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             return Err(DomainError::Disconnected(format!(
@@ -207,7 +205,6 @@ impl StorageClient for S3Storage {
             );
             return Err(err);
         }
-
         let key = self.key(remote);
         let (size, recursive) = self.remote_extent(&key).await?;
         self.assert_within_limit(size)?;
@@ -236,7 +233,7 @@ impl StorageClient for S3Storage {
         let src = local
             .to_str()
             .ok_or_else(|| DomainError::Serialize("local path is not valid UTF-8".into()))?;
-        let dst = format!("s3://{}/{}/{key}", self.bucket, self.prefix);
+        let dst = format!("s3://{}/{key}", self.bucket);
         self.spawn_cp(src, &dst, recursive).await
     }
 
@@ -256,7 +253,6 @@ impl StorageClient for S3Storage {
             .await
             .map_err(|e| DomainError::Disconnected(e.to_string()))?
             .into_bytes();
-
         String::from_utf8(bytes.to_vec()).map_err(|e| DomainError::Serialize(e.to_string()))
     }
 
@@ -294,6 +290,7 @@ impl StorageClient for S3Storage {
             .send()
             .await
             .map_err(|e| DomainError::Disconnected(e.to_string()))?;
+        tracing::debug!("file written into {path}");
         Ok(())
     }
 }

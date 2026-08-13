@@ -8,6 +8,8 @@ pub enum ComputeRegion {
     AwsApSoutheast1,
     #[serde(rename = "ap-southeast-2")]
     AWSApSoutheast2,
+    #[serde(rename = "ap-southeast-3")]
+    AWSApSoutheast3,
     #[serde(rename = "us-east-1")]
     AWSUsEast1,
 }
@@ -26,6 +28,7 @@ impl TryFrom<&str> for ComputeRegion {
         match value {
             "ap-southeast-1" => Ok(ComputeRegion::AwsApSoutheast1),
             "ap-southeast-2" => Ok(ComputeRegion::AWSApSoutheast2),
+            "ap-southeast-3" => Ok(ComputeRegion::AWSApSoutheast3),
             "us-east-1" => Ok(ComputeRegion::AWSUsEast1),
             other => Err(ComputeError::InvalidRegion(other.to_string())),
         }
