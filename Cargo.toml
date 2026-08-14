@@ -19,6 +19,9 @@ path = "src/bin/cron/main.rs"
 name = "diffusion-agent"
 path = "src/bin/diffusions/main.rs"
 
+[features]
+arkhamstep = ["dep:sqlx"]
+
 [dependencies]
 lambda_runtime = "0.13"
 lambda_http = "0.13"
@@ -26,24 +29,20 @@ tokio = { version = "1", features = ["macros", "process"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tracing = "0.1"
-sqlx = { version = "0.9", features = ["postgres", "runtime-tokio", "tls-rustls"] }
+sqlx = { version = "0.9", features = ["postgres", "runtime-tokio", "tls-rustls"], optional = true }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 async-openai = "0.27"
 aws-config = { version = "1", features = ["behavior-version-latest"] }
 aws-sdk-dynamodb = "1"
 serde_dynamo = { version = "4", features = ["aws-sdk-dynamodb+1"] }
 thiserror = "2"
-typos = "0.10.43"
-typos-vars = "0.10.4"
 chrono = { version = "0.4", features = ["serde"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 scraper = { version = "0.22" }
 async-trait = "0.1"
 dotenvy = "0.15"
 aws-sdk-s3 = "1.133.0"
-aws-sdk-costexplorer = "1.123.0"
 aws-sdk-ec2 = "1.242.0"
-aws-sdk-sqs = "1.105.0"
 anyhow = "1.0.104"
 notify = "8.2.0"
 

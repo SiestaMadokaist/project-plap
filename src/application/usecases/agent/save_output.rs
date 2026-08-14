@@ -100,7 +100,7 @@ impl<C: SaveOutputClient, R: SaveOutputRepos> SaveOutput<C, R> {
             .unwrap_or_else(|_| self.path.clone())
     }
 
-    async fn store_image(&self) -> anyhow::Result<()> {
+    async fn save_output(&self) -> anyhow::Result<()> {
         let c = self.clients.clone();
         let storage = c.output_storage();
         let data = self.ioread().await?;
@@ -120,7 +120,7 @@ impl<C: SaveOutputClient, R: SaveOutputRepos> SaveOutput<C, R> {
 
     pub async fn exec(&self) -> anyhow::Result<()> {
         self.read_exif().await?;
-        self.store_image().await?;
+        self.save_output().await?;
         Ok(())
     }
 }

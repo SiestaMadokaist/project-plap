@@ -12,7 +12,7 @@ use tokio::sync::mpsc::{self, UnboundedReceiver};
 
 use crate::{
     application::usecases::agent::{
-        save_image::SaveOutput,
+        save_output::SaveOutput,
         traits::{AgentClients, AgentRepos},
     },
     pkg::types::time::Timestamp,

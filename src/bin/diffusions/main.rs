@@ -4,7 +4,9 @@ use rust_api::{
     bootstrap::ec2diffusion::{client::EC2DiffusionClients, repo::EC2DiffusionRepo},
     config::diffusion_env::DiffusionEnv,
     pkg::types::{peek::Peek, time::Timestamp},
-    trigger::{idle_terminator::IdleTerminator, newoutput_listener::NewOutputListener},
+    trigger::{
+        commandq::CommandQ, idle_terminator::IdleTerminator, output_listener::NewOutputListener,
+    },
 };
 
 #[tokio::main(flavor = "current_thread")]
@@ -12,7 +14,7 @@ async fn main() -> anyhow::Result<()> {
     rust_api::init_env();
     rust_api::init_tracing();
     let env = DiffusionEnv::from_env();
-    // let queue_interval = env.queue_interval.clone();
+    let queue_interval = env.queue_interval.clone();
     let track_interval = env.watch_interval.clone();
     let idle_tolerance = env.idle_tolerance.clone();
     let config = aws_config::from_env().load().await;
@@ -23,7 +25,7 @@ async fn main() -> anyhow::Result<()> {
     let start_at = Timestamp::now();
     let rc_start_at = Rc::new(Cell::new(start_at));
     let rc_start_peek = Peek::new(rc_start_at.clone());
-    // let queue_handler = CommandQ::new(clients.clone(), repos.clone(), queue_interval);
+    let queue_handler = CommandQ::new(clients.clone(), repos.clone(), queue_interval);
     let activity_tracker = NewOutputListener::new(
         clients.clone(),
         repos.clone(),
@@ -38,7 +40,7 @@ async fn main() -> anyhow::Result<()> {
         track_interval,
     );
     tokio::try_join!(
-        // queue_handler.run(),
+        queue_handler.run(),
         activity_tracker.run(),
         idle_terminator.run()
     )?;

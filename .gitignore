@@ -14,3 +14,4 @@ terraform/*.tfvars.json
 .claude/
 o.txt
 samples/outputs
+samples/inputs

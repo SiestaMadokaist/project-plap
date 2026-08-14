@@ -15,7 +15,6 @@ all: verify test build
 # --- code quality ---
 
 verify:
-	typos
 	cargo check
 	cargo clippy -- -D warnings
 
