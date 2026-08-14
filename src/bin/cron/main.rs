@@ -6,8 +6,8 @@ use rust_api::{
         bases::Usecase,
         translations::{init, run},
     },
-    bootstrap::lambda::{client::LambdaClients, repo::LambdaRepos},
-    config::lambda_env::LambdaEnv,
+    bootstrap::cron::{client::CronClients, repo::CronRepos},
+    config::cron_env::CronEnv,
 };
 use serde::Deserialize;
 
@@ -24,8 +24,8 @@ struct PathParameters {
 }
 
 async fn handler(
-    repo: Rc<LambdaRepos>,
-    client: Rc<LambdaClients>,
+    repo: Rc<CronRepos>,
+    client: Rc<CronClients>,
     event: LambdaEvent<CronEvent>,
 ) -> Result<(), Error> {
     let path_params = &event.payload.path_parameters;
@@ -51,12 +51,12 @@ async fn main() -> Result<(), Error> {
     rust_api::init_env();
     rust_api::init_tracing();
 
-    let env = LambdaEnv::from_env();
+    let env = CronEnv::from_env();
     let config = aws_config::from_env().load().await;
     let dynamo = aws_sdk_dynamodb::Client::new(&config);
 
-    let repo = LambdaRepos::rc(&dynamo, env.stage());
-    let client = LambdaClients::rc(env, config);
+    let repo = CronRepos::rc(&dynamo, env.stage());
+    let client = CronClients::rc(env, config);
 
     run(service_fn(move |event| {
         let r = repo.clone();

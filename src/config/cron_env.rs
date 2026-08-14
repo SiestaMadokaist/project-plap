@@ -1,11 +1,9 @@
 use std::env;
 
 use crate::{config::helper::var_or, pkg::enums::stage::Stage};
-pub struct LambdaEnv {
+pub struct CronEnv {
     stage: String,
     pub translation_table: String,
-    pub user_table: String,
-    pub agent_command_table: String,
     pub openai_model: String,
     pub syosetu_host: String,
     pub proxy_host: Option<String>,
@@ -21,13 +19,11 @@ pub struct LambdaEnv {
 
 const LAMBDA_MAX_DATA_TRANSFER_BYTES: i64 = 1 * 1024 * 1024 * 1024;
 
-impl LambdaEnv {
+impl CronEnv {
     pub fn from_env() -> Self {
         Self {
             stage: var_or("STAGE", "production"),
             translation_table: var_or("TRANSLATION_TABLE", "production-translations"),
-            user_table: var_or("USER_TABLE", "production-users"),
-            agent_command_table: var_or("AGENT_COMMAND_TABLE", "production-agent-commands"),
             openai_model: var_or("OPENAI_MODEL", "gpt-4o"),
             syosetu_host: var_or("SYOSETU_HOST", "https://ncode.syosetu.com"),
             proxy_host: env::var("PROXY_HOST").ok(),
