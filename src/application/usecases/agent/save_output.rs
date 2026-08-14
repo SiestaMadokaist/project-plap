@@ -5,6 +5,7 @@ use crate::{
     },
     domain::{errors::DomainError, storage::StoragePath},
     pkg::{
+        exif::{comfyui::ComfyUI, exif::Exif},
         macros::{trait_clients, trait_repos},
         types::time::Timestamp,
     },
@@ -69,9 +70,10 @@ impl<C: SaveOutputClient, R: SaveOutputRepos> SaveOutput<C, R> {
      * extract exif from image
      * store exif to bigquery
      */
-    async fn read_exif(&self) -> anyhow::Result<()> {
-        let data = self.ioread().await;
-        Ok(())
+    async fn read_exif(&self) -> anyhow::Result<Exif<ComfyUI>> {
+        let data = self.ioread().await?;
+        let exif = Exif::<ComfyUI>::new(data.clone());
+        Ok(exif)
     }
 
     fn store_path(&self) -> StoragePath {

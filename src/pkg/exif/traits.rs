@@ -6,7 +6,7 @@ pub trait WebUI {
     type Memo: Default;
 }
 
-pub(super) trait ExifTraits {
+pub trait ExifTraits {
     fn positive(&self) -> Result<String, ExifError>;
     fn negative(&self) -> Result<String, ExifError>;
     fn checkpoint(&self) -> Result<String, ExifError>;

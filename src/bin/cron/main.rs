@@ -1,16 +1,15 @@
-pub mod resources;
-
 use std::rc::Rc;
 
 use lambda_runtime::{run, service_fn, Error, LambdaEvent};
 use rust_api::{
-    application::usecases::translations::{init, run},
-    bootstrap::lambda::{self, client::LambdaClients, repo::LambdaRepos},
+    application::usecases::{
+        bases::Usecase,
+        translations::{init, run},
+    },
+    bootstrap::lambda::{client::LambdaClients, repo::LambdaRepos},
     config::lambda_env::LambdaEnv,
 };
 use serde::Deserialize;
-
-use crate::resources::translations::controller::TranslationController;
 
 #[derive(Deserialize)]
 struct CronEvent {
@@ -31,15 +30,16 @@ async fn handler(
 ) -> Result<(), Error> {
     let path_params = &event.payload.path_parameters;
     let proxy = &path_params.proxy;
-    let controller = TranslationController::new(repo, client);
     match proxy.as_str() {
         "cron/translate" => {
-            let param: run::Params = serde_json::from_value(path_params.data.clone())?;
-            controller.run(param).await?;
+            let params: run::Params = serde_json::from_value(path_params.data.clone())?;
+            let action = run::Run::new(repo.clone(), client.clone(), params);
+            action.exec().await?;
         }
         "cron/init" => {
-            let param: init::Params = serde_json::from_value(path_params.data.clone())?;
-            controller.init(param).await?;
+            let params: init::Params = serde_json::from_value(path_params.data.clone())?;
+            let action = init::Init::new(repo.clone(), client.clone(), params);
+            action.exec().await?;
         }
         _ => tracing::warn!(proxy = proxy.as_str(), "unknown cron route"),
     }

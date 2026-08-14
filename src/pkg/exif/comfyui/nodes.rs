@@ -59,12 +59,12 @@ impl ComfyWorkflow {
 
     pub fn negative(&self) -> &Option<String> {
         let result = self.memo.negative.get_or_init(|| {
-            let positive = self
+            let negative = self
                 .nodes
                 .iter()
                 .map(|x| x.negative_clip())
                 .find(|x| matches!(x, Some(_)))??;
-            return Some(positive.clone());
+            return Some(negative.clone());
         });
         return result;
     }
