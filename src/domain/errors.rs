@@ -6,6 +6,9 @@ pub enum DomainError {
     #[error("prerequisite not satisfied")]
     Prerequisite(String),
 
+    #[error("action: {0} is not allowed")]
+    NotAllowed(String),
+
     #[error("not implemented")]
     NotImplemented,
 

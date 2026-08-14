@@ -8,16 +8,22 @@ use crate::{
         },
         usecases::agent::inference::RunInference,
     },
-    domain::commands::{
-        command::{
-            Action::{Inference, Network},
-            CommandDomain, Progression,
+    domain::{
+        commands::{
+            command::{
+                Action::{Inference, Network},
+                CommandDomain, Progression,
+            },
+            inference::InferenceArgs,
+            network::{
+                ModelDst,
+                ModelSrc::{self, Civitai},
+                NetworkAction::{Download, Upload},
+                NetworkArgs,
+            },
         },
-        inference::InferenceArgs,
-        network::{
-            NetworkAction::{Download, Upload},
-            NetworkArgs,
-        },
+        errors::DomainError,
+        storage::StoragePath,
     },
     pkg::macros::{trait_clients, trait_repos},
 };
@@ -60,12 +66,41 @@ impl<R: CommandHandlerRepos, C: CommandHandlerClients> CommandHandler<R, C> {
     }
 
     async fn handle_network(&self, arg: &NetworkArgs) -> anyhow::Result<()> {
-        let storage = self.client.model_storage();
-        match arg.action {
-            Download => storage.download(&arg.remote, &arg.local).await?,
-            Upload => storage.upload(&arg.local, &arg.remote).await?,
+        let result: anyhow::Result<()> = match &arg.src {
+            ModelSrc::S3(s) => match &arg.dst {
+                ModelDst::Local(d) => {
+                    let storage = self.client.model_storage();
+                    storage.download(&s.path, &d.path).await?;
+                    if d.forward {
+                        let fwd = d.path.to_str().unwrap_or_default();
+                        if fwd == "" {
+                            let msg = "local path must be defined first";
+                            let err = DomainError::Prerequisite(msg.into());
+                            Err(err.into())
+                        } else {
+                            storage.upload(&d.path, &StoragePath(fwd.into())).await?;
+                            Ok(())
+                        }
+                    } else {
+                        Ok(())
+                    }
+                }
+                ModelDst::S3(_) => {
+                    let msg = "transfer between s3 is not supported";
+                    let err = DomainError::NotAllowed(msg.into());
+                    Err(err.into())
+                }
+            },
+            ModelSrc::Civitai(i) => match &arg.dst {
+                ModelDst::S3(_) => {
+                    let msg = "external to s3 must use local with forward = true";
+                    let err = DomainError::NotAllowed(msg.into());
+                    Err(err.into())
+                }
+                ModelDst::Local(_) => Err(DomainError::NotImplemented.into()),
+            },
         };
-        todo!();
+        result
     }
 
     async fn handle_inference(&self, arg: &InferenceArgs) -> anyhow::Result<()> {

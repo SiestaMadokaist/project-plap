@@ -8,9 +8,7 @@ use crate::{
         HasNotification, HasOutputStorage, HasRaws, HasTranslator,
     },
     config::cron_env::CronEnv,
-    domain::commands::compute::ComputeRegion,
     infras::{
-        compute::ec2::EC2MultiRegion,
         notifications::discord::Discord,
         raws::syosetu::{ProxyConfig, Syosetu},
         storage::s3::S3Storage,

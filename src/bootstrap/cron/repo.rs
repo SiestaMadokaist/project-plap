@@ -4,15 +4,9 @@ use aws_sdk_dynamodb::Client;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    application::ports::repository::container::{
-        HasAgentCommand, HasHotReload, HasPromptHistory, HasTranslation, HasUser,
-    },
-    infras::repos::{
-        dynamo::{
-            agent_command::DDBAgentCommandRepository, hotreload::DDBHotReloadRepository,
-            translation::DDBTranslationRepository, user::DDBUserRepository,
-        },
-        prompts::PromptRepository,
+    application::ports::repository::container::{HasHotReload, HasTranslation},
+    infras::repos::dynamo::{
+        hotreload::DDBHotReloadRepository, translation::DDBTranslationRepository,
     },
     pkg::{enums::stage::Stage, macros::displayable},
 };

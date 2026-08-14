@@ -30,13 +30,6 @@ impl From<CommandStage> for String {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum ModelProvider {
-    S3,
-    Civitai,
-    Https,
-}
 id_type!(ActionID);
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
@@ -92,7 +85,7 @@ pub struct CommandDomain {
 }
 
 impl CommandDomain {
-    fn status(&self) -> String {
+    pub fn status(&self) -> String {
         let s = match self.stage {
             CommandStage::Completed => "completed",
             CommandStage::InProgress => {
