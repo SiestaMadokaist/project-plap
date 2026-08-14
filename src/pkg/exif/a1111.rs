@@ -1,6 +1,6 @@
 use crate::pkg::exif::{
     exif::Exif,
-    traits::{ExifTraits, WebUI},
+    traits::{ExifError, ExifTraits, WebUI},
 };
 
 pub struct A1111 {}
@@ -13,13 +13,15 @@ impl WebUI for A1111 {
 }
 
 impl ExifTraits for Exif<A1111> {
-    fn checkpoints(&self) -> &str {
+    fn positive(&self) -> Result<String, ExifError> {
         todo!()
     }
-    fn negative(&self) -> &str {
+
+    fn negative(&self) -> Result<String, ExifError> {
         todo!()
     }
-    fn positive(&self) -> &str {
-        todo!()
+
+    fn checkpoint(&self) -> Result<String, ExifError> {
+        todo!();
     }
 }

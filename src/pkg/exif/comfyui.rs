@@ -1,15 +1,15 @@
-use std::{cell::OnceCell, path::PathBuf};
+use std::cell::OnceCell;
 pub mod nodes;
 use crate::pkg::exif::{
     comfyui::nodes::ComfyWorkflow,
     exif::Exif,
-    traits::{ExifTraits, WebUI},
+    traits::{ExifError, ExifTraits, WebUI},
 };
 
 #[derive(Default)]
 pub struct ComfyMemo {
     range: OnceCell<(usize, usize)>,
-    workflow: OnceCell<Result<ComfyWorkflow, serde_json::Error>>,
+    workflow: OnceCell<Result<ComfyWorkflow, ExifError>>,
 }
 
 pub struct ComfyUI {}
@@ -29,28 +29,42 @@ impl Exif<ComfyUI> {
         }
     }
 
-    pub fn workflow(&self) -> &Result<ComfyWorkflow, serde_json::Error> {
+    pub fn workflow(&self) -> &Result<ComfyWorkflow, ExifError> {
         let memoized = self.memo.workflow.get_or_init(|| {
             let string = self.text();
-            let wf: Result<ComfyWorkflow, serde_json::Error> = serde_json::from_str(&string);
+            let wf: Result<ComfyWorkflow, ExifError> = serde_json::from_str(&string).map_err(|e| {
+                tracing::error!("Parsing Failed: {}", e);
+                ExifError::ParsingFailed
+            });
             wf
         });
         memoized
     }
 
-    pub fn get_str(&self) -> &str {
+    fn get_str(&self) -> Result<&str, ExifError> {
+        if !self.valid() {
+            return Err(ExifError::InvalidRange);
+        }
         let (from, to) = self.text_range();
-        let text = std::str::from_utf8(&self.data[*from..*to]).expect("trust me");
+        let text = std::str::from_utf8(&self.data[*from..*to]).map_err(|_| ExifError::NotExtracted);
         text
     }
 
-    pub fn text(&self) -> String {
-        let str = self.get_str();
-        let result = str.replace("\n", "");
-        return result;
+    fn valid(&self) -> bool {
+        let (_, to) = self.text_range();
+        let zero: &usize = &0;
+        to > zero
     }
 
-    pub fn text_range(&self) -> &(usize, usize) {
+    pub fn text(&self) -> String {
+        let result = self.get_str();
+        match result {
+            Ok(s) => s.into(),
+            Err(_) => "".into(),
+        }
+    }
+
+    fn text_range(&self) -> &(usize, usize) {
         let memoized = self.memo.range.get_or_init(|| {
             let open: u8 = b'{';
             let close: u8 = b'}';
@@ -86,14 +100,29 @@ impl Exif<ComfyUI> {
 }
 
 impl ExifTraits for Exif<ComfyUI> {
-    fn checkpoints(&self) -> &str {
-        todo!()
+    fn checkpoint(&self) -> Result<String, ExifError> {
+        let wf = self.workflow().as_ref().map_err(|x| x.clone())?;
+        let s: String = match wf.checkpoint() {
+            None => "???".into(),
+            Some(x) => x.clone(),
+        };
+        Ok(s)
     }
-    fn negative(&self) -> &str {
-        todo!()
+    fn negative(&self) -> Result<String, ExifError> {
+        let wf = self.workflow().as_ref().map_err(|x| x.clone())?;
+        let s: String = match wf.negative() {
+            None => "-".into(),
+            Some(x) => x.clone(),
+        };
+        Ok(s)
     }
-    fn positive(&self) -> &str {
-        todo!()
+    fn positive(&self) -> Result<String, ExifError> {
+        let wf = self.workflow().as_ref().map_err(|x| x.clone())?;
+        let s: String = match wf.positive() {
+            None => "-".into(),
+            Some(x) => x.clone(),
+        };
+        Ok(s)
     }
 }
 
@@ -107,15 +136,12 @@ mod tests {
         let exif = Exif::<ComfyUI>::new(data);
         let text = exif.text();
         print!("raw: {}\n", text);
-        match exif.workflow() {
-            Err(e) => {
-                print!("error: {}\n", e.to_string());
-            }
-            Ok(wf) => {
-                let firstnode = wf.nodes.first().expect("trust me");
-                print!("json: {}\n\n", firstnode.tipe);
-            }
-        }
+        let checkpoint = exif.checkpoint()?;
+        print!("checkpoint: {}\n", checkpoint);
+        let positive = exif.positive()?;
+        print!("positive: {}\n", positive);
+        let negative = exif.negative()?;
+        print!("negative: {}\n", negative);
         Ok(())
     }
 }
