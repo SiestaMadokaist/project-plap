@@ -1,3 +1,4 @@
+pub mod civitai;
 pub mod compute;
 pub mod compute_agent;
 pub mod diffusions;

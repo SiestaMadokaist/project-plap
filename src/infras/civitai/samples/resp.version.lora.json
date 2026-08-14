@@ -1,0 +1,1007 @@
+{
+  "id": 2116314,
+  "modelId": 880852,
+  "name": "Illustrious v2.0",
+  "nsfwLevel": 1,
+  "createdAt": "2025-08-15T14:37:04.845Z",
+  "updatedAt": "2026-08-14T16:54:46.533Z",
+  "status": "Published",
+  "publishedAt": "2025-08-15T15:00:00.000Z",
+  "trainedWords": [
+    "bigsight, kokusaitenjijou",
+    "pavement, scenery",
+    "day, blue sky",
+    "night, starry sky"
+  ],
+  "trainingStatus": null,
+  "trainingDetails": null,
+  "baseModel": "Illustrious",
+  "baseModelType": "Standard",
+  "description": "<p>V2: </p><ol><li><p>背景の再現率向上 / Improved background fidelity</p></li><li><p>画風の影響を軽減 / Reduced influence of art style</p></li><li><p>NAIモデルとの互換性向上 / Enhanced compatibility with NAI models</p></li></ol>",
+  "uploadType": "Created",
+  "usageControl": "Download",
+  "licensingFee": null,
+  "paidAccess": null,
+  "air": "urn:air:sdxl:lora:civitai:880852@2116314",
+  "stats": {
+    "downloadCount": 264,
+    "thumbsUpCount": 46
+  },
+  "model": {
+    "name": "東京ビッグサイト🗼 / Tokyo Big Sight #Love Live! #Nijigasaki #Japan #Comic Market #Comiket #Doujinshi #Touhou #Osaka Shizuku",
+    "type": "LORA",
+    "nsfw": false,
+    "poi": false
+  },
+  "files": [
+    {
+      "id": 2010741,
+      "sizeKB": 104915.546875,
+      "name": "Tokyo-Bigsight-IllustriousXLV01-V2.safetensors",
+      "type": "Model",
+      "pickleScanResult": "Success",
+      "pickleScanMessage": "No Pickle imports",
+      "virusScanResult": "Success",
+      "virusScanMessage": null,
+      "scannedAt": "2025-08-15T14:41:12.11",
+      "metadata": {
+        "format": "SafeTensor",
+        "size": null,
+        "fp": null
+      },
+      "hashes": {
+        "AutoV1": "339C8C5C",
+        "AutoV2": "94929A96BA",
+        "SHA256": "94929A96BA70798F7CB58B1F49A94D8E6762D2E7AEB553747C8144646F5A0E03",
+        "CRC32": "49905C85",
+        "BLAKE3": "42D4E568F7AB13FFA357EC8526FA3078A8D8ACB44160D7CA1B274369D7B81AF9",
+        "AutoV3": "E591F5593454"
+      },
+      "primary": true,
+      "downloadUrl": "https://civitai.red/api/download/models/2116314?fileId=2010741"
+    }
+  ],
+  "images": [
+    {
+      "url": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/cada31f7-f9ba-4182-a113-9b35a7163cfc/original=true/94424178.jpeg",
+      "nsfwLevel": 1,
+      "width": 1824,
+      "height": 2400,
+      "hash": "UWIhgpD-pKkEPTEM$djDT5MzR*xv.AR,enWA",
+      "type": "image",
+      "metadata": {
+        "hash": "UWIhgpD-pKkEPTEM$djDT5MzR*xv.AR,enWA",
+        "size": 4086997,
+        "width": 1824,
+        "height": 2400
+      },
+      "minor": false,
+      "poi": false,
+      "meta": {
+        "VAE": "sdxl_vae.safetensors",
+        "Size": "1824x2400",
+        "seed": 1148078782,
+        "Model": "aimXLIllustriousNoobai_v10",
+        "steps": 28,
+        "hashes": {
+          "vae": "63aeecb90f",
+          "model": "0c87f17f6d",
+          "lora:sdxl-boldline": "962ec577d783",
+          "lora:distance_slider": "f457053d00ca",
+          "lora:il_saturation_slider_d1": "66f4a6bee66c",
+          "lora:Tokyo-Bigsight-IllustriousXLV01-V2": "36c19d7d6f5b",
+          "lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1": "5306959ee1a3",
+          "lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1": "6a584703a489"
+        },
+        "prompt": "<lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1:0.5> <lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1:0.5> <lora:sdxl-boldline:-0.5> <lora:il_saturation_slider_d1:-0.5>\n<lora:Tokyo-Bigsight-IllustriousXLV01-V2:1> <lora:distance_slider:0.6>\n(llas:1.4), (masterpiece, very aesthetic, absurdres, very awa:1.2), best quality, highres, newest, perfect anatomy, perfect lighting, anime coloring, anime screenshot, (dutch angle, out of frame:-1.2) BREAK\n(sparkle, light particles:1.2), light rays, depth of field, blurry background BREAK\n1girl, solo, looking at viewer, cowboy shot BREAK\nosaka shizuku, hair bow, red bow BREAK\nbig pupils, (detailed eyes:1.2), large breasts, lips, :d, upper teeth only BREAK\n(hakurei reimu cosplay), nontraditional miko, red shirt, red skirt, yellow ascot, hair tubes, navel, (holding gohei), stick BREAK\nbigsight, kokusaitenjijou, scenery, day, blue sky, sky, cloud, sunlight, (cherry blossoms, falling petals:1.3), (blue hydrangea, purple hydrangea, flower field, garden:1.2), blue background, pink background",
+        "Version": "f1.0.0v2-v1.10.1RC-latest-2443-g1a25b0ee",
+        "sampler": "Euler Ancestral CFG++",
+        "Emphasis": "No norm",
+        "cfgScale": 2,
+        "clipSkip": 2,
+        "Mask blur": "4",
+        "resources": [
+          {
+            "hash": "6a584703a489",
+            "name": "Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1",
+            "type": "lora",
+            "weight": 0.5
+          },
+          {
+            "hash": "5306959ee1a3",
+            "name": "Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1",
+            "type": "lora",
+            "weight": 0.5
+          },
+          {
+            "hash": "36c19d7d6f5b",
+            "name": "Tokyo-Bigsight-IllustriousXLV01-V2",
+            "type": "lora",
+            "weight": 1
+          },
+          {
+            "hash": "f457053d00ca",
+            "name": "distance_slider",
+            "type": "lora",
+            "weight": 0.6
+          },
+          {
+            "hash": "962ec577d783",
+            "name": "sdxl-boldline",
+            "type": "lora"
+          },
+          {
+            "hash": "66f4a6bee66c",
+            "name": "il_saturation_slider_d1",
+            "type": "lora"
+          },
+          {
+            "hash": "0c87f17f6d",
+            "name": "aimXLIllustriousNoobai_v10",
+            "type": "model"
+          }
+        ],
+        "Model hash": "0c87f17f6d",
+        "NegPiP Active": "True",
+        "Schedule type": "SGM Uniform",
+        "negativePrompt": "(worst quality, low quality, worst aesthetic:1.2), normal quality, bad quality, lowres, unfinished, old BREAK\nbad anatomy, bad hands, amputee, long torso, missing limbs, long fingers, malformed fingers, missing fingers, extra fingers, 6 fingers, tall, tall female BREAK\n(simple background:1.2), text, censorship, jpeg artifacts, scan artifacts, lossy-lossless, error, monochrome, letterboxed, heterochromia, head out of frame, multiple views, 3d, abstract BREAK\n(bad eyes, empty eyes:1.2), heart-shaped pupils, looking to the side, alternate hairstyle, twintails, dutch angle, mole, (lens flare:0.5), dark skin, dark-skinned female, red skin, sparkle print BREAK\nstairs, ceiling, shadow",
+        "Denoising strength": "0.03",
+        "rescale_cfg_enabled": "True",
+        "rescale_cfg_version": "Normal",
+        "rescale_cfg_multiplier": "0.5"
+      },
+      "availability": "Public",
+      "hasMeta": true,
+      "hasPositivePrompt": true,
+      "onSite": false,
+      "remixOfId": null
+    },
+    {
+      "url": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/8cb53766-05c2-4b98-b46e-5a056312043e/original=true/94424184.jpeg",
+      "nsfwLevel": 1,
+      "width": 1824,
+      "height": 2400,
+      "hash": "USKT3{?F}qbv=;sQt1tNNjxCR:of-PrXZ~aK",
+      "type": "image",
+      "metadata": {
+        "hash": "USKT3{?F}qbv=;sQt1tNNjxCR:of-PrXZ~aK",
+        "size": 4348885,
+        "width": 1824,
+        "height": 2400
+      },
+      "minor": false,
+      "poi": false,
+      "meta": {
+        "VAE": "sdxl_vae.safetensors",
+        "Size": "1824x2400",
+        "seed": 2746438119,
+        "Model": "aimXLIllustriousNoobai_v10",
+        "steps": 28,
+        "hashes": {
+          "vae": "63aeecb90f",
+          "model": "0c87f17f6d",
+          "lora:sdxl-boldline": "962ec577d783",
+          "lora:distance_slider": "f457053d00ca",
+          "lora:il_saturation_slider_d1": "66f4a6bee66c",
+          "lora:Tokyo-Bigsight-IllustriousXLV01-V2": "36c19d7d6f5b",
+          "lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1": "5306959ee1a3",
+          "lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1": "6a584703a489"
+        },
+        "prompt": "<lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1:0.5> <lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1:0.5> <lora:sdxl-boldline:-0.5> <lora:il_saturation_slider_d1:-0.5>\n<lora:Tokyo-Bigsight-IllustriousXLV01-V2:1> <lora:distance_slider:0.6>\n(llas:1.4), (masterpiece, very aesthetic, absurdres, very awa:1.2), best quality, highres, newest, perfect anatomy, perfect lighting, anime coloring, anime screenshot, (dutch angle, out of frame:-1.2) BREAK\n(sparkle, light particles:1.2), light rays, depth of field, blurry background BREAK\n1girl, solo, looking at viewer, cowboy shot BREAK\nyuki setsuna, long hair BREAK\nbig pupils, (detailed eyes:1.2), large breasts, lips, :d, upper teeth only BREAK\n(shameimaru aya cosplay), white collared shirt, buttons, black skirt, frilled skirt, puffy short sleeves, black neck ribbon, black wings, red hat, tokin hat, holding camera BREAK\nbigsight, kokusaitenjijou, (river, reflective water:1.2), scenery, day, orange sky, sky, cloud, sunlight, (maple leaf, falling leaves, autumn leaves:1.4), blue background, red background",
+        "Version": "f1.0.0v2-v1.10.1RC-latest-2443-g1a25b0ee",
+        "sampler": "Euler Ancestral CFG++",
+        "Emphasis": "No norm",
+        "cfgScale": 2,
+        "clipSkip": 2,
+        "Mask blur": "4",
+        "resources": [
+          {
+            "hash": "6a584703a489",
+            "name": "Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1",
+            "type": "lora",
+            "weight": 0.5
+          },
+          {
+            "hash": "5306959ee1a3",
+            "name": "Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1",
+            "type": "lora",
+            "weight": 0.5
+          },
+          {
+            "hash": "36c19d7d6f5b",
+            "name": "Tokyo-Bigsight-IllustriousXLV01-V2",
+            "type": "lora",
+            "weight": 1
+          },
+          {
+            "hash": "f457053d00ca",
+            "name": "distance_slider",
+            "type": "lora",
+            "weight": 0.6
+          },
+          {
+            "hash": "962ec577d783",
+            "name": "sdxl-boldline",
+            "type": "lora"
+          },
+          {
+            "hash": "66f4a6bee66c",
+            "name": "il_saturation_slider_d1",
+            "type": "lora"
+          },
+          {
+            "hash": "0c87f17f6d",
+            "name": "aimXLIllustriousNoobai_v10",
+            "type": "model"
+          }
+        ],
+        "Model hash": "0c87f17f6d",
+        "NegPiP Active": "True",
+        "Schedule type": "SGM Uniform",
+        "negativePrompt": "(worst quality, low quality, worst aesthetic:1.2), normal quality, bad quality, lowres, unfinished, old BREAK\nbad anatomy, bad hands, amputee, long torso, missing limbs, long fingers, malformed fingers, missing fingers, extra fingers, 6 fingers, tall, tall female BREAK\n(simple background:1.2), text, censorship, jpeg artifacts, scan artifacts, lossy-lossless, error, monochrome, letterboxed, heterochromia, head out of frame, multiple views, 3d, abstract BREAK\n(bad eyes, empty eyes:1.2), heart-shaped pupils, looking to the side, alternate hairstyle, twintails, dutch angle, mole, (lens flare:0.5), dark skin, dark-skinned female, red skin, sparkle print BREAK\nstairs, ceiling, shadow, tile floor, pavement, road",
+        "Denoising strength": "0.03",
+        "rescale_cfg_enabled": "True",
+        "rescale_cfg_version": "Normal",
+        "rescale_cfg_multiplier": "0.5"
+      },
+      "availability": "Public",
+      "hasMeta": true,
+      "hasPositivePrompt": true,
+      "onSite": false,
+      "remixOfId": null
+    },
+    {
+      "url": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/ddf807e3-6858-4e94-8e61-bc8bf6a9397a/original=true/94424217.jpeg",
+      "nsfwLevel": 1,
+      "width": 1824,
+      "height": 2400,
+      "hash": "UaIr:KD-?HtRiGIVflWAb|RQVrof%%RkRifk",
+      "type": "image",
+      "metadata": {
+        "hash": "UaIr:KD-?HtRiGIVflWAb|RQVrof%%RkRifk",
+        "size": 4099463,
+        "width": 1824,
+        "height": 2400
+      },
+      "minor": false,
+      "poi": false,
+      "meta": {
+        "VAE": "sdxl_vae.safetensors",
+        "Size": "1824x2400",
+        "seed": 1657471698,
+        "Model": "aimXLIllustriousNoobai_v10",
+        "steps": 28,
+        "hashes": {
+          "vae": "63aeecb90f",
+          "model": "0c87f17f6d",
+          "lora:sdxl-boldline": "962ec577d783",
+          "lora:distance_slider": "f457053d00ca",
+          "lora:il_saturation_slider_d1": "66f4a6bee66c",
+          "lora:Tokyo-Bigsight-IllustriousXLV01-V2": "36c19d7d6f5b",
+          "lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1": "5306959ee1a3",
+          "lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1": "6a584703a489"
+        },
+        "prompt": "<lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1:0.5> <lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1:0.5> <lora:sdxl-boldline:-0.5> <lora:il_saturation_slider_d1:-0.5>\n<lora:Tokyo-Bigsight-IllustriousXLV01-V2:1> <lora:distance_slider:0.6>\n(llas:1.4), (masterpiece, very aesthetic, absurdres, very awa:1.2), best quality, highres, newest, perfect anatomy, perfect lighting, anime coloring, anime screenshot, (dutch angle, out of frame:-1.2) BREAK\n(sparkle, light particles:1.2), light rays, depth of field, blurry background BREAK\n1girl, solo, looking at viewer, cowboy shot BREAK\nsonoda umi, half updo, hair bow, blue bow BREAK\nbig pupils, (detailed eyes:1.2), large breasts, lips, :d, upper teeth only BREAK\n(cirno cosplay), blue dress, ice wings, casting spell, ice magic, cryokinesis, blue aura effects BREAK\nbigsight, kokusaitenjijou, lake, reflective floor, scenery, day, blue sky, sky, cloud, sunlight, (snowflakes, snowing, fog, mist:1.4), ice, storm, blue background, white background",
+        "Version": "f1.0.0v2-v1.10.1RC-latest-2443-g1a25b0ee",
+        "sampler": "Euler Ancestral CFG++",
+        "Emphasis": "No norm",
+        "cfgScale": 2,
+        "clipSkip": 2,
+        "Mask blur": "4",
+        "resources": [
+          {
+            "hash": "6a584703a489",
+            "name": "Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1",
+            "type": "lora",
+            "weight": 0.5
+          },
+          {
+            "hash": "5306959ee1a3",
+            "name": "Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1",
+            "type": "lora",
+            "weight": 0.5
+          },
+          {
+            "hash": "36c19d7d6f5b",
+            "name": "Tokyo-Bigsight-IllustriousXLV01-V2",
+            "type": "lora",
+            "weight": 1
+          },
+          {
+            "hash": "f457053d00ca",
+            "name": "distance_slider",
+            "type": "lora",
+            "weight": 0.6
+          },
+          {
+            "hash": "962ec577d783",
+            "name": "sdxl-boldline",
+            "type": "lora"
+          },
+          {
+            "hash": "66f4a6bee66c",
+            "name": "il_saturation_slider_d1",
+            "type": "lora"
+          },
+          {
+            "hash": "0c87f17f6d",
+            "name": "aimXLIllustriousNoobai_v10",
+            "type": "model"
+          }
+        ],
+        "Model hash": "0c87f17f6d",
+        "NegPiP Active": "True",
+        "Schedule type": "SGM Uniform",
+        "negativePrompt": "(worst quality, low quality, worst aesthetic:1.2), normal quality, bad quality, lowres, unfinished, old BREAK\nbad anatomy, bad hands, amputee, long torso, missing limbs, long fingers, malformed fingers, missing fingers, extra fingers, 6 fingers, tall, tall female BREAK\n(simple background:1.2), text, censorship, jpeg artifacts, scan artifacts, lossy-lossless, error, monochrome, letterboxed, heterochromia, head out of frame, multiple views, 3d, abstract BREAK\n(bad eyes, empty eyes:1.2), heart-shaped pupils, looking to the side, alternate hairstyle, twintails, dutch angle, mole, (lens flare:0.5), dark skin, dark-skinned female, red skin, sparkle print BREAK\nstairs, ceiling, shadow",
+        "Denoising strength": "0.03",
+        "rescale_cfg_enabled": "True",
+        "rescale_cfg_version": "Normal",
+        "rescale_cfg_multiplier": "0.5"
+      },
+      "availability": "Public",
+      "hasMeta": true,
+      "hasPositivePrompt": true,
+      "onSite": false,
+      "remixOfId": null
+    },
+    {
+      "url": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/62c3da07-4964-4e1e-8545-0f3e2109fe3c/original=true/94424265.jpeg",
+      "nsfwLevel": 1,
+      "width": 1824,
+      "height": 2400,
+      "hash": "U9KII@?Z00xZKjEf4.S}QXWZ1{NG*H=F0KJU",
+      "type": "image",
+      "metadata": {
+        "hash": "U9KII@?Z00xZKjEf4.S}QXWZ1{NG*H=F0KJU",
+        "size": 4322573,
+        "width": 1824,
+        "height": 2400
+      },
+      "minor": false,
+      "poi": false,
+      "meta": {
+        "VAE": "sdxl_vae.safetensors",
+        "Size": "1824x2400",
+        "seed": 668451436,
+        "Model": "aimXLIllustriousNoobai_v10",
+        "steps": 28,
+        "hashes": {
+          "vae": "63aeecb90f",
+          "model": "0c87f17f6d",
+          "lora:sdxl-boldline": "962ec577d783",
+          "lora:distance_slider": "f457053d00ca",
+          "lora:il_saturation_slider_d1": "66f4a6bee66c",
+          "lora:Tokyo-Bigsight-IllustriousXLV01-V2": "36c19d7d6f5b",
+          "lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1": "5306959ee1a3",
+          "lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1": "6a584703a489"
+        },
+        "prompt": "<lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1:0.5> <lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1:0.5> <lora:sdxl-boldline:-0.5> <lora:il_saturation_slider_d1:-0.5>\n<lora:Tokyo-Bigsight-IllustriousXLV01-V2:1> <lora:distance_slider:0.6>\n(llas:1.4), (masterpiece, very aesthetic, absurdres, very awa:1.2), best quality, highres, newest, perfect anatomy, perfect lighting, anime coloring, anime screenshot, (dutch angle, out of frame:-1.2) BREAK\n(sparkle, light particles:1.2), depth of field, blurry background BREAK\n1girl, solo, looking at viewer, cowboy shot BREAK\nminami kotori, long hair BREAK\nbig pupils, (detailed eyes:1.2), large breasts, lips, serious, closed mouth BREAK\n(flandre scarlet coslpay:1.2), red dress, white sleeves, yellow ascot, frills, ribbon, (hat, demon wings:1.2), holding sword, (flaming sword, flaming weapon, fire aura effects, slashing, levantine:1.2) BREAK\nbigsight, kokusaitenjijou, (red carpet), scenery, night, starry sky, night sky, (red moon, full moon, fire, burning:1.2), bat \\(animal\\), (red rose, flower field, garden:1.1), red background, black background",
+        "Version": "f1.0.0v2-v1.10.1RC-latest-2443-g1a25b0ee",
+        "sampler": "Euler Ancestral CFG++",
+        "Emphasis": "No norm",
+        "cfgScale": 2,
+        "clipSkip": 2,
+        "Mask blur": "4",
+        "resources": [
+          {
+            "hash": "6a584703a489",
+            "name": "Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1",
+            "type": "lora",
+            "weight": 0.5
+          },
+          {
+            "hash": "5306959ee1a3",
+            "name": "Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1",
+            "type": "lora",
+            "weight": 0.5
+          },
+          {
+            "hash": "36c19d7d6f5b",
+            "name": "Tokyo-Bigsight-IllustriousXLV01-V2",
+            "type": "lora",
+            "weight": 1
+          },
+          {
+            "hash": "f457053d00ca",
+            "name": "distance_slider",
+            "type": "lora",
+            "weight": 0.6
+          },
+          {
+            "hash": "962ec577d783",
+            "name": "sdxl-boldline",
+            "type": "lora"
+          },
+          {
+            "hash": "66f4a6bee66c",
+            "name": "il_saturation_slider_d1",
+            "type": "lora"
+          },
+          {
+            "hash": "0c87f17f6d",
+            "name": "aimXLIllustriousNoobai_v10",
+            "type": "model"
+          }
+        ],
+        "Model hash": "0c87f17f6d",
+        "NegPiP Active": "True",
+        "Schedule type": "SGM Uniform",
+        "negativePrompt": "(worst quality, low quality, worst aesthetic:1.2), normal quality, bad quality, lowres, unfinished, old BREAK\nbad anatomy, bad hands, amputee, long torso, missing limbs, long fingers, malformed fingers, missing fingers, extra fingers, 6 fingers, tall, tall female BREAK\n(simple background:1.2), text, censorship, jpeg artifacts, scan artifacts, lossy-lossless, error, monochrome, letterboxed, heterochromia, head out of frame, multiple views, 3d, abstract BREAK\n(bad eyes, empty eyes:1.2), heart-shaped pupils, looking to the side, alternate hairstyle, twintails, dutch angle, mole, (lens flare:0.5), dark skin, dark-skinned female, red skin, sparkle print BREAK\nstairs, ceiling, buttons, pavement, road, tile floor",
+        "Denoising strength": "0.03",
+        "rescale_cfg_enabled": "True",
+        "rescale_cfg_version": "Normal",
+        "rescale_cfg_multiplier": "0.5"
+      },
+      "availability": "Public",
+      "hasMeta": true,
+      "hasPositivePrompt": true,
+      "onSite": false,
+      "remixOfId": null
+    },
+    {
+      "url": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/9ae74a2f-497d-4c28-954d-a7e980038fd8/original=true/94424274.jpeg",
+      "nsfwLevel": 1,
+      "width": 1824,
+      "height": 2400,
+      "hash": "U9IN,q-;_hXV00x]csrp9DNH9;S%5XQ-=qo#",
+      "type": "image",
+      "metadata": {
+        "hash": "U9IN,q-;_hXV00x]csrp9DNH9;S%5XQ-=qo#",
+        "size": 4504609,
+        "width": 1824,
+        "height": 2400
+      },
+      "minor": false,
+      "poi": false,
+      "meta": {
+        "VAE": "sdxl_vae.safetensors",
+        "Size": "1824x2400",
+        "seed": 2781264837,
+        "Model": "aimXLIllustriousNoobai_v10",
+        "steps": 28,
+        "hashes": {
+          "vae": "63aeecb90f",
+          "model": "0c87f17f6d",
+          "lora:sdxl-boldline": "962ec577d783",
+          "lora:distance_slider": "f457053d00ca",
+          "lora:il_saturation_slider_d1": "66f4a6bee66c",
+          "lora:Tokyo-Bigsight-IllustriousXLV01-V2": "36c19d7d6f5b",
+          "lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1": "5306959ee1a3",
+          "lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1": "6a584703a489"
+        },
+        "prompt": "<lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1:0.5> <lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1:0.5> <lora:sdxl-boldline:-0.5> <lora:il_saturation_slider_d1:-0.5>\n<lora:Tokyo-Bigsight-IllustriousXLV01-V2:1> <lora:distance_slider:0.6>\n(llas:1.4), (masterpiece, very aesthetic, absurdres, very awa:1.2), best quality, highres, newest, perfect anatomy, perfect lighting, anime coloring, anime screenshot, (dutch angle, out of frame:-1.2) BREAK\n(sparkle, light particles:1.2), depth of field, blurry background BREAK\n1girl, solo, looking at viewer, cowboy shot BREAK\nsakurauchi riko, long hair BREAK\nbig pupils, (detailed eyes:1.2), large breasts, lips, :d, upper teeth only BREAK\n(saigyouji yuyuko cosplay:1.2), blue dress, (kimono:0.7), frilled sleeves, (frills), floral print, sash, sash bow, frilled bow, wide sleeves, (hat), holding fan, folding fan BREAK\nbigsight, kokusaitenjijou, scenery, night, starry sky, night sky, (pink bioluminescence butterfly, cherry blossoms, falling petals, blue hitodama:1.4), (spider lily, flower field, garden:1.1), blue background, purple background, red background",
+        "Version": "f1.0.0v2-v1.10.1RC-latest-2443-g1a25b0ee",
+        "sampler": "Euler Ancestral CFG++",
+        "Emphasis": "No norm",
+        "cfgScale": 2,
+        "clipSkip": 2,
+        "Mask blur": "4",
+        "resources": [
+          {
+            "hash": "6a584703a489",
+            "name": "Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1",
+            "type": "lora",
+            "weight": 0.5
+          },
+          {
+            "hash": "5306959ee1a3",
+            "name": "Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1",
+            "type": "lora",
+            "weight": 0.5
+          },
+          {
+            "hash": "36c19d7d6f5b",
+            "name": "Tokyo-Bigsight-IllustriousXLV01-V2",
+            "type": "lora",
+            "weight": 1
+          },
+          {
+            "hash": "f457053d00ca",
+            "name": "distance_slider",
+            "type": "lora",
+            "weight": 0.6
+          },
+          {
+            "hash": "962ec577d783",
+            "name": "sdxl-boldline",
+            "type": "lora"
+          },
+          {
+            "hash": "66f4a6bee66c",
+            "name": "il_saturation_slider_d1",
+            "type": "lora"
+          },
+          {
+            "hash": "0c87f17f6d",
+            "name": "aimXLIllustriousNoobai_v10",
+            "type": "model"
+          }
+        ],
+        "Model hash": "0c87f17f6d",
+        "NegPiP Active": "True",
+        "Schedule type": "SGM Uniform",
+        "negativePrompt": "(worst quality, low quality, worst aesthetic:1.2), normal quality, bad quality, lowres, unfinished, old BREAK\nbad anatomy, bad hands, amputee, long torso, missing limbs, long fingers, malformed fingers, missing fingers, extra fingers, 6 fingers, tall, tall female BREAK\n(simple background:1.2), text, censorship, jpeg artifacts, scan artifacts, lossy-lossless, error, monochrome, letterboxed, heterochromia, head out of frame, multiple views, 3d, abstract BREAK\n(bad eyes, empty eyes:1.2), heart-shaped pupils, looking to the side, alternate hairstyle, twintails, dutch angle, mole, (lens flare:0.5), dark skin, dark-skinned female, red skin, sparkle print BREAK\nstairs, ceiling, tile floor, yellow background",
+        "Denoising strength": "0.03",
+        "rescale_cfg_enabled": "True",
+        "rescale_cfg_version": "Normal",
+        "rescale_cfg_multiplier": "0.5"
+      },
+      "availability": "Public",
+      "hasMeta": true,
+      "hasPositivePrompt": true,
+      "onSite": false,
+      "remixOfId": null
+    },
+    {
+      "url": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/53cd99c7-7708-4154-85c5-d8a406b89127/original=true/94424298.jpeg",
+      "nsfwLevel": 1,
+      "width": 1824,
+      "height": 2400,
+      "hash": "U8FOTf?I4@y3tqKEIT~X00-V?aNekGxu--9Z",
+      "type": "image",
+      "metadata": {
+        "hash": "U8FOTf?I4@y3tqKEIT~X00-V?aNekGxu--9Z",
+        "size": 4204360,
+        "width": 1824,
+        "height": 2400
+      },
+      "minor": false,
+      "poi": false,
+      "meta": {
+        "VAE": "sdxl_vae.safetensors",
+        "Size": "1824x2400",
+        "seed": 884354189,
+        "Model": "aimXLIllustriousNoobai_v10",
+        "steps": 28,
+        "hashes": {
+          "vae": "63aeecb90f",
+          "model": "0c87f17f6d",
+          "lora:sdxl-boldline": "962ec577d783",
+          "lora:distance_slider": "f457053d00ca",
+          "lora:il_saturation_slider_d1": "66f4a6bee66c",
+          "lora:Tokyo-Bigsight-IllustriousXLV01-V2": "36c19d7d6f5b",
+          "lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1": "5306959ee1a3",
+          "lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1": "6a584703a489"
+        },
+        "prompt": "<lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1:0.5> <lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1:0.5> <lora:sdxl-boldline:-0.5> <lora:il_saturation_slider_d1:-0.5>\n<lora:Tokyo-Bigsight-IllustriousXLV01-V2:1> <lora:distance_slider:0.6>\n(llas:1.4), (masterpiece, very aesthetic, absurdres, very awa:1.2), best quality, highres, newest, perfect anatomy, perfect lighting, anime coloring, anime screenshot, (dutch angle, out of frame:-1.2) BREAK\n(sparkle, light particles:1.2), depth of field, blurry background BREAK\n1girl, solo, looking at viewer, cowboy shot BREAK\nminami kotori BREAK\nbig pupils, (detailed eyes:1.2), large breasts, lips, seductive smile, parted lips BREAK\n(yakumo yukari cosplay:1.2), purple dress, puffy short sleeves, white elbow gloves, choker, (hat), red ribbon, collarbone, cleavage, (shushing, purple aura effects) BREAK\nbigsight, kokusaitenjijou, scenery, dark sky, (lavender, fireflies:1.2), (flower field, garden:1.2), black background, purple background",
+        "Version": "f1.0.0v2-v1.10.1RC-latest-2443-g1a25b0ee",
+        "sampler": "Euler Ancestral CFG++",
+        "Emphasis": "No norm",
+        "cfgScale": 2,
+        "clipSkip": 2,
+        "Mask blur": "4",
+        "resources": [
+          {
+            "hash": "6a584703a489",
+            "name": "Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1",
+            "type": "lora",
+            "weight": 0.5
+          },
+          {
+            "hash": "5306959ee1a3",
+            "name": "Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1",
+            "type": "lora",
+            "weight": 0.5
+          },
+          {
+            "hash": "36c19d7d6f5b",
+            "name": "Tokyo-Bigsight-IllustriousXLV01-V2",
+            "type": "lora",
+            "weight": 1
+          },
+          {
+            "hash": "f457053d00ca",
+            "name": "distance_slider",
+            "type": "lora",
+            "weight": 0.6
+          },
+          {
+            "hash": "962ec577d783",
+            "name": "sdxl-boldline",
+            "type": "lora"
+          },
+          {
+            "hash": "66f4a6bee66c",
+            "name": "il_saturation_slider_d1",
+            "type": "lora"
+          },
+          {
+            "hash": "0c87f17f6d",
+            "name": "aimXLIllustriousNoobai_v10",
+            "type": "model"
+          }
+        ],
+        "Model hash": "0c87f17f6d",
+        "NegPiP Active": "True",
+        "Schedule type": "SGM Uniform",
+        "negativePrompt": "(worst quality, low quality, worst aesthetic:1.2), normal quality, bad quality, lowres, unfinished, old BREAK\nbad anatomy, bad hands, amputee, long torso, missing limbs, long fingers, malformed fingers, missing fingers, extra fingers, 6 fingers, tall, tall female BREAK\n(simple background:1.2), text, censorship, jpeg artifacts, scan artifacts, lossy-lossless, error, monochrome, letterboxed, heterochromia, head out of frame, multiple views, 3d, abstract BREAK\n(bad eyes, empty eyes:1.2), heart-shaped pupils, looking to the side, alternate hairstyle, twintails, dutch angle, mole, (lens flare:0.5), dark skin, dark-skinned female, red skin, sparkle print BREAK\nstairs, ceiling, yellow background, light",
+        "Denoising strength": "0.03",
+        "rescale_cfg_enabled": "True",
+        "rescale_cfg_version": "Normal",
+        "rescale_cfg_multiplier": "0.5"
+      },
+      "availability": "Public",
+      "hasMeta": true,
+      "hasPositivePrompt": true,
+      "onSite": false,
+      "remixOfId": null
+    },
+    {
+      "url": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/c01fe90a-b9b0-4ddc-a83f-31fa91bfa191/original=true/94424358.jpeg",
+      "nsfwLevel": 1,
+      "width": 1824,
+      "height": 2400,
+      "hash": "ULJsLW~7NEES0n9wD,-U0gV]tlW.-VkBs*WE",
+      "type": "image",
+      "metadata": {
+        "hash": "ULJsLW~7NEES0n9wD,-U0gV]tlW.-VkBs*WE",
+        "size": 4099041,
+        "width": 1824,
+        "height": 2400
+      },
+      "minor": false,
+      "poi": false,
+      "meta": {
+        "VAE": "sdxl_vae.safetensors",
+        "Size": "1824x2400",
+        "seed": 2813794611,
+        "Model": "aimXLIllustriousNoobai_v10",
+        "steps": 28,
+        "hashes": {
+          "vae": "63aeecb90f",
+          "model": "0c87f17f6d",
+          "lora:sdxl-boldline": "962ec577d783",
+          "lora:distance_slider": "f457053d00ca",
+          "lora:il_saturation_slider_d1": "66f4a6bee66c",
+          "lora:Tokyo-Bigsight-IllustriousXLV01-V2": "36c19d7d6f5b",
+          "lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1": "5306959ee1a3",
+          "lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1": "6a584703a489"
+        },
+        "prompt": "<lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1:0.5> <lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1:0.5> <lora:sdxl-boldline:-0.5> <lora:il_saturation_slider_d1:-0.5>\n<lora:Tokyo-Bigsight-IllustriousXLV01-V2:1> <lora:distance_slider:0.6>\n(llas:1.4), (masterpiece, very aesthetic, absurdres, very awa:1.2), best quality, highres, newest, perfect anatomy, perfect lighting, anime coloring, anime screenshot, (dutch angle, out of frame:-1.2) BREAK\n(sparkle, light particles:1.2), depth of field, blurry background BREAK\n1girl, solo, looking at viewer, cowboy shot BREAK\nyuki setsuna BREAK\nbig pupils, (detailed eyes:1.2), large breasts, lips, :d, upper teeth only BREAK\n(houraisan kaguya cosplay:1.2), pink dress, red skirt, frilled sleeves, (frills, ribbon:1.2), floral print, long sleeves, (holding lantern, paper lantern:1.2) BREAK\nbigsight, kokusaitenjijou, (tatami floor, shouji), scenery, night, starry sky, night sky, (bamboo forest:1.4), (full moon), blue background, orange background",
+        "Version": "f1.0.0v2-v1.10.1RC-latest-2443-g1a25b0ee",
+        "sampler": "Euler Ancestral CFG++",
+        "Emphasis": "No norm",
+        "cfgScale": 2,
+        "clipSkip": 2,
+        "Mask blur": "4",
+        "resources": [
+          {
+            "hash": "6a584703a489",
+            "name": "Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1",
+            "type": "lora",
+            "weight": 0.5
+          },
+          {
+            "hash": "5306959ee1a3",
+            "name": "Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1",
+            "type": "lora",
+            "weight": 0.5
+          },
+          {
+            "hash": "36c19d7d6f5b",
+            "name": "Tokyo-Bigsight-IllustriousXLV01-V2",
+            "type": "lora",
+            "weight": 1
+          },
+          {
+            "hash": "f457053d00ca",
+            "name": "distance_slider",
+            "type": "lora",
+            "weight": 0.6
+          },
+          {
+            "hash": "962ec577d783",
+            "name": "sdxl-boldline",
+            "type": "lora"
+          },
+          {
+            "hash": "66f4a6bee66c",
+            "name": "il_saturation_slider_d1",
+            "type": "lora"
+          },
+          {
+            "hash": "0c87f17f6d",
+            "name": "aimXLIllustriousNoobai_v10",
+            "type": "model"
+          }
+        ],
+        "Model hash": "0c87f17f6d",
+        "NegPiP Active": "True",
+        "Schedule type": "SGM Uniform",
+        "negativePrompt": "(worst quality, low quality, worst aesthetic:1.2), normal quality, bad quality, lowres, unfinished, old BREAK\nbad anatomy, bad hands, amputee, long torso, missing limbs, long fingers, malformed fingers, missing fingers, extra fingers, 6 fingers, tall, tall female BREAK\n(simple background:1.2), text, censorship, jpeg artifacts, scan artifacts, lossy-lossless, error, monochrome, letterboxed, heterochromia, head out of frame, multiple views, 3d, abstract BREAK\n(bad eyes, empty eyes:1.2), heart-shaped pupils, looking to the side, alternate hairstyle, twintails, dutch angle, mole, (lens flare:0.5), dark skin, dark-skinned female, red skin, sparkle print BREAK\nstairs, ceiling, obi",
+        "Denoising strength": "0.03",
+        "rescale_cfg_enabled": "True",
+        "rescale_cfg_version": "Normal",
+        "rescale_cfg_multiplier": "0.5"
+      },
+      "availability": "Public",
+      "hasMeta": true,
+      "hasPositivePrompt": true,
+      "onSite": false,
+      "remixOfId": null
+    },
+    {
+      "url": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/36044677-c575-4972-be41-6595e37ea8f2/original=true/94424403.jpeg",
+      "nsfwLevel": 1,
+      "width": 1824,
+      "height": 2400,
+      "hash": "U7C@57OZ00.700$|+jNx4;M{{wbeOkR*TKrp",
+      "type": "image",
+      "metadata": {
+        "hash": "U7C@57OZ00.700$|+jNx4;M{{wbeOkR*TKrp",
+        "size": 4258177,
+        "width": 1824,
+        "height": 2400
+      },
+      "minor": false,
+      "poi": false,
+      "meta": {
+        "VAE": "sdxl_vae.safetensors",
+        "Size": "1824x2400",
+        "seed": 3381253488,
+        "Model": "aimXLIllustriousNoobai_v10",
+        "steps": 28,
+        "hashes": {
+          "vae": "63aeecb90f",
+          "model": "0c87f17f6d",
+          "lora:sdxl-boldline": "962ec577d783",
+          "lora:distance_slider": "f457053d00ca",
+          "lora:il_saturation_slider_d1": "66f4a6bee66c",
+          "lora:Tokyo-Bigsight-IllustriousXLV01-V2": "36c19d7d6f5b",
+          "lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1": "5306959ee1a3",
+          "lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1": "6a584703a489"
+        },
+        "prompt": "<lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1:0.5> <lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1:0.5> <lora:sdxl-boldline:-0.5> <lora:il_saturation_slider_d1:-0.5>\n<lora:Tokyo-Bigsight-IllustriousXLV01-V2:1> <lora:distance_slider:0.6>\n(llas:1.4), (masterpiece, very aesthetic, absurdres, very awa:1.2), best quality, highres, newest, perfect anatomy, perfect lighting, anime coloring, anime screenshot, (dutch angle, out of frame:-1.2) BREAK\n(sparkle, light particles:1.2), depth of field, blurry background BREAK\n1girl, solo, looking at viewer, cowboy shot BREAK\nminami kotori, braid BREAK\nbig pupils, (detailed eyes:1.2), large breasts, lips, :d, upper teeth only BREAK\n(kirisame marisa cosplay:1.2), black dress, white sleeves, puffy short sleeves, buttons, (white apron:0.8), (frills, witch hat:1.2), white ribbon, (holding pumpkin lantern) BREAK\nbigsight, kokusaitenjijou, scenery, night, night sky, starry sky, shooting star, (grass, glowing tree, forest, garden, fireflies, sparkle background:1.2), (too many mushroom, glowing mushroom:1.5), fantasy, blue background, green background",
+        "Version": "f1.0.0v2-v1.10.1RC-latest-2443-g1a25b0ee",
+        "sampler": "Euler Ancestral CFG++",
+        "Emphasis": "No norm",
+        "cfgScale": 2,
+        "clipSkip": 2,
+        "Mask blur": "4",
+        "resources": [
+          {
+            "hash": "6a584703a489",
+            "name": "Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1",
+            "type": "lora",
+            "weight": 0.5
+          },
+          {
+            "hash": "5306959ee1a3",
+            "name": "Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1",
+            "type": "lora",
+            "weight": 0.5
+          },
+          {
+            "hash": "36c19d7d6f5b",
+            "name": "Tokyo-Bigsight-IllustriousXLV01-V2",
+            "type": "lora",
+            "weight": 1
+          },
+          {
+            "hash": "f457053d00ca",
+            "name": "distance_slider",
+            "type": "lora",
+            "weight": 0.6
+          },
+          {
+            "hash": "962ec577d783",
+            "name": "sdxl-boldline",
+            "type": "lora"
+          },
+          {
+            "hash": "66f4a6bee66c",
+            "name": "il_saturation_slider_d1",
+            "type": "lora"
+          },
+          {
+            "hash": "0c87f17f6d",
+            "name": "aimXLIllustriousNoobai_v10",
+            "type": "model"
+          }
+        ],
+        "Model hash": "0c87f17f6d",
+        "NegPiP Active": "True",
+        "Schedule type": "SGM Uniform",
+        "negativePrompt": "(worst quality, low quality, worst aesthetic:1.2), normal quality, bad quality, lowres, unfinished, old BREAK\nbad anatomy, bad hands, amputee, long torso, missing limbs, long fingers, malformed fingers, missing fingers, extra fingers, 6 fingers, tall, tall female BREAK\n(simple background:1.2), text, censorship, jpeg artifacts, scan artifacts, lossy-lossless, error, monochrome, letterboxed, heterochromia, head out of frame, multiple views, 3d, abstract BREAK\n(bad eyes, empty eyes:1.2), heart-shaped pupils, looking to the side, alternate hairstyle, twintails, dutch angle, mole, (lens flare:0.5), dark skin, dark-skinned female, red skin, sparkle print BREAK\nstairs, ceiling, yellow background, maid",
+        "Denoising strength": "0.03",
+        "rescale_cfg_enabled": "True",
+        "rescale_cfg_version": "Normal",
+        "rescale_cfg_multiplier": "0.5"
+      },
+      "availability": "Public",
+      "hasMeta": true,
+      "hasPositivePrompt": true,
+      "onSite": false,
+      "remixOfId": null
+    },
+    {
+      "url": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/80daba21-836a-464e-85a4-538b0bb70745/original=true/94424454.jpeg",
+      "nsfwLevel": 1,
+      "width": 1824,
+      "height": 2400,
+      "hash": "UCKvBG%J*|^NqGEh0.k9}Qs,A0oy2wIX9]Rk",
+      "type": "image",
+      "metadata": {
+        "hash": "UCKvBG%J*|^NqGEh0.k9}Qs,A0oy2wIX9]Rk",
+        "size": 4316790,
+        "width": 1824,
+        "height": 2400
+      },
+      "minor": false,
+      "poi": false,
+      "meta": {
+        "VAE": "sdxl_vae.safetensors",
+        "Size": "1824x2400",
+        "seed": 3054257249,
+        "Model": "aimXLIllustriousNoobai_v10",
+        "steps": 28,
+        "hashes": {
+          "vae": "63aeecb90f",
+          "model": "0c87f17f6d",
+          "lora:sdxl-boldline": "962ec577d783",
+          "lora:distance_slider": "f457053d00ca",
+          "lora:il_saturation_slider_d1": "66f4a6bee66c",
+          "lora:Tokyo-Bigsight-IllustriousXLV01-V2": "36c19d7d6f5b",
+          "lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1": "5306959ee1a3",
+          "lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1": "6a584703a489"
+        },
+        "prompt": "<lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1:0.5> <lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1:0.5> <lora:sdxl-boldline:-0.5> <lora:il_saturation_slider_d1:-0.5>\n<lora:Tokyo-Bigsight-IllustriousXLV01-V2:1> <lora:distance_slider:0.3>\n(llas:1.4), (masterpiece, very aesthetic, absurdres, very awa:1.2), best quality, highres, newest, perfect anatomy, perfect lighting, anime coloring, anime screenshot, (dutch angle, out of frame:-1.2) BREAK\n(sparkle, light particles:1.2), depth of field, blurry background BREAK\n1girl, solo, looking at viewer, cowboy shot BREAK\nyuki setsuna, half updo, hair bow, green bow BREAK\nbig pupils, (detailed eyes:1.2), large breasts, lips, evil grin BREAK\n(reiuji utsuho cosplay:1.2), white dress, green skirt, frills, black wings, holding flaming weapon, flaming sword, (red aura effects:1.2) BREAK\nbigsight, kokusaitenjijou, scenery, lava, magma, fire, burning, volcano, explosion, nuclear explosion, mushroom cloud, lightning, electricity, red background",
+        "Version": "f1.0.0v2-v1.10.1RC-latest-2443-g1a25b0ee",
+        "sampler": "Euler Ancestral CFG++",
+        "Emphasis": "No norm",
+        "cfgScale": 2,
+        "clipSkip": 2,
+        "Mask blur": "4",
+        "resources": [
+          {
+            "hash": "6a584703a489",
+            "name": "Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1",
+            "type": "lora",
+            "weight": 0.5
+          },
+          {
+            "hash": "5306959ee1a3",
+            "name": "Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1",
+            "type": "lora",
+            "weight": 0.5
+          },
+          {
+            "hash": "36c19d7d6f5b",
+            "name": "Tokyo-Bigsight-IllustriousXLV01-V2",
+            "type": "lora",
+            "weight": 1
+          },
+          {
+            "hash": "f457053d00ca",
+            "name": "distance_slider",
+            "type": "lora",
+            "weight": 0.3
+          },
+          {
+            "hash": "962ec577d783",
+            "name": "sdxl-boldline",
+            "type": "lora"
+          },
+          {
+            "hash": "66f4a6bee66c",
+            "name": "il_saturation_slider_d1",
+            "type": "lora"
+          },
+          {
+            "hash": "0c87f17f6d",
+            "name": "aimXLIllustriousNoobai_v10",
+            "type": "model"
+          }
+        ],
+        "Model hash": "0c87f17f6d",
+        "NegPiP Active": "True",
+        "Schedule type": "SGM Uniform",
+        "negativePrompt": "(worst quality, low quality, worst aesthetic:1.2), normal quality, bad quality, lowres, unfinished, old BREAK\nbad anatomy, bad hands, amputee, long torso, missing limbs, long fingers, malformed fingers, missing fingers, extra fingers, 6 fingers, tall, tall female BREAK\n(simple background:1.2), text, censorship, jpeg artifacts, scan artifacts, lossy-lossless, error, monochrome, letterboxed, heterochromia, head out of frame, multiple views, 3d, abstract BREAK\n(bad eyes, empty eyes:1.2), heart-shaped pupils, looking to the side, alternate hairstyle, twintails, dutch angle, mole, (lens flare:0.5), dark skin, dark-skinned female, red skin, sparkle print BREAK\nstairs",
+        "Denoising strength": "0.03",
+        "rescale_cfg_enabled": "True",
+        "rescale_cfg_version": "Normal",
+        "rescale_cfg_multiplier": "0.5"
+      },
+      "availability": "Public",
+      "hasMeta": true,
+      "hasPositivePrompt": true,
+      "onSite": false,
+      "remixOfId": null
+    },
+    {
+      "url": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/cd96fd2e-3818-44b6-b3d5-0b0d5488e6cc/original=true/94424513.jpeg",
+      "nsfwLevel": 1,
+      "width": 1824,
+      "height": 2400,
+      "hash": "UZFjNtDmOuo#$xN2oIn$kcRRIVjbyZjJV?bI",
+      "type": "image",
+      "metadata": {
+        "hash": "UZFjNtDmOuo#$xN2oIn$kcRRIVjbyZjJV?bI",
+        "size": 3762269,
+        "width": 1824,
+        "height": 2400
+      },
+      "minor": false,
+      "poi": false,
+      "meta": {
+        "VAE": "sdxl_vae.safetensors",
+        "Size": "1824x2400",
+        "seed": 127518678,
+        "Model": "aimXLIllustriousNoobai_v10",
+        "steps": 28,
+        "hashes": {
+          "vae": "63aeecb90f",
+          "model": "0c87f17f6d",
+          "lora:sdxl-boldline": "962ec577d783",
+          "lora:distance_slider": "f457053d00ca",
+          "lora:il_saturation_slider_d1": "66f4a6bee66c",
+          "lora:Tokyo-Bigsight-IllustriousXLV01-V2": "36c19d7d6f5b",
+          "lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1": "5306959ee1a3",
+          "lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1": "6a584703a489"
+        },
+        "prompt": "<lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1:0.5> <lora:Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1:0.5> <lora:sdxl-boldline:-0.5> <lora:il_saturation_slider_d1:-0.5>\n<lora:Tokyo-Bigsight-IllustriousXLV01-V2:1> <lora:distance_slider:0.3>\n(llas:1.4), (masterpiece, very aesthetic, absurdres, very awa:1.2), best quality, highres, newest, perfect anatomy, perfect lighting, anime coloring, anime screenshot, (dutch angle, out of frame:-1.2) BREAK\n(sparkle, light particles:1.2), light rays, depth of field, blurry background BREAK\n1girl, solo, looking at viewer, cowboy shot BREAK\nsonoda umi BREAK\nbig pupils, (detailed eyes:1.2), large breasts, lips, :d, upper teeth only BREAK\n(tatara kogasa cosplay:1.2), blue dress, frills, holding umbrella, (tatara kogasa \\(umbrella\\)), (oil-paper umbrella, closed umbrella) BREAK\nbigsight, kokusaitenjijou, (reflective water, reflective floor:1.2), scenery, day, (blue sky, sky, cloud), (water drop, bubble:1.4), blue background",
+        "Version": "f1.0.0v2-v1.10.1RC-latest-2443-g1a25b0ee",
+        "sampler": "Euler Ancestral CFG++",
+        "Emphasis": "No norm",
+        "cfgScale": 2,
+        "clipSkip": 2,
+        "Mask blur": "4",
+        "resources": [
+          {
+            "hash": "6a584703a489",
+            "name": "Koto-Umi-Riko-Shizu-Setsu-LLAS-IllustriousXLV01-V1",
+            "type": "lora",
+            "weight": 0.5
+          },
+          {
+            "hash": "5306959ee1a3",
+            "name": "Koto-Umi-Riko-Shizu-Setsu-LLAS-NoobAIXLV11-V1",
+            "type": "lora",
+            "weight": 0.5
+          },
+          {
+            "hash": "36c19d7d6f5b",
+            "name": "Tokyo-Bigsight-IllustriousXLV01-V2",
+            "type": "lora",
+            "weight": 1
+          },
+          {
+            "hash": "f457053d00ca",
+            "name": "distance_slider",
+            "type": "lora",
+            "weight": 0.3
+          },
+          {
+            "hash": "962ec577d783",
+            "name": "sdxl-boldline",
+            "type": "lora"
+          },
+          {
+            "hash": "66f4a6bee66c",
+            "name": "il_saturation_slider_d1",
+            "type": "lora"
+          },
+          {
+            "hash": "0c87f17f6d",
+            "name": "aimXLIllustriousNoobai_v10",
+            "type": "model"
+          }
+        ],
+        "Model hash": "0c87f17f6d",
+        "NegPiP Active": "True",
+        "Schedule type": "SGM Uniform",
+        "negativePrompt": "(worst quality, low quality, worst aesthetic:1.2), normal quality, bad quality, lowres, unfinished, old BREAK\nbad anatomy, bad hands, amputee, long torso, missing limbs, long fingers, malformed fingers, missing fingers, extra fingers, 6 fingers, tall, tall female BREAK\n(simple background:1.2), text, censorship, jpeg artifacts, scan artifacts, lossy-lossless, error, monochrome, letterboxed, heterochromia, head out of frame, multiple views, 3d, abstract BREAK\n(bad eyes, empty eyes:1.2), heart-shaped pupils, looking to the side, alternate hairstyle, twintails, dutch angle, mole, (lens flare:0.5), dark skin, dark-skinned female, red skin, sparkle print BREAK\nstairs, ceiling, shadow, yellow background, tile floor",
+        "Denoising strength": "0.03",
+        "rescale_cfg_enabled": "True",
+        "rescale_cfg_version": "Normal",
+        "rescale_cfg_multiplier": "0.5"
+      },
+      "availability": "Public",
+      "hasMeta": true,
+      "hasPositivePrompt": true,
+      "onSite": false,
+      "remixOfId": null
+    }
+  ],
+  "downloadUrl": "https://civitai.red/api/download/models/2116314"
+}

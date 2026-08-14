@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::pkg::macros::displayable;
+
 type Tags = CommaSeparated;
 #[derive(Clone, Serialize, Deserialize)]
 pub struct CommaSeparated(pub String);
@@ -16,3 +18,11 @@ pub struct Email(pub String);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct URL(pub String);
+
+impl URL {
+    pub fn e(&self, e: &str) -> Self {
+        let s = format!("{}{}", self.0, e);
+        Self(s)
+    }
+}
+displayable!(URL);

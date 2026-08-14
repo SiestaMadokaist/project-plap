@@ -2,10 +2,7 @@ use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    domain::storage::{StorageBucket, StoragePath},
-    pkg::types::strings::URL,
-};
+use crate::domain::storage::{StorageBucket, StoragePath};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]

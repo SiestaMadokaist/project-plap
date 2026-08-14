@@ -17,8 +17,7 @@ use crate::{
             inference::InferenceArgs,
             network::{
                 ModelDst,
-                ModelSrc::{self, Civitai},
-                NetworkAction::{Download, Upload},
+                ModelSrc::{self},
                 NetworkArgs,
             },
         },
