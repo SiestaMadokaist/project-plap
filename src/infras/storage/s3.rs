@@ -273,8 +273,20 @@ impl StorageClient for S3Storage {
             .prefix(prefix.0.clone())
             .send()
             .await;
-        todo!();
-        // vec![]
+        let vs = match result {
+            Err(_) => vec![],
+            Ok(items) => {
+                let vecs = items.contents.unwrap_or(vec![]);
+                let vocs = vecs
+                    .iter()
+                    .map(|o| o.clone().key.unwrap_or(String::from("")))
+                    .filter(|x| x.len() > 0)
+                    .map(|x| String::from(x));
+                let vcs: Vec<String> = vocs.collect();
+                vcs
+            }
+        };
+        vs
     }
 
     async fn versions(&self, path: &StoragePath) -> Result<ItemVersion, DomainError> {

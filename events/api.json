@@ -1,11 +1,5 @@
 {
-  "version": "2.0",
-  "routeKey": "GET /",
-  "rawPath": "/",
-  "rawQueryString": "",
-  "headers": { "host": "localhost:9000" },
-  "requestContext": {
-    "http": { "method": "GET", "path": "/", "protocol": "HTTP/1.1" }
-  },
-  "isBase64Encoded": false
+  "path": "/models/list",
+  "httpMethod": "POST",
+  "body": "{\"prefix\":\"comfy-playground\"}"
 }

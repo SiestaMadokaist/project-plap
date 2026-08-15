@@ -3,7 +3,8 @@ use std::rc::Rc;
 use lambda_runtime::{run, service_fn, Error, LambdaEvent};
 use matchit::Router;
 use rust_api::{
-    application::usecases::hq::models::list::GetListModel, domain::errors::DomainError,
+    application::usecases::hq::models::{fetch::AgentCommandFetchModel, list::GetListModel},
+    domain::errors::DomainError,
 };
 
 mod bootstrap;
@@ -17,9 +18,16 @@ use crate::routes::{err_response, json_response, ApiEvent, ApiResponse, HttpEven
 
 fn routes() -> Router<RouteId> {
     let mut router = Router::new();
+    let expectation = "must be valid route";
     router
-        .insert("/", RouteId::ListModels)
-        .expect("valid route");
+        .insert(RouteId::ListModels.to_string(), RouteId::ListModels)
+        .expect(expectation);
+    router
+        .insert(
+            RouteId::AgentCommandFetchModel,
+            RouteId::AgentCommandFetchModel,
+        )
+        .expect(expectation);
     router
 }
 
@@ -35,6 +43,11 @@ async fn handler(
             let resp: Result<serde_json::Value, DomainError> = match matched.value {
                 RouteId::ListModels => {
                     GetListModel::new(clients.clone(), event.body()?.try_into()?)
+                        .exec()
+                        .await
+                }
+                RouteId::AgentCommandFetchModel => {
+                    AgentCommandFetchModel::new(repos.clone(), event.body()?.try_into()?)
                         .exec()
                         .await
                 }
@@ -74,9 +87,10 @@ async fn main() -> Result<(), Error> {
                 Ok(x) => x,
                 Err(e) => {
                     tracing::error!("unhandled exception: {}", e);
-                    err_response(e)
+                    err_response(&e)
                 }
             };
+            tracing::debug!("final resp = {}", serde_json::to_value(&converted)?);
             Ok::<ApiResponse, Error>(converted)
         }
     }))

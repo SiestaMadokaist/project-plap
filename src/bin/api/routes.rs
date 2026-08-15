@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use lambda_runtime::LambdaEvent;
-use rust_api::domain::errors::DomainError;
+use rust_api::{displayable, domain::errors::DomainError};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -14,7 +14,10 @@ pub enum HttpMethod {
 pub enum RouteId {
     #[serde(rename = "/models/list")]
     ListModels,
+    #[serde(rename = "/agent/command/fetch")]
+    AgentCommandFetchModel,
 }
+displayable!(RouteId);
 
 #[derive(Serialize)]
 pub struct ApiResponse {
@@ -24,7 +27,7 @@ pub struct ApiResponse {
     body: String,
 }
 
-fn error_code(err: DomainError) -> u16 {
+fn error_code(err: &DomainError) -> u16 {
     match err {
         DomainError::ApiError(_) => 503,
         DomainError::NotAllowed(_) => 403,
@@ -32,8 +35,9 @@ fn error_code(err: DomainError) -> u16 {
     }
 }
 
-pub fn err_response(err: DomainError) -> ApiResponse {
+pub fn err_response(err: &DomainError) -> ApiResponse {
     let code = error_code(err);
+    tracing::error!("error: {}", err.to_string());
     json_response(code, r#"{"error": "internal error"}"#)
 }
 

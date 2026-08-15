@@ -48,17 +48,17 @@ deploy-bin:
 # Starts a local Lambda API server on http://localhost:9000
 # Then use make invoke-* or curl/wscat to test
 
-run:
-	cargo lambda watch --env-file .env.local
+run-api:
+	cargo lambda watch --invoke-address 127.0.0.1 --env-file .env.api
 
 invoke-api:
-	cargo lambda invoke api --data-file events/api.json
+	@cargo lambda invoke api --invoke-address 127.0.0.1 --data-file /tmp/api.json
 
 invoke-ws:
-	cargo lambda invoke ws --data-file events/ws.json
+	@cargo lambda invoke ws --invoke-address 127.0.0.1 --data-file events/ws.json
 
 invoke-cron:
-	cargo lambda invoke cron --data-file events/cron.json
+	@cargo lambda invoke cron --invoke-address 127.0.0.1 --data-file events/cron.json
 
 # --- terraform ---
 # Run `make tf-init` once before first deploy

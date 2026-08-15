@@ -1,12 +1,15 @@
 use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{
-    domain::commands::{compute::ComputeArgs, inference::InferenceArgs, network::NetworkArgs},
+    domain::commands::{
+        command::Action::Network, compute::ComputeArgs, inference::InferenceArgs,
+        network::NetworkArgs,
+    },
     pkg::{
         macros::id_type,
         types::{
             time::{self, Timestamp},
-            unit,
+            unit::{self, Index0, Index1},
         },
     },
 };
@@ -30,12 +33,12 @@ impl From<CommandStage> for String {
     }
 }
 
-id_type!(ActionID);
+id_type!(ActionId);
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct Progression {
-    total: unit::Index1,
-    progress: unit::Index1,
+    total: unit::Index0,
+    progress: unit::Index0,
     started_at: Option<Timestamp>,
     finished_at: Option<Timestamp>,
 }
@@ -75,7 +78,7 @@ where
 pub struct CommandDomain {
     #[serde(default = "default_ttl", deserialize_with = "deserialize_ttl")]
     ttl: Option<Timestamp>,
-    pub action_id: ActionID,
+    pub action_id: ActionId,
     pub priority: u64,
     pub stage: CommandStage,
     pub created_at: Timestamp,
@@ -85,6 +88,26 @@ pub struct CommandDomain {
 }
 
 impl CommandDomain {
+    pub fn network(args: NetworkArgs, priority: u64) -> Self {
+        let now = Timestamp::now();
+        let nonce = 823272;
+        let action_id = format!("network-{}-{}", now.to_datestring(), nonce);
+        // let nonce: u32 = Math.random() * 1_000_000;
+        Self {
+            ttl: None,
+            action_id: ActionId(now.to_datestring()),
+            progress: Progression {
+                total: Index0(1),
+                progress: Index0(0),
+                started_at: None,
+                finished_at: None,
+            },
+            priority,
+            stage: CommandStage::InProgress,
+            action: Network(args),
+            created_at: now,
+        }
+    }
     pub fn status(&self) -> String {
         let s = match self.stage {
             CommandStage::Completed => "completed",

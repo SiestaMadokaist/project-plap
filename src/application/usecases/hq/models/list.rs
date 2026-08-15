@@ -2,32 +2,33 @@ use std::rc::Rc;
 
 use crate::{
     application::ports::clients::{container::HasModelStorage, storage::StorageClient},
-    domain::{commands::compute::ComputeRegion, errors::DomainError, storage::StoragePrefix},
+    domain::{errors::DomainError, storage::StoragePrefix},
     json_type,
+    pkg::macros::trait_clients,
 };
 use serde::{Deserialize, Serialize};
 use serde_json;
 
-pub struct GetListModel<C: HasModelStorage> {
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Payload {
+    prefix: StoragePrefix,
+}
+json_type!(Payload);
+
+trait_clients!(IClients, HasModelStorage);
+pub struct GetListModel<C: IClients> {
     clients: Rc<C>,
     payload: Payload,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Payload {
-    region: ComputeRegion,
-}
-json_type!(Payload);
-
-impl<C: HasModelStorage> GetListModel<C> {
+impl<C: IClients> GetListModel<C> {
     pub fn new(clients: Rc<C>, payload: Payload) -> Self {
         Self { clients, payload }
     }
 
     async fn run(&self) -> anyhow::Result<Vec<String>> {
         let storage = self.clients.model_storage();
-        let prefix = StoragePrefix("./models".into());
-        let items = storage.ls(&prefix).await;
+        let items = storage.ls(&self.payload.prefix).await;
         Ok(items)
     }
 

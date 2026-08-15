@@ -13,13 +13,13 @@ pub enum NetworkAction {
     Download,
     Upload,
 }
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct S3Args {
     pub bucket: StorageBucket,
     pub path: StoragePath,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "provider", content = "data")]
 pub enum ModelSrc {
     #[serde(rename = "s3")]
@@ -30,25 +30,26 @@ pub enum ModelSrc {
     // Https(URL),
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LocalArgs {
     pub forward: bool,
     pub path: PathBuf,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "provider", content = "data")]
 pub enum ModelDst {
     #[serde(rename = "s3")]
     S3(S3Args),
-    #[serde(rename = "https")]
+    #[serde(rename = "localhost")]
     Local(LocalArgs),
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct NetworkArgs {
     pub src: ModelSrc,
     pub dst: ModelDst,
     // prevent from being constructible aside from json deserialize
+    #[serde(skip)]
     _marker: std::marker::PhantomData<()>,
 }

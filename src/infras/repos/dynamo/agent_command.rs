@@ -11,7 +11,7 @@ use crate::{
         agent_command::{AgentCommandError, AgentCommandRepository},
         error::RepositoryError,
     },
-    domain::commands::command::{ActionID, CommandDomain, CommandStage, Progression},
+    domain::commands::command::{ActionId, CommandDomain, CommandStage, Progression},
 };
 
 pub struct DDBAgentCommandRepository {
@@ -49,7 +49,7 @@ impl DDBAgentCommandRepository {
 }
 
 impl AgentCommandRepository for DDBAgentCommandRepository {
-    async fn insert(&self, command: CommandDomain) -> Result<ActionID, AgentCommandError> {
+    async fn insert(&self, command: CommandDomain) -> Result<ActionId, AgentCommandError> {
         let action_id = command.action_id.clone();
         let item = AgentCommandDDB(command);
         let av_map = to_item(item).map_err(|e| RepositoryError::Serialize(e.to_string()))?;
@@ -90,11 +90,11 @@ impl AgentCommandRepository for DDBAgentCommandRepository {
             })
         });
         let collected =
-            serialized.collect::<Result<Vec<CommandDomain>, RepositoryError<ActionID>>>()?;
+            serialized.collect::<Result<Vec<CommandDomain>, RepositoryError<ActionId>>>()?;
         Ok(collected)
     }
 
-    async fn get(&self, id: &ActionID) -> Result<CommandDomain, AgentCommandError> {
+    async fn get(&self, id: &ActionId) -> Result<CommandDomain, AgentCommandError> {
         let item = self
             .query()
             .key_condition_expression("action_id = :action_id")
@@ -114,7 +114,7 @@ impl AgentCommandRepository for DDBAgentCommandRepository {
 
     async fn set_progress(
         &self,
-        id: &ActionID,
+        id: &ActionId,
         progress: &Progression,
     ) -> Result<CommandDomain, AgentCommandError> {
         if progress.is_done() {
