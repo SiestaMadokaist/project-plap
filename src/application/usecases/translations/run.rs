@@ -111,9 +111,9 @@ impl<R: TLRepos, C: TLClients> Run<R, C> {
             let translated = self.client.translator().translate(&raw).await?;
             let inserted = tl_repo.insert(prev, chapter_id).await?;
             storage
-                .write(inserted.filepath(), &translated.bytes().collect())
+                .write(&inserted.filepath(), &translated.bytes().collect())
                 .await?;
-            let public_url = storage.public_url(inserted.filepath());
+            let public_url = storage.public_url(&inserted.filepath());
             let message = format!(
                 "chapter {} of {:?} has just been translated here: {}",
                 inserted.title(),

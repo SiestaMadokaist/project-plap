@@ -1,16 +1,24 @@
 use crate::{
     config::helper::{var_or, var_second},
-    pkg::{enums::stage::Stage, types::time::Second},
+    pkg::{
+        enums::stage::Stage,
+        types::{strings::URL, time::Second},
+    },
 };
 use std::env;
 
 pub struct DiffusionEnv {
     stage: String,
+    civitai_host: String,
+
     pub localhost: bool,
     pub max_data_transfer: i64,
     pub watch_dir: String,
     pub aws_region: String,
     pub discord_webhook_url: String,
+
+    pub civitai_apikey: String,
+    pub workdir: String,
 
     pub output_region: String,
     pub output_bucket: String,
@@ -31,6 +39,11 @@ impl DiffusionEnv {
         Self {
             localhost: true, // @todo
             stage: var_or("STAGE", "production"),
+
+            civitai_apikey: env::var("CIVITAI_APIKEY").expect("CIVITAI_APIKEY must be set"),
+            civitai_host: env::var("CIVITAI_HOST").expect("CIVITAI_HOST must be set"),
+            workdir: env::var("WORKDIR").expect("WORKDIR must be set"),
+
             watch_dir: env::var("WATCH_DIR").expect("WATCH_DIR must be set"),
             max_data_transfer: env::var("MAX_DATA_TRANSFER")
                 .ok()
@@ -52,6 +65,10 @@ impl DiffusionEnv {
             queue_interval: var_second("QUEUE_INTERVAL"),
             idle_tolerance: var_second("IDLE_TOLERANCE"),
         }
+    }
+
+    pub fn civitai_host(&self) -> URL {
+        URL(self.civitai_host.clone())
     }
 
     pub fn stage(&self) -> Stage {
