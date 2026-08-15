@@ -1,5 +1,7 @@
 use std::rc::Rc;
 
+#[cfg(feature = "datatransfer")]
+use crate::infras::civitai::dto::model_version::ModelVersionDTO;
 use crate::{
     application::{
         ports::{
@@ -30,7 +32,8 @@ use crate::{
 trait_clients!(
     CommandHandlerClients,
     clients::container::HasDiffusion,
-    clients::container::HasModelStorage
+    clients::container::HasModelStorage,
+    clients::container::HasCivitai
 );
 trait_repos!(CommandHandlerRepos, repository::container::HasAgentCommand);
 
@@ -64,6 +67,16 @@ impl<R: CommandHandlerRepos, C: CommandHandlerClients> CommandHandler<R, C> {
         }
     }
 
+    fn remote_path(mv: &ModelVersionDTO, ext: &str) -> StoragePath {
+        use crate::infras::civitai;
+        let category = mv.category();
+        let id: &civitai::typing::VersionId = &mv.id;
+        let name = &mv.name;
+        let s = format!("{category}/{id}/{name}{ext}");
+        StoragePath(s)
+    }
+
+    #[cfg(feature = "datatransfer")]
     async fn handle_network(&self, arg: &NetworkArgs) -> anyhow::Result<()> {
         let result: anyhow::Result<()> = match &arg.src {
             ModelSrc::S3(s) => match &arg.dst {
@@ -90,13 +103,27 @@ impl<R: CommandHandlerRepos, C: CommandHandlerClients> CommandHandler<R, C> {
                     Err(err.into())
                 }
             },
-            ModelSrc::Civitai(i) => match &arg.dst {
+            ModelSrc::Civitai(id) => match &arg.dst {
                 ModelDst::S3(_) => {
                     let msg = "external to s3 must use local with forward = true";
                     let err = DomainError::NotAllowed(msg.into());
                     Err(err.into())
                 }
-                ModelDst::Local(_) => Err(DomainError::NotImplemented.into()),
+                ModelDst::Local(args) => {
+                    let api = self.client.civitai();
+                    let mv = api.version_detail(id).await?;
+                    let path = api.abs_path(&mv.id, &mv.category(), &mv.name);
+                    api.download(id, &path).await?;
+                    if args.forward {
+                        let storage = self.client.model_storage();
+                        let model_path = Self::remote_path(&mv, ".safetensors");
+                        let info_path = Self::remote_path(&mv, ".json");
+                        storage.upload(&path, &model_path).await?;
+                        let info = serde_json::to_value(mv)?.to_string();
+                        storage.write(&info_path, &info.to_string().into_bytes());
+                    }
+                    Ok(())
+                }
             },
         };
         result
@@ -116,6 +143,7 @@ impl<R: CommandHandlerRepos, C: CommandHandlerClients> CommandHandler<R, C> {
         let action = &self.params.action;
         match action {
             Inference(arg) => self.handle_inference(arg).await,
+            #[cfg(feature = "datatransfer")]
             Network(arg) => self.handle_network(arg).await,
             _ => Ok(()),
         }

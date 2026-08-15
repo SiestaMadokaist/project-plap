@@ -115,7 +115,7 @@ impl<C: SaveOutputClient, R: SaveOutputRepos> SaveOutput<C, R> {
             storage.bucket()
         );
         storage
-            .write(remote_path, data)
+            .write(&remote_path, data)
             .await
             .map_err(|_| DomainError::ApiError(err_msg).into())
     }

@@ -197,6 +197,7 @@ impl StorageClient for S3Storage {
         StorageBucket(self.bucket.clone())
     }
 
+    #[cfg(feature = "datatransfer")]
     async fn download(&self, remote: &StoragePath, local: &PathBuf) -> Result<(), DomainError> {
         let same_region = self.is_same_region().await?;
         if !same_region {
@@ -216,6 +217,7 @@ impl StorageClient for S3Storage {
         self.spawn_cp(&src, dst, recursive).await
     }
 
+    #[cfg(feature = "datatransfer")]
     async fn upload(&self, local: &PathBuf, remote: &StoragePath) -> Result<(), DomainError> {
         let same_region = self.is_same_region().await?;
         if !same_region {
@@ -237,7 +239,7 @@ impl StorageClient for S3Storage {
         self.spawn_cp(src, &dst, recursive).await
     }
 
-    async fn read(&self, path: StoragePath) -> Result<String, DomainError> {
+    async fn read(&self, path: &StoragePath) -> Result<String, DomainError> {
         let out = self
             .client
             .get_object()
@@ -256,30 +258,30 @@ impl StorageClient for S3Storage {
         String::from_utf8(bytes.to_vec()).map_err(|e| DomainError::Serialize(e.to_string()))
     }
 
-    fn public_url(&self, path: StoragePath) -> String {
+    fn public_url(&self, path: &StoragePath) -> String {
         return format!(
             "https://{}.s3.ap-southeast-1.amazonaws.com/{}",
             self.bucket, path.0,
         );
     }
 
-    async fn ls(&self, prefix: StoragePrefix) -> Vec<String> {
+    async fn ls(&self, prefix: &StoragePrefix) -> Vec<String> {
         let result = self
             .client
             .list_objects()
             .bucket(&self.bucket)
-            .prefix(prefix.0)
+            .prefix(prefix.0.clone())
             .send()
             .await;
         todo!();
         // vec![]
     }
 
-    async fn versions(&self, path: StoragePath) -> Result<ItemVersion, DomainError> {
+    async fn versions(&self, path: &StoragePath) -> Result<ItemVersion, DomainError> {
         todo!();
     }
 
-    async fn write(&self, path: StoragePath, data: &Vec<u8>) -> Result<(), DomainError> {
+    async fn write(&self, path: &StoragePath, data: &Vec<u8>) -> Result<(), DomainError> {
         let bytes = ByteStream::from(data.clone());
         self.client
             .put_object()

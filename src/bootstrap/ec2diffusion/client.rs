@@ -7,14 +7,15 @@ use crate::{
     application::ports::clients::{
         compute_agent::ComputeAgent,
         container::{
-            HasComputeAgent, HasDiffusion, HasEngines, HasModelStorage, HasNotification,
-            HasOutputStorage,
+            HasCivitai, HasComputeAgent, HasDiffusion, HasEngines, HasModelStorage,
+            HasNotification, HasOutputStorage,
         },
         diffusions::DiffusionClient,
     },
     config::diffusion_env::DiffusionEnv,
     domain::commands::compute::ComputeRegion,
     infras::{
+        civitai::client::CivitaiAPI,
         compute::ec2::EC2MultiRegion,
         compute_agent::{ec2::EC2Agent, localhost::LocalhostAgent},
         diffusions::a1111::A1111,
@@ -30,11 +31,12 @@ pub struct EC2DiffusionClients {
     diffusion: Box<dyn DiffusionClient>,
     engines: EC2MultiRegion,
     agent: Box<dyn ComputeAgent>,
+    civitai: CivitaiAPI,
 }
 
 impl EC2DiffusionClients {
     pub fn rc(env: &DiffusionEnv, config: SdkConfig) -> Rc<Self> {
-        Rc::new(Self::new(env, config))
+        Rc::new(Self::new(&env, config))
     }
 
     fn agent(env: &DiffusionEnv) -> Box<dyn ComputeAgent> {
@@ -60,6 +62,11 @@ impl EC2DiffusionClients {
                 env.output_prefix.clone(),
                 env.max_data_transfer,
             ),
+            civitai: CivitaiAPI::new(
+                env.civitai_host(),
+                env.civitai_apikey.clone(),
+                env.workdir.clone(),
+            ),
             model_storage: S3Storage::new(
                 config.clone(),
                 env.model_region
@@ -78,6 +85,12 @@ impl EC2DiffusionClients {
             agent: Self::agent(env),
         };
         general_clients
+    }
+}
+
+impl HasCivitai for EC2DiffusionClients {
+    fn civitai(&self) -> &CivitaiAPI {
+        &self.civitai
     }
 }
 

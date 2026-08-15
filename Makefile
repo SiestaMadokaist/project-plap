@@ -40,7 +40,7 @@ package: build
 # --- standalone binary deploy (e.g. diffusion-agent on EC2) ---
 
 deploy-bin:
-	cargo build --release
+	cargo build --release --features datatransfer --bin diffusion-agent
 	@for bin in $(BINS); do \
 		aws s3 cp target/release/$$bin $(S3_BIN_BUCKET)/$$bin; \
 	done

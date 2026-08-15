@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::pkg::macros::displayable;
+use crate::pkg::macros::{displayable, id_type};
 
 type Tags = CommaSeparated;
 #[derive(Clone, Serialize, Deserialize)]
