@@ -120,7 +120,9 @@ impl<R: CommandHandlerRepos, C: CommandHandlerClients> CommandHandler<R, C> {
                         let info_path = Self::remote_path(&mv, ".json");
                         storage.upload(&path, &model_path).await?;
                         let info = serde_json::to_value(mv)?.to_string();
-                        storage.write(&info_path, &info.to_string().into_bytes());
+                        storage
+                            .write(&info_path, &info.to_string().into_bytes())
+                            .await?;
                     }
                     Ok(())
                 }
