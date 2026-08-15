@@ -65,15 +65,20 @@ impl<C: SaveOutputClient, R: SaveOutputRepos> SaveOutput<C, R> {
         }
     }
 
+    async fn read_exif(&self) -> anyhow::Result<Exif<ComfyUI>> {
+        let data = self.ioread().await?;
+        let exif = Exif::<ComfyUI>::new(data.clone());
+        Ok(exif)
+    }
+
     /**
      * @todo!()
      * extract exif from image
      * store exif to bigquery
      */
-    async fn read_exif(&self) -> anyhow::Result<Exif<ComfyUI>> {
-        let data = self.ioread().await?;
-        let exif = Exif::<ComfyUI>::new(data.clone());
-        Ok(exif)
+    async fn save_exif(&self) -> anyhow::Result<()> {
+        let _exif = self.read_exif().await?;
+        Ok(())
     }
 
     fn store_path(&self) -> StoragePath {
@@ -81,7 +86,9 @@ impl<C: SaveOutputClient, R: SaveOutputRepos> SaveOutput<C, R> {
         let ds = now.to_datestring();
         let date_string = ds.as_str();
         let relative_path = self.relative_path();
-        let path = relative_path.to_str().unwrap_or("todo!(now)");
+        let path = relative_path
+            .to_str()
+            .expect("relative_path cannot be converted to str???");
         let s = format!("{}/{}", date_string, path);
         StoragePath(s)
     }
@@ -121,7 +128,7 @@ impl<C: SaveOutputClient, R: SaveOutputRepos> SaveOutput<C, R> {
     }
 
     pub async fn exec(&self) -> anyhow::Result<()> {
-        self.read_exif().await?;
+        self.save_exif().await?;
         self.save_output().await?;
         Ok(())
     }

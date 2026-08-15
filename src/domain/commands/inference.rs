@@ -1,6 +1,6 @@
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize};
 
-use crate::pkg::types::unit;
+use crate::{domain::storage::StoragePath, pkg::types::unit};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorkflowId(pub String);
@@ -8,6 +8,7 @@ pub struct WorkflowId(pub String);
 #[derive(Debug, Serialize, Deserialize)]
 pub struct InferenceConfig {
     workflow_id: Option<WorkflowId>,
+    loras: Vec<StoragePath>,
     positive: String,
     negative: String,
     width: unit::Px,

@@ -3,7 +3,7 @@ use std::rc::Rc;
 use aws_sdk_dynamodb::Client;
 use serde::{Deserialize, Serialize};
 
-use crate::{
+use rust_api::{
     application::ports::repository::container::{HasHotReload, HasTranslation},
     infras::repos::dynamo::{
         hotreload::DDBHotReloadRepository, translation::DDBTranslationRepository,

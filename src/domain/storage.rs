@@ -7,6 +7,20 @@ id_type!(StorageBucket);
 id_type!(StoragePath);
 id_type!(StoragePrefix);
 
+impl StoragePrefix {
+    pub fn at(&self, other: StoragePrefix) -> StoragePrefix {
+        if other.0.starts_with("/") {
+            return other;
+        } else if other.0.starts_with("./") {
+            let s = format!("{}/{}", self.0, other.0.replacen("./", "", 1));
+            StoragePrefix(s)
+        } else {
+            let s = format!("{}/{}", self.0, other.0);
+            StoragePrefix(s)
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct ItemVersion {
     pub key: Option<String>,

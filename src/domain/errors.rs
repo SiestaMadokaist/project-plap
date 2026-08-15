@@ -30,6 +30,9 @@ pub enum DomainError {
     #[error("upstream response had no content")]
     MissingContent,
 
+    #[error("payload incomplete")]
+    MissingPayload,
+
     #[error("http connection failed: {0}")]
     HttpConnectionFailed(String),
 

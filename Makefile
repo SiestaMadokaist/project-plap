@@ -2,7 +2,6 @@ STAGE     ?= production
 FUNCTIONS := api ws cron
 DIST_DIR  := dist
 
-BINS         := diffusion-agent
 S3_BIN_BUCKET := s3://virginia-ramadoka/bin
 
 TF_VARS := -var="stage=$(STAGE)"
@@ -41,9 +40,9 @@ package: build
 
 deploy-bin:
 	cargo build --release --features datatransfer --bin diffusion-agent
-	@for bin in $(BINS); do \
-		aws s3 cp target/release/$$bin $(S3_BIN_BUCKET)/$$bin; \
-	done
+	SANITY_RUN=true ENV_PATH="./.env.diffusion" ./target/release/diffusion-agent
+	aws s3 cp target/release/diffusion-agent $(S3_BIN_BUCKET)/diffusion-agent
+	aws s3 cp .env.diffusion $(S3_BIN_BUCKET)/.env.diffusion
 
 # --- local run ---
 # Starts a local Lambda API server on http://localhost:9000

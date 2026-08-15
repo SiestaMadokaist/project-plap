@@ -3,7 +3,7 @@ use std::rc::Rc;
 // use async_openai::{config::OpenAIConfig, Client as OpenAIClient};
 use aws_config::SdkConfig;
 
-use crate::{
+use rust_api::{
     application::ports::clients::{
         compute_agent::ComputeAgent,
         container::{
@@ -12,7 +12,6 @@ use crate::{
         },
         diffusions::DiffusionClient,
     },
-    config::diffusion_env::DiffusionEnv,
     domain::commands::compute::ComputeRegion,
     infras::{
         civitai::client::CivitaiAPI,
@@ -23,6 +22,8 @@ use crate::{
         storage::s3::S3Storage,
     },
 };
+
+use crate::env::DiffusionEnv;
 
 pub struct EC2DiffusionClients {
     output_storage: S3Storage,

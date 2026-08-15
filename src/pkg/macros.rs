@@ -23,6 +23,7 @@ macro_rules! id_type {
     };
 }
 
+#[macro_export]
 macro_rules! displayable {
     ($name:ident) => {
         impl std::fmt::Display for $name {
@@ -60,7 +61,7 @@ macro_rules! trait_repos {
     };
 }
 
-pub(crate) use displayable;
+pub use displayable;
 pub(crate) use id_type;
 pub(crate) use trait_clients;
 pub(crate) use trait_repos;

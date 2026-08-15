@@ -10,3 +10,14 @@ pub enum Stage {
     Production,
 }
 displayable!(Stage);
+
+impl From<&str> for Stage {
+    fn from(value: &str) -> Self {
+        match value {
+            "development" => Stage::Development,
+            "staging" => Stage::Staging,
+            "production" => Stage::Staging,
+            _ => Stage::Development,
+        }
+    }
+}

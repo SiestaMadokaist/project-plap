@@ -3,11 +3,10 @@ use std::rc::Rc;
 use async_openai::{config::OpenAIConfig, Client as OpenAIClient};
 use aws_config::SdkConfig;
 
-use crate::{
+use rust_api::{
     application::ports::clients::container::{
         HasNotification, HasOutputStorage, HasRaws, HasTranslator,
     },
-    config::cron_env::CronEnv,
     infras::{
         notifications::discord::Discord,
         raws::syosetu::{ProxyConfig, Syosetu},
@@ -15,6 +14,8 @@ use crate::{
         translators::chatgpt::ChatGPT,
     },
 };
+
+use crate::env::CronEnv;
 
 pub struct CronClients {
     translator: ChatGPT,

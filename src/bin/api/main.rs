@@ -1,67 +1,49 @@
-use std::{collections::HashMap, rc::Rc};
+use std::rc::Rc;
 
 use lambda_runtime::{run, service_fn, Error, LambdaEvent};
 use matchit::Router;
 use rust_api::{
-    bootstrap::cron::{client::CronClients, repo::CronRepos},
-    config::cron_env::CronEnv,
+    application::usecases::hq::models::list::GetListModel, domain::errors::DomainError,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
-#[derive(Deserialize)]
-struct ApiEvent {
-    path: String,
-    #[serde(rename = "httpMethod")]
-    #[allow(dead_code)]
-    http_method: String,
-    #[allow(dead_code)]
-    body: Option<String>,
-}
+mod bootstrap;
+mod env;
+mod routes;
 
-#[derive(Serialize)]
-struct ApiResponse {
-    #[serde(rename = "statusCode")]
-    status_code: u16,
-    headers: HashMap<String, String>,
-    body: String,
-}
+use bootstrap::{client::ApiClients, repo::ApiRepos};
+use env::ApiEnv;
 
-fn json_response(status_code: u16, body: impl Into<String>) -> ApiResponse {
-    let mut headers = HashMap::new();
-    headers.insert("content-type".into(), "application/json".into());
-    ApiResponse {
-        status_code,
-        headers,
-        body: body.into(),
-    }
-}
-
-enum RouteId {
-    Hello,
-}
+use crate::routes::{json_response, ApiEvent, ApiResponse, HttpEvent, HttpMethod, RouteId};
 
 fn routes() -> Router<RouteId> {
     let mut router = Router::new();
-    router.insert("/", RouteId::Hello).expect("valid route");
+    router
+        .insert("/", RouteId::ListModels)
+        .expect("valid route");
     router
 }
 
-async fn hello(_repo: &CronRepos, _client: &CronClients) -> ApiResponse {
-    json_response(200, r#"{"message":"hello world"}"#)
-}
-
 async fn handler(
-    repo: Rc<CronRepos>,
-    client: Rc<CronClients>,
+    repos: Rc<ApiRepos>,
+    clients: Rc<ApiClients>,
     router: Rc<Router<RouteId>>,
-    event: LambdaEvent<ApiEvent>,
+    event: HttpEvent,
 ) -> Result<ApiResponse, Error> {
-    let path = &event.payload.path;
+    let path = &event.body().path;
 
     let resp = match router.at(path) {
-        Ok(matched) => match matched.value {
-            RouteId::Hello => hello(&repo, &client).await,
-        },
+        Ok(matched) => {
+            let resp: serde_json::Value = match matched.value {
+                RouteId::ListModels => {
+                    GetListModel::new(clients.clone(), event.body().into())
+                        .exec()
+                        .await?
+                }
+                _ => false.into(),
+            };
+            json_response(200, resp.to_string())
+        }
         Err(_) => json_response(404, r#"{"error":"not found"}"#),
     };
 
@@ -73,19 +55,23 @@ async fn main() -> Result<(), Error> {
     rust_api::init_env();
     rust_api::init_tracing();
 
-    let env = CronEnv::from_env();
+    let env = ApiEnv::from_env();
+    if env.sanity_run() {
+        return Ok(());
+    }
     let config = aws_config::from_env().load().await;
     let dynamo = aws_sdk_dynamodb::Client::new(&config);
 
-    let repo = CronRepos::rc(&dynamo, env.stage());
-    let client = CronClients::rc(env, config);
+    let repo = ApiRepos::rc(&dynamo, env.stage());
+    let client = ApiClients::rc(&env, &config);
     let router = Rc::new(routes());
 
-    run(service_fn(move |event| {
+    run(service_fn(move |event: LambdaEvent<ApiEvent>| {
         let r = repo.clone();
         let c = client.clone();
         let rt = router.clone();
-        async move { handler(r, c, rt, event).await }
+        let http_event = HttpEvent(event);
+        async move { handler(r, c, rt, http_event).await }
     }))
     .await
 }

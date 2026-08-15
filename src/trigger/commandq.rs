@@ -28,20 +28,16 @@ impl<R: CommandHandlerRepos, C: CommandHandlerClients> CommandQ<R, C> {
     async fn on_interval(&self) -> anyhow::Result<()> {
         let loader = self.repos.agent_command();
         // could just load 1 at a time, but idk.
-        let in_progress = loader.in_progress(3).await?;
+        let in_progress = loader.in_progress(1).await?;
         // "lowest" priority score first
         // lowest mean earliest being put...
         // or, just some command with higher urgency.
-        let next = in_progress.into_iter().next();
-        match next {
-            None => Ok(()),
-            Some(params) => {
-                let mut handler =
-                    CommandHandler::new(self.repos.clone(), self.clients.clone(), params);
-                let result = handler.exec().await?;
-                Ok(result)
-            }
+        for command in in_progress.into_iter() {
+            let mut handler =
+                CommandHandler::new(self.repos.clone(), self.clients.clone(), command);
+            handler.exec().await?;
         }
+        Ok(())
     }
 
     pub async fn run(&self) -> anyhow::Result<()> {

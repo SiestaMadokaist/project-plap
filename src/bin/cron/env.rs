@@ -1,9 +1,8 @@
 use std::env;
 
-use crate::{config::helper::var_or, pkg::enums::stage::Stage};
+use rust_api::pkg::{enums::stage::Stage, utils::var_or};
 pub struct CronEnv {
     stage: String,
-    pub translation_table: String,
     pub openai_model: String,
     pub syosetu_host: String,
     pub proxy_host: Option<String>,
@@ -23,7 +22,6 @@ impl CronEnv {
     pub fn from_env() -> Self {
         Self {
             stage: var_or("STAGE", "production"),
-            translation_table: var_or("TRANSLATION_TABLE", "production-translations"),
             openai_model: var_or("OPENAI_MODEL", "gpt-4o"),
             syosetu_host: var_or("SYOSETU_HOST", "https://ncode.syosetu.com"),
             proxy_host: env::var("PROXY_HOST").ok(),

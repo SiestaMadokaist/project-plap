@@ -13,15 +13,15 @@ pub struct BillOptimization {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum LaunchConfigCtx {
-    LaunchConfigV2,
+pub enum HotReloadService {
+    EC2Diffusion,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct DiffusionConfigDomain {
     checkpoint: String,
     username: UserId,
-    context: LaunchConfigCtx,
+    svc: HotReloadService,
     region: String,
     bill_saving: BillOptimization,
 }

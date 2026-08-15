@@ -1,19 +1,28 @@
 use std::{cell::Cell, rc::Rc};
 
 use rust_api::{
-    bootstrap::ec2diffusion::{client::EC2DiffusionClients, repo::EC2DiffusionRepo},
-    config::diffusion_env::DiffusionEnv,
     pkg::types::{peek::Peek, time::Timestamp},
     trigger::{
         commandq::CommandQ, idle_terminator::IdleTerminator, output_listener::NewOutputListener,
     },
 };
 
+mod bootstrap;
+mod env;
+
+use bootstrap::{client::EC2DiffusionClients, repo::EC2DiffusionRepo};
+use env::DiffusionEnv;
+
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> anyhow::Result<()> {
     rust_api::init_env();
     rust_api::init_tracing();
     let env = DiffusionEnv::from_env();
+    // make sure no missing env in the build
+    tracing::debug!("sanity run: {}", env.sanity_run());
+    if env.sanity_run() {
+        return Ok(());
+    }
     let queue_interval = env.queue_interval.clone();
     let track_interval = env.watch_interval.clone();
     let idle_tolerance = env.idle_tolerance.clone();
@@ -26,7 +35,7 @@ async fn main() -> anyhow::Result<()> {
     let rc_start_at = Rc::new(Cell::new(start_at));
     let rc_start_peek = Peek::new(rc_start_at.clone());
     let queue_handler = CommandQ::new(clients.clone(), repos.clone(), queue_interval);
-    let activity_tracker = NewOutputListener::new(
+    let output_listener = NewOutputListener::new(
         clients.clone(),
         repos.clone(),
         watch_dir,
@@ -41,7 +50,7 @@ async fn main() -> anyhow::Result<()> {
     );
     tokio::try_join!(
         queue_handler.run(),
-        activity_tracker.run(),
+        output_listener.run(),
         idle_terminator.run()
     )?;
     Ok(())

@@ -67,6 +67,7 @@ impl<R: CommandHandlerRepos, C: CommandHandlerClients> CommandHandler<R, C> {
         }
     }
 
+    #[cfg(feature = "datatransfer")]
     fn remote_path(mv: &ModelVersionDTO, ext: &str) -> StoragePath {
         use crate::infras::civitai;
         let category = mv.category();

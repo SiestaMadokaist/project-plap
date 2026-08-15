@@ -1,6 +1,8 @@
 use lambda_runtime::{run, service_fn, Error, LambdaEvent};
 use serde_json::{json, Value};
 
+mod bootstrap;
+
 async fn handler(event: LambdaEvent<Value>) -> Result<Value, Error> {
     let route_key = event.payload["requestContext"]["routeKey"]
         .as_str()

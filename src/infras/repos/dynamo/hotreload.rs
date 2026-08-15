@@ -1,8 +1,4 @@
-use aws_sdk_dynamodb::{
-    operation::query::builders::QueryFluentBuilder,
-    types::{AttributeAction, AttributeValue, AttributeValueUpdate},
-    Client,
-};
+use aws_sdk_dynamodb::Client;
 
 use crate::{
     application::ports::repository::hot_reload::{HotReloadError, HotReloadRepository},

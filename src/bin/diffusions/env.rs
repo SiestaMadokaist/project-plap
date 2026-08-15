@@ -1,20 +1,19 @@
-use crate::{
-    config::helper::{var_or, var_second},
-    pkg::{
-        enums::stage::Stage,
-        types::{strings::URL, time::Second},
-    },
+use rust_api::pkg::{
+    enums::stage::Stage,
+    types::{strings::URL, time::Second},
+    utils::{var_or, var_second},
 };
 use std::env;
 
 pub struct DiffusionEnv {
     stage: String,
     civitai_host: String,
+    sanity_run: String,
 
     pub localhost: bool,
     pub max_data_transfer: i64,
     pub watch_dir: String,
-    pub aws_region: String,
+    // pub aws_region: String,
     pub discord_webhook_url: String,
 
     pub civitai_apikey: String,
@@ -39,6 +38,7 @@ impl DiffusionEnv {
         Self {
             localhost: true, // @todo
             stage: var_or("STAGE", "production"),
+            sanity_run: var_or("SANITY_RUN", "false"),
 
             civitai_apikey: env::var("CIVITAI_APIKEY").expect("CIVITAI_APIKEY must be set"),
             civitai_host: env::var("CIVITAI_HOST").expect("CIVITAI_HOST must be set"),
@@ -49,7 +49,7 @@ impl DiffusionEnv {
                 .ok()
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(DEFAULT_MAX_DATA_TRANSFER_BYTES),
-            aws_region: var_or("AWS_REGION", "us-east-1"),
+            // aws_region: var_or("AWS_REGION", "us-east-1"),
             discord_webhook_url: env::var("DISCORD_WEBHOOK_URL")
                 .expect("DISCORD_WEBHOOK_URL must be set"),
 
@@ -67,16 +67,15 @@ impl DiffusionEnv {
         }
     }
 
+    pub fn sanity_run(&self) -> bool {
+        self.sanity_run == "true"
+    }
+
     pub fn civitai_host(&self) -> URL {
         URL(self.civitai_host.clone())
     }
 
     pub fn stage(&self) -> Stage {
-        match self.stage.as_str() {
-            "development" => Stage::Development,
-            "staging" => Stage::Staging,
-            "production" => Stage::Staging,
-            _ => Stage::Development,
-        }
+        self.stage.as_str().into()
     }
 }
