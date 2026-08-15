@@ -77,12 +77,6 @@ impl From<reqwest::Error> for DomainError {
     }
 }
 
-impl From<serde_json::Error> for DomainError {
-    fn from(e: serde_json::Error) -> DomainError {
-        DomainError::Serialize(e.to_string())
-    }
-}
-
 impl From<SelectorErrorKind<'_>> for DomainError {
     fn from(e: SelectorErrorKind<'_>) -> DomainError {
         DomainError::InvalidSelector(e.to_string())

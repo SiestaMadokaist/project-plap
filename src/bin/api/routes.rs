@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use lambda_runtime::LambdaEvent;
+use rust_api::domain::errors::DomainError;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -23,6 +24,19 @@ pub struct ApiResponse {
     body: String,
 }
 
+fn error_code(err: DomainError) -> u16 {
+    match err {
+        DomainError::ApiError(_) => 503,
+        DomainError::NotAllowed(_) => 403,
+        _ => 500,
+    }
+}
+
+pub fn err_response(err: DomainError) -> ApiResponse {
+    let code = error_code(err);
+    json_response(code, r#"{"error": "internal error"}"#)
+}
+
 pub fn json_response(status_code: u16, body: impl Into<String>) -> ApiResponse {
     let mut headers = HashMap::new();
     headers.insert("content-type".into(), "application/json".into());
@@ -40,14 +54,25 @@ pub struct ApiEvent {
     #[allow(dead_code)]
     http_method: HttpMethod,
     #[allow(dead_code)]
-    body: Option<serde_json::Value>,
+    body: Option<String>,
 }
 
 // type HttpEvent = LambdaEvent<ApiEvent>;
 pub struct HttpEvent(pub LambdaEvent<ApiEvent>);
 
 impl HttpEvent {
-    pub fn body(&self) -> Option<serde_json::Value> {
-        self.0.payload.body.clone()
+    pub fn body(&self) -> Result<serde_json::Value, serde_json::Error> {
+        let body = &self.0.payload.body;
+        match body {
+            None => Ok(serde_json::from_str("{}").expect("{} is always a valid json}")),
+            Some(x) => {
+                let result = serde_json::from_str::<serde_json::Value>(x)?;
+                Ok(result)
+            }
+        }
+    }
+
+    pub fn path(&self) -> &str {
+        &self.0.payload.path
     }
 }

@@ -48,3 +48,9 @@ pub enum DomainError {
     #[error("transfer size {size} bytes exceeds the {limit} byte limit")]
     TransferTooLarge { size: u64, limit: u64 },
 }
+
+impl From<serde_json::Error> for DomainError {
+    fn from(value: serde_json::Error) -> Self {
+        DomainError::Serialize(value.to_string())
+    }
+}

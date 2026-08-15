@@ -1,11 +1,12 @@
 use std::rc::Rc;
 
-use serde::{Deserialize, Serialize};
-
 use crate::{
     application::ports::clients::{container::HasModelStorage, storage::StorageClient},
-    domain::{commands::compute::ComputeRegion, storage::StoragePrefix},
+    domain::{commands::compute::ComputeRegion, errors::DomainError, storage::StoragePrefix},
+    json_type,
 };
+use serde::{Deserialize, Serialize};
+use serde_json;
 
 pub struct GetListModel<C: HasModelStorage> {
     clients: Rc<C>,
@@ -16,6 +17,7 @@ pub struct GetListModel<C: HasModelStorage> {
 pub struct Payload {
     region: ComputeRegion,
 }
+json_type!(Payload);
 
 impl<C: HasModelStorage> GetListModel<C> {
     pub fn new(clients: Rc<C>, payload: Payload) -> Self {
@@ -29,8 +31,8 @@ impl<C: HasModelStorage> GetListModel<C> {
         Ok(items)
     }
 
-    pub async fn exec(&self) -> anyhow::Result<serde_json::Value> {
-        let result = self.run().await?;
+    pub async fn exec(&self) -> Result<serde_json::Value, DomainError> {
+        let result = self.run().await.map_err(|_| DomainError::Unhandled)?;
         Ok(result.into())
     }
 }

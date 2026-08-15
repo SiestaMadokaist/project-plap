@@ -1,3 +1,14 @@
+#[macro_export]
+macro_rules! json_type {
+    ($name:ident) => {
+        impl TryFrom<serde_json::Value> for $name {
+            type Error = serde_json::Error;
+            fn try_from(value: serde_json::Value) -> Result<$name, Self::Error> {
+                serde_json::from_value(value)
+            }
+        }
+    };
+}
 macro_rules! id_type {
     ($name:ident) => {
         #[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
@@ -63,5 +74,6 @@ macro_rules! trait_repos {
 
 pub use displayable;
 pub(crate) use id_type;
+pub use json_type;
 pub(crate) use trait_clients;
 pub(crate) use trait_repos;

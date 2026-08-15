@@ -27,7 +27,7 @@ test:
 # Requires: cargo-lambda (cargo install cargo-lambda)
 
 build:
-	cargo lambda build --release --arm64
+	cargo lambda build --release --arm64 --bin api --bin ws --bin cron
 
 package: build
 	mkdir -p $(DIST_DIR)

@@ -5,7 +5,6 @@ use matchit::Router;
 use rust_api::{
     application::usecases::hq::models::list::GetListModel, domain::errors::DomainError,
 };
-use serde::Deserialize;
 
 mod bootstrap;
 mod env;
@@ -14,7 +13,7 @@ mod routes;
 use bootstrap::{client::ApiClients, repo::ApiRepos};
 use env::ApiEnv;
 
-use crate::routes::{json_response, ApiEvent, ApiResponse, HttpEvent, HttpMethod, RouteId};
+use crate::routes::{err_response, json_response, ApiEvent, ApiResponse, HttpEvent, RouteId};
 
 fn routes() -> Router<RouteId> {
     let mut router = Router::new();
@@ -29,24 +28,22 @@ async fn handler(
     clients: Rc<ApiClients>,
     router: Rc<Router<RouteId>>,
     event: HttpEvent,
-) -> Result<ApiResponse, Error> {
-    let path = &event.body().path;
-
+) -> Result<ApiResponse, DomainError> {
+    let path = event.path();
     let resp = match router.at(path) {
         Ok(matched) => {
-            let resp: serde_json::Value = match matched.value {
+            let resp: Result<serde_json::Value, DomainError> = match matched.value {
                 RouteId::ListModels => {
-                    GetListModel::new(clients.clone(), event.body().into())
+                    GetListModel::new(clients.clone(), event.body()?.try_into()?)
                         .exec()
-                        .await?
+                        .await
                 }
-                _ => false.into(),
+                _ => Err(DomainError::NotImplemented),
             };
-            json_response(200, resp.to_string())
+            json_response(200, resp?.to_string())
         }
         Err(_) => json_response(404, r#"{"error":"not found"}"#),
     };
-
     Ok(resp)
 }
 
@@ -71,7 +68,17 @@ async fn main() -> Result<(), Error> {
         let c = client.clone();
         let rt = router.clone();
         let http_event = HttpEvent(event);
-        async move { handler(r, c, rt, http_event).await }
+        async move {
+            let handled: Result<ApiResponse, DomainError> = handler(r, c, rt, http_event).await;
+            let converted: ApiResponse = match handled {
+                Ok(x) => x,
+                Err(e) => {
+                    tracing::error!("unhandled exception: {}", e);
+                    err_response(e)
+                }
+            };
+            Ok::<ApiResponse, Error>(converted)
+        }
     }))
     .await
 }
