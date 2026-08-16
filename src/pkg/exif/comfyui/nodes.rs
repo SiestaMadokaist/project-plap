@@ -34,7 +34,7 @@ pub struct ComfyWorkflow {
 }
 
 impl ComfyWorkflow {
-    pub fn checkpoint(&self) -> Option<&String> {
+    pub fn checkpoint(&self) -> Option<&str> {
         let cp = self
             .nodes
             .iter()
@@ -45,28 +45,28 @@ impl ComfyWorkflow {
         }
     }
 
-    pub fn positive(&self) -> &Option<String> {
+    pub fn positive(&self) -> Option<&str> {
         let result = self.memo.positive.get_or_init(|| {
-            let positive = self
+            let positive: &String = self
                 .nodes
                 .iter()
                 .map(|x| x.positive_clip())
                 .find(|x| matches!(x, Some(_)))??;
-            return Some(positive.clone());
+            return Some(positive.trim().into());
         });
-        return result;
+        result.as_deref()
     }
 
-    pub fn negative(&self) -> &Option<String> {
+    pub fn negative(&self) -> Option<&str> {
         let result = self.memo.negative.get_or_init(|| {
-            let negative = self
+            let negative: &String = self
                 .nodes
                 .iter()
                 .map(|x| x.negative_clip())
                 .find(|x| matches!(x, Some(_)))??;
-            return Some(negative.clone());
+            return Some(negative.trim().into());
         });
-        return result;
+        result.as_deref()
     }
 }
 
@@ -105,7 +105,7 @@ impl ComfyNode {
 }
 
 impl NodeData<Vec<String>> {
-    pub fn value(&self) -> Option<&String> {
-        self.widgets_values.first()
+    pub fn value(&self) -> Option<&str> {
+        self.widgets_values.first().map(|x| x.as_str())
     }
 }

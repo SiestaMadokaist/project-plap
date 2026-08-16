@@ -13,15 +13,15 @@ impl WebUI for A1111 {
 }
 
 impl ExifTraits for Exif<A1111> {
-    fn positive(&self) -> Result<String, ExifError> {
+    fn positive(&self) -> Result<&str, ExifError> {
         todo!()
     }
 
-    fn negative(&self) -> Result<String, ExifError> {
+    fn negative(&self) -> Result<&str, ExifError> {
         todo!()
     }
 
-    fn checkpoint(&self) -> Result<String, ExifError> {
+    fn checkpoint(&self) -> Result<&str, ExifError> {
         todo!();
     }
 }

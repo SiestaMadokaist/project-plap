@@ -7,9 +7,9 @@ pub trait WebUI {
 }
 
 pub trait ExifTraits {
-    fn positive(&self) -> Result<String, ExifError>;
-    fn negative(&self) -> Result<String, ExifError>;
-    fn checkpoint(&self) -> Result<String, ExifError>;
+    fn positive(&self) -> Result<&str, ExifError>;
+    fn negative(&self) -> Result<&str, ExifError>;
+    fn checkpoint(&self) -> Result<&str, ExifError>;
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]

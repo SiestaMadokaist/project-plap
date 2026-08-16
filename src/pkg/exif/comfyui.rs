@@ -100,28 +100,19 @@ impl Exif<ComfyUI> {
 }
 
 impl ExifTraits for Exif<ComfyUI> {
-    fn checkpoint(&self) -> Result<String, ExifError> {
+    fn checkpoint(&self) -> Result<&str, ExifError> {
         let wf = self.workflow().as_ref().map_err(|x| x.clone())?;
-        let s: String = match wf.checkpoint() {
-            None => "???".into(),
-            Some(x) => x.clone(),
-        };
+        let s = wf.checkpoint().unwrap_or("-");
         Ok(s)
     }
-    fn negative(&self) -> Result<String, ExifError> {
+    fn negative(&self) -> Result<&str, ExifError> {
         let wf = self.workflow().as_ref().map_err(|x| x.clone())?;
-        let s: String = match wf.negative() {
-            None => "-".into(),
-            Some(x) => x.clone(),
-        };
+        let s = wf.negative().unwrap_or("-");
         Ok(s)
     }
-    fn positive(&self) -> Result<String, ExifError> {
+    fn positive(&self) -> Result<&str, ExifError> {
         let wf = self.workflow().as_ref().map_err(|x| x.clone())?;
-        let s: String = match wf.positive() {
-            None => "-".into(),
-            Some(x) => x.clone(),
-        };
+        let s = wf.positive().unwrap_or("-");
         Ok(s)
     }
 }
@@ -138,10 +129,18 @@ mod tests {
         print!("raw: {}\n", text);
         let checkpoint = exif.checkpoint()?;
         print!("checkpoint: {}\n", checkpoint);
+        assert_eq!(checkpoint, "cosplayillustriousmi_v20.safetensors");
+
         let positive = exif.positive()?;
         print!("positive: {}\n", positive);
+        assert!(positive.starts_with("photorealistic"));
+        assert!(positive.ends_with("fate series."));
+
         let negative = exif.negative()?;
         print!("negative: {}\n", negative);
+        assert!(negative.starts_with("lowres, bad anatomy"));
+        assert!(negative.ends_with("username, blurry"));
+
         Ok(())
     }
 }
