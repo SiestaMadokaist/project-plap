@@ -7,7 +7,8 @@ S3_BIN_BUCKET := s3://virginia-ramadoka/bin
 TF_VARS := -var="stage=$(STAGE)"
 
 .PHONY: all verify fmt test build package plan deploy run \
-        invoke-api invoke-ws invoke-cron tf-init clean deploy-bin
+        invoke-api invoke-ws invoke-cron tf-init clean deploy-bin \
+        build-api package-api deploy-api
 
 all: verify test build
 
@@ -35,6 +36,19 @@ package: build
 		echo "unzipped size $$fn: $$(du -h target/lambda/$$fn/bootstrap | cut -f1)"; \
 		zip -j $(DIST_DIR)/$$fn.zip target/lambda/$$fn/bootstrap .env.production; \
 	done
+
+# --- deploy just the api function (skips ws/cron, still WIP) ---
+
+build-api:
+	cargo lambda build --release --arm64 --bin api
+
+package-api: build-api
+	mkdir -p $(DIST_DIR)
+	@echo "unzipped size api: $$(du -h target/lambda/api/bootstrap | cut -f1)"
+	zip -j $(DIST_DIR)/api.zip target/lambda/api/bootstrap .env.production
+
+deploy-api: package-api
+	cd terraform && terraform apply -target=aws_lambda_function.api -auto-approve $(TF_VARS)
 
 # --- standalone binary deploy (e.g. diffusion-agent on EC2) ---
 

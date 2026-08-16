@@ -1,4 +1,6 @@
-#[derive(Debug, thiserror::Error)]
+use serde::Serialize;
+
+#[derive(Debug, thiserror::Error, Serialize)]
 pub enum DomainError {
     #[error("failed")]
     Unhandled,

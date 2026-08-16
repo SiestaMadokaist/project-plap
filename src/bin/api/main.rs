@@ -3,8 +3,8 @@ use std::rc::Rc;
 use lambda_runtime::{run, service_fn, Error, LambdaEvent};
 use matchit::Router;
 use rust_api::{
-    application::usecases::hq::models::{fetch::AgentCommandFetchModel, list::GetListModel},
-    domain::errors::DomainError,
+    application::usecases::hq::commands::cp_model::CPModel,
+    application::usecases::hq::models::list::GetListModel, domain::errors::DomainError,
 };
 
 mod bootstrap;
@@ -47,7 +47,7 @@ async fn handler(
                         .await
                 }
                 RouteId::AgentCommandFetchModel => {
-                    AgentCommandFetchModel::new(repos.clone(), event.body()?.try_into()?)
+                    CPModel::new(repos.clone(), event.body()?.try_into()?)
                         .exec()
                         .await
                 }

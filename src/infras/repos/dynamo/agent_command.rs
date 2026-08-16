@@ -21,6 +21,7 @@ pub struct DDBAgentCommandRepository {
 
 impl DDBAgentCommandRepository {
     pub fn new(client: Client, table: String) -> Self {
+        tracing::info!("connecting to table: {}", table);
         Self { client, table }
     }
 }
@@ -52,7 +53,10 @@ impl AgentCommandRepository for DDBAgentCommandRepository {
     async fn insert(&self, command: CommandDomain) -> Result<ActionId, AgentCommandError> {
         let action_id = command.action_id.clone();
         let item = AgentCommandDDB(command);
-        let av_map = to_item(item).map_err(|e| RepositoryError::Serialize(e.to_string()))?;
+        let av_map = to_item(item).map_err(|e| {
+            tracing::error!(error = %e, debug = ?e, "mapping item failed");
+            RepositoryError::Serialize(e.to_string())
+        })?;
         self.client
             .put_item()
             .table_name(&self.table)

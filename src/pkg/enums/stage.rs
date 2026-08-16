@@ -16,7 +16,7 @@ impl From<&str> for Stage {
         match value {
             "development" => Stage::Development,
             "staging" => Stage::Staging,
-            "production" => Stage::Staging,
+            "production" => Stage::Production,
             _ => Stage::Development,
         }
     }

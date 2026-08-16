@@ -27,7 +27,12 @@ pub struct ApiResponse {
     body: String,
 }
 
-fn error_code(err: &DomainError) -> u16 {
+#[derive(Debug, Serialize)]
+struct ErrorResponse<'a> {
+    err: &'a DomainError,
+    code: u16,
+}
+pub fn error_code(err: &DomainError) -> u16 {
     match err {
         DomainError::ApiError(_) => 503,
         DomainError::NotAllowed(_) => 403,
@@ -37,8 +42,16 @@ fn error_code(err: &DomainError) -> u16 {
 
 pub fn err_response(err: &DomainError) -> ApiResponse {
     let code = error_code(err);
+    let resp = ErrorResponse { err, code };
     tracing::error!("error: {}", err.to_string());
-    json_response(code, r#"{"error": "internal error"}"#)
+    let stringified = serde_json::to_string(&resp);
+    match stringified {
+        Ok(s) => json_response(code, s),
+        Err(e) => {
+            tracing::error!("error serialize: {}", e);
+            json_response(500, r#"{"error": "internal error"}"#)
+        }
+    }
 }
 
 pub fn json_response(status_code: u16, body: impl Into<String>) -> ApiResponse {

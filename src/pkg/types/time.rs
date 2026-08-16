@@ -37,6 +37,10 @@ impl Timestamp {
         Self(Utc::now().timestamp())
     }
 
+    pub fn add(&self, dt: Second) -> Timestamp {
+        return Timestamp(self.0 + dt.0);
+    }
+
     pub fn sub(&self, other: &Timestamp) -> Second {
         let dt = self.0 - other.0;
         return Second(dt);

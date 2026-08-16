@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use rust_api::{
     application::ports::repository::container::{HasHotReload, HasTranslation},
+    constant::ddb::DDBTable,
     infras::repos::dynamo::{
         hotreload::DDBHotReloadRepository, translation::DDBTranslationRepository,
     },
@@ -16,37 +17,20 @@ pub struct CronRepos {
     hotreload: DDBHotReloadRepository,
 }
 
-/**
- * @todo:
- * this introduce a name change for table
- */
-#[derive(Copy, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-enum TableName {
-    Translations,
-    HotReloads,
-}
-displayable!(TableName);
-
 impl CronRepos {
     pub fn rc(client: &Client, stage: Stage) -> Rc<Self> {
         Rc::new(Self::new(client, stage))
-    }
-
-    fn to_table(stage: Stage, name: TableName) -> String {
-        let v: Vec<String> = vec![stage.into(), name.into()];
-        v.join("-")
     }
 
     pub fn new(client: &Client, stage: Stage) -> Self {
         Self {
             translation: DDBTranslationRepository::new(
                 client.clone(),
-                Self::to_table(stage, TableName::Translations),
+                DDBTable::Translations.table_name(stage),
             ),
             hotreload: DDBHotReloadRepository::new(
                 client.clone(),
-                Self::to_table(stage, TableName::HotReloads),
+                DDBTable::HotReloads.table_name(stage),
             ),
         }
     }

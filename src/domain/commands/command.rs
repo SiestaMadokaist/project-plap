@@ -8,7 +8,7 @@ use crate::{
     pkg::{
         macros::id_type,
         types::{
-            time::{self, Timestamp},
+            time::{self, Second, Timestamp},
             unit::{self, Index0, Index1},
         },
     },
@@ -21,6 +21,7 @@ pub enum CommandStage {
     // Running is skipped
     // we use InProgress { started_at: Some } to mark its Running
     Completed,
+    Cancelled,
 }
 
 impl From<CommandStage> for String {
@@ -28,6 +29,7 @@ impl From<CommandStage> for String {
         let s: &str = match value {
             CommandStage::InProgress => "in_progress",
             CommandStage::Completed => "completed",
+            CommandStage::Cancelled => "cancelled",
         };
         String::from(s)
     }
@@ -88,14 +90,12 @@ pub struct CommandDomain {
 }
 
 impl CommandDomain {
-    pub fn network(args: NetworkArgs, priority: u64) -> Self {
+    pub fn network(action_id: ActionId, args: NetworkArgs, priority: u64) -> Self {
         let now = Timestamp::now();
-        let nonce = 823272;
-        let action_id = format!("network-{}-{}", now.to_datestring(), nonce);
-        // let nonce: u32 = Math.random() * 1_000_000;
+        let ttl = now.add(Second(86400));
         Self {
-            ttl: None,
-            action_id: ActionId(now.to_datestring()),
+            ttl: Some(ttl),
+            action_id,
             progress: Progression {
                 total: Index0(1),
                 progress: Index0(0),
@@ -111,6 +111,7 @@ impl CommandDomain {
     pub fn status(&self) -> String {
         let s = match self.stage {
             CommandStage::Completed => "completed",
+            CommandStage::Cancelled => "cancelled",
             CommandStage::InProgress => {
                 if self.progress.is_started() {
                     "running"

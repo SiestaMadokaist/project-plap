@@ -3,20 +3,13 @@ use std::rc::Rc;
 use aws_sdk_dynamodb::Client;
 use rust_api::{
     application::ports::repository::container::{HasAgentCommand, HasHotReload},
+    constant::ddb::DDBTable,
     infras::repos::dynamo::{
         agent_command::DDBAgentCommandRepository, hotreload::DDBHotReloadRepository,
     },
     pkg::{enums::stage::Stage, macros::displayable},
 };
 use serde::{Deserialize, Serialize};
-
-#[derive(Copy, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-enum TableName {
-    AgentCommands,
-    HotReloads,
-}
-displayable!(TableName);
 
 pub struct ApiRepos {
     agent_command: DDBAgentCommandRepository,
@@ -28,20 +21,15 @@ impl ApiRepos {
         Rc::new(Self::new(client, stage))
     }
 
-    fn to_table(stage: Stage, name: TableName) -> String {
-        let v: Vec<String> = vec![stage.into(), name.into()];
-        v.join("-")
-    }
-
     pub fn new(client: &Client, stage: Stage) -> Self {
         Self {
             agent_command: DDBAgentCommandRepository::new(
                 client.clone(),
-                Self::to_table(stage, TableName::AgentCommands),
+                DDBTable::AgentCommands.table_name(stage),
             ),
             hotreload: DDBHotReloadRepository::new(
                 client.clone(),
-                Self::to_table(stage, TableName::HotReloads),
+                DDBTable::AgentCommands.table_name(stage),
             ),
         }
     }

@@ -23,20 +23,18 @@ use crate::{
  */
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Payload {
+    action_id: ActionId,
     args: NetworkArgs,
     priority: u64,
 }
 json_type!(Payload);
-
-// trait_clients!(IClients, HasModelStorage, HasCivitai);
 trait_repos!(IRepos, HasAgentCommand);
-pub struct AgentCommandFetchModel<R: IRepos> {
-    // clients: Rc<C>,
+pub struct CPModel<R: IRepos> {
     repos: Rc<R>,
     payload: Payload,
 }
 
-impl<R: IRepos> AgentCommandFetchModel<R> {
+impl<R: IRepos> CPModel<R> {
     pub fn new(repos: Rc<R>, payload: Payload) -> Self {
         Self { repos, payload }
     }
@@ -49,7 +47,11 @@ impl<R: IRepos> AgentCommandFetchModel<R> {
 
     async fn run(&self) -> Result<ActionId, DomainError> {
         let repo = self.repos.agent_command();
-        let command = CommandDomain::network(self.payload.args.clone(), self.payload.priority);
+        let command = CommandDomain::network(
+            self.payload.action_id.clone(),
+            self.payload.args.clone(),
+            self.payload.priority,
+        );
         tracing::debug!("command: {}", serde_json::to_value(&command)?);
         let result = repo
             .insert(command)

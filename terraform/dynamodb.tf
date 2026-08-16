@@ -46,7 +46,7 @@ resource "aws_dynamodb_table" "translations" {
 }
 
 resource "aws_dynamodb_table" "agent_commands" {
-  name         = "${var.stage}-agent-commands"
+  name         = "${var.stage}-agent_commands"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "action_id"
 

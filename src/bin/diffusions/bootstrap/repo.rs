@@ -1,15 +1,15 @@
 use std::rc::Rc;
 
 use aws_sdk_dynamodb::Client;
-use serde::{Deserialize, Serialize};
 
 use rust_api::{
     application::ports::repository::container::{HasAgentCommand, HasHotReload, HasPromptHistory},
+    constant::ddb::DDBTable::{self},
     infras::repos::{
         dynamo::{agent_command::DDBAgentCommandRepository, hotreload::DDBHotReloadRepository},
         prompts::PromptRepository,
     },
-    pkg::{enums::stage::Stage, macros::displayable},
+    pkg::enums::stage::Stage,
 };
 
 pub struct EC2DiffusionRepo {
@@ -18,38 +18,20 @@ pub struct EC2DiffusionRepo {
     prompt: PromptRepository,
 }
 
-/**
- * @todo:
- * this introduce a name change for table
- * eg: agent_commands -> agentcommands, unless
- */
-#[derive(Copy, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-enum TableName {
-    AgentCommands,
-    HotReloads,
-}
-displayable!(TableName);
-
 impl EC2DiffusionRepo {
     pub fn rc(client: &Client, stage: Stage) -> Rc<Self> {
         Rc::new(Self::new(client, stage))
-    }
-
-    fn to_table(stage: Stage, name: TableName) -> String {
-        let v: Vec<String> = vec![stage.into(), name.into()];
-        v.join("-")
     }
 
     pub fn new(client: &Client, stage: Stage) -> Self {
         Self {
             agent_command: DDBAgentCommandRepository::new(
                 client.clone(),
-                Self::to_table(stage, TableName::AgentCommands),
+                DDBTable::AgentCommands.table_name(stage),
             ),
             hotreload: DDBHotReloadRepository::new(
                 client.clone(),
-                Self::to_table(stage, TableName::HotReloads),
+                DDBTable::HotReloads.table_name(stage),
             ),
             prompt: PromptRepository::new(),
         }
