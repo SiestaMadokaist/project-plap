@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     domain::storage::{StorageBucket, StoragePath},
-    infras::civitai,
+    pkg::civitai,
 };
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]

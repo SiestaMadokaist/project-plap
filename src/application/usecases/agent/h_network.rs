@@ -1,8 +1,7 @@
-#[cfg(feature = "datatransfer")]
 use crate::{
-    application::ports::clients::container::{HasCivitai, HasModelStorage},
+    application::ports::clients::container::{HasInferenceModelProvider, HasModelStorage},
     application::ports::clients::storage::StorageClient,
-    domain::storage::StoragePath,
+    domain::storage::{StorageBucket, StoragePath, StoragePrefix},
     domain::{
         commands::{
             command::CommandStage,
@@ -10,12 +9,16 @@ use crate::{
         },
         errors::DomainError,
     },
-    infras::civitai::{self, dto::model_version::ModelVersionDTO},
+    pkg::civitai::{self, dto::model_version::ModelVersionDTO},
     pkg::macros::trait_clients,
 };
 use std::rc::Rc;
 
-trait_clients!(HandleNetworkClients, HasModelStorage, HasCivitai);
+trait_clients!(
+    HandleNetworkClients,
+    HasModelStorage,
+    HasInferenceModelProvider
+);
 
 #[cfg(feature = "datatransfer")]
 pub struct HandleNetwork<'a, C: HandleNetworkClients> {
@@ -74,9 +77,9 @@ impl<'a, C: HandleNetworkClients> HandleNetwork<'a, C> {
                     Err(err.into())
                 }
                 ModelDst::Local(args) => {
-                    let api = self.clients.civitai();
+                    let api = self.clients.inference_model_provider();
                     let mv = api
-                        .version_detail(id)
+                        .get_detail(id)
                         .await
                         .map_err(|x| DomainError::ApiError(x.to_string()))?;
                     let path = api.abs_path(&mv.id, &mv.category(), &mv.name);
@@ -102,5 +105,100 @@ impl<'a, C: HandleNetworkClients> HandleNetwork<'a, C> {
 
     pub async fn exec(&self) -> Result<CommandStage, DomainError> {
         self.handle_network().await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[cfg(feature = "datatransfer")]
+    use std::path::PathBuf;
+
+    use crate::{
+        application::ports::clients::inference_model_provider::InferenceModelProvider,
+        domain::storage::{ItemVersion, StorageBucket},
+        pkg::{civitai::typing::ModelCategory, id::InferenceModelId},
+    };
+
+    use super::*;
+
+    struct MockStorage {}
+
+    #[allow(async_fn_in_trait)]
+    impl StorageClient for MockStorage {
+        fn provider_name() -> String {
+            "mock".into()
+        }
+        fn bucket(&self) -> StorageBucket {
+            StorageBucket("mock-bucket".into())
+        }
+
+        async fn read(&self, path: &StoragePath) -> Result<String, DomainError> {
+            todo!()
+        }
+        async fn write(&self, path: &StoragePath, data: &Vec<u8>) -> Result<(), DomainError> {
+            todo!()
+        }
+        fn public_url(&self, path: &StoragePath) -> String {
+            todo!()
+        }
+        async fn ls(&self, prefix: &StoragePrefix) -> Vec<String> {
+            todo!()
+        }
+        async fn versions(&self, path: &StoragePath) -> Result<ItemVersion, DomainError> {
+            todo!()
+        }
+        #[cfg(feature = "datatransfer")]
+        async fn upload(&self, local: &PathBuf, remote: &StoragePath) -> Result<(), DomainError> {
+            todo!()
+        }
+        #[cfg(feature = "datatransfer")]
+        async fn download(&self, remote: &StoragePath, local: &PathBuf) -> Result<(), DomainError> {
+            todo!()
+        }
+    }
+    struct MockInferenceModelProvider {}
+
+    #[async_trait::async_trait(?Send)]
+    impl InferenceModelProvider for MockInferenceModelProvider {
+        // async fn model_detail(&self, id: &ModelId) -> anyhow::Result<ModelDetailDTO>;
+        async fn get_detail(&self, id: &InferenceModelId) -> anyhow::Result<ModelVersionDTO> {
+            todo!()
+        }
+
+        fn abs_path(&self, id: &InferenceModelId, category: &ModelCategory, name: &str) -> PathBuf {
+            todo!()
+        }
+
+        #[cfg(feature = "datatransfer")]
+        async fn download(&self, id: &InferenceModelId, dst: &PathBuf) -> anyhow::Result<()> {
+            todo!()
+        }
+    }
+
+    struct MockContainer {
+        storage: MockStorage,
+        civitai: MockInferenceModelProvider,
+    }
+
+    impl HasModelStorage for MockContainer {
+        type ModelStorage = MockStorage;
+        fn model_storage(&self) -> &Self::ModelStorage {
+            &self.storage
+        }
+    }
+
+    impl HasInferenceModelProvider for MockContainer {
+        fn inference_model_provider(&self) -> &dyn InferenceModelProvider {
+            &self.civitai
+        }
+    }
+
+    #[test]
+    fn s32localhost() -> std::io::Result<()> {
+        let clients = MockContainer {
+            storage: MockStorage {},
+            civitai: MockInferenceModelProvider {},
+        };
+        Ok(())
     }
 }

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::infras::civitai::{
+use crate::pkg::civitai::{
     self,
     typing::{self, BaseModel},
 };

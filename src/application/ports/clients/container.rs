@@ -1,10 +1,7 @@
-use crate::{
-    application::ports::clients::{
-        compute::ComputeEngines, compute_agent::ComputeAgent, diffusions::DiffusionClient,
-        notification::NotificationClient, raws::RawsClient, storage::StorageClient,
-        translator::TranslatorClient,
-    },
-    infras::civitai::client::CivitaiAPI,
+use crate::application::ports::clients::{
+    compute::ComputeEngines, compute_agent::ComputeAgent, diffusions::DiffusionClient,
+    inference_model_provider::InferenceModelProvider, notification::NotificationClient,
+    raws::RawsClient, storage::StorageClient, translator::TranslatorClient,
 };
 
 pub trait HasTranslator {
@@ -46,6 +43,6 @@ pub trait HasComputeAgent {
     fn agent(&self) -> &dyn ComputeAgent;
 }
 
-pub trait HasCivitai {
-    fn civitai(&self) -> &CivitaiAPI;
+pub trait HasInferenceModelProvider {
+    fn inference_model_provider(&self) -> &dyn InferenceModelProvider;
 }

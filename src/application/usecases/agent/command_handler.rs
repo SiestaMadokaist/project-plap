@@ -1,7 +1,5 @@
 use std::rc::Rc;
 
-#[cfg(feature = "datatransfer")]
-// use crate::infras::civitai::{self, dto::model_version::ModelVersionDTO};
 use crate::{
     application::{
         ports::{
@@ -28,7 +26,7 @@ trait_clients!(
     CommandHandlerClients,
     clients::container::HasDiffusion,
     clients::container::HasModelStorage,
-    clients::container::HasCivitai
+    clients::container::HasInferenceModelProvider
 );
 trait_repos!(CommandHandlerRepos, repository::container::HasAgentCommand);
 

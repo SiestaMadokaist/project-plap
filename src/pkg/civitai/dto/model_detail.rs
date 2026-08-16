@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::infras::civitai::{self, typing::BaseModel};
+use crate::pkg::civitai::{self, typing::BaseModel};
 
 /// more details on ../samples/resp.model.json
 #[derive(Serialize, Deserialize, Debug, Clone)]

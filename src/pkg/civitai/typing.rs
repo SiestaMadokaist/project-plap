@@ -2,9 +2,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::pkg::macros::displayable;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct VersionId(pub u32);
-displayable!(VersionId);
+// as far as civitai is concerned this is just "VersionId"; application/ports
+// only ever sees it as the provider-agnostic pkg::id::InferenceModelId.
+pub type VersionId = crate::pkg::id::InferenceModelId;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModelId(pub u32);

@@ -7,10 +7,11 @@ use rust_api::{
     application::ports::clients::{
         compute_agent::ComputeAgent,
         container::{
-            HasCivitai, HasComputeAgent, HasDiffusion, HasEngines, HasModelStorage,
+            HasComputeAgent, HasDiffusion, HasEngines, HasInferenceModelProvider, HasModelStorage,
             HasNotification, HasOutputStorage,
         },
         diffusions::DiffusionClient,
+        inference_model_provider::InferenceModelProvider,
     },
     domain::commands::compute::ComputeRegion,
     infras::{
@@ -89,8 +90,8 @@ impl EC2DiffusionClients {
     }
 }
 
-impl HasCivitai for EC2DiffusionClients {
-    fn civitai(&self) -> &CivitaiAPI {
+impl HasInferenceModelProvider for EC2DiffusionClients {
+    fn inference_model_provider(&self) -> &dyn InferenceModelProvider {
         &self.civitai
     }
 }
