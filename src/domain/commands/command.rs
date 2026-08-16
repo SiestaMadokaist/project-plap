@@ -1,3 +1,4 @@
+use aws_sdk_s3::config::retry::ShouldAttempt::No;
 use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{
@@ -9,7 +10,7 @@ use crate::{
         macros::id_type,
         types::{
             time::{self, Second, Timestamp},
-            unit::{self, Index0, Index1},
+            unit::{self, Index0, INDEX_ZERO},
         },
     },
 };
@@ -22,6 +23,7 @@ pub enum CommandStage {
     // we use InProgress { started_at: Some } to mark its Running
     Completed,
     Cancelled,
+    Failed,
 }
 
 impl From<CommandStage> for String {
@@ -30,6 +32,7 @@ impl From<CommandStage> for String {
             CommandStage::InProgress => "in_progress",
             CommandStage::Completed => "completed",
             CommandStage::Cancelled => "cancelled",
+            CommandStage::Failed => "failed",
         };
         String::from(s)
     }
@@ -41,15 +44,25 @@ id_type!(ActionId);
 pub struct Progression {
     total: unit::Index0,
     progress: unit::Index0,
-    started_at: Option<Timestamp>,
     finished_at: Option<Timestamp>,
 }
 
 impl Progression {
+    pub fn new(total: unit::Index0, progress: unit::Index0) -> Self {
+        Self {
+            total,
+            progress,
+            finished_at: None,
+        }
+    }
+
+    pub fn start(&mut self) -> () {}
+
     pub fn increment(&mut self) -> () {
+        let now = Timestamp::now();
         self.progress.next();
         if self.is_done() {
-            self.finished_at = Some(time::Timestamp::now());
+            self.finished_at = Some(now);
         }
     }
 
@@ -58,7 +71,7 @@ impl Progression {
     }
 
     pub fn is_started(&self) -> bool {
-        return self.started_at != None;
+        self.progress.gt(&INDEX_ZERO)
     }
 }
 
@@ -99,7 +112,6 @@ impl CommandDomain {
             progress: Progression {
                 total: Index0(1),
                 progress: Index0(0),
-                started_at: None,
                 finished_at: None,
             },
             priority,
@@ -112,6 +124,7 @@ impl CommandDomain {
         let s = match self.stage {
             CommandStage::Completed => "completed",
             CommandStage::Cancelled => "cancelled",
+            CommandStage::Failed => "failed",
             CommandStage::InProgress => {
                 if self.progress.is_started() {
                     "running"
@@ -130,4 +143,27 @@ pub enum Action {
     Inference(InferenceArgs),
     Network(NetworkArgs),
     Compute(ComputeArgs),
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::pkg::types::unit;
+
+    use super::Progression;
+
+    #[test]
+    fn test_increment() -> std::io::Result<()> {
+        let progress = &mut Progression::new(unit::Index0(10), unit::Index0(0));
+        progress.increment();
+        assert_eq!(progress.is_done(), false);
+        Ok(())
+    }
+
+    #[test]
+    fn test_done() -> std::io::Result<()> {
+        let progress = &mut Progression::new(unit::Index0(1), unit::Index0(0));
+        progress.increment();
+        assert_eq!(progress.is_done(), true);
+        Ok(())
+    }
 }

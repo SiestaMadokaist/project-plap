@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::pkg::macros::{displayable, id_type};
+use crate::pkg::macros::displayable;
 
-type Tags = CommaSeparated;
 #[derive(Clone, Serialize, Deserialize)]
 pub struct CommaSeparated(pub String);
 

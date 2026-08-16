@@ -46,7 +46,8 @@ impl Exif<ComfyUI> {
             return Err(ExifError::InvalidRange);
         }
         let (from, to) = self.text_range();
-        let text = std::str::from_utf8(&self.data[*from..*to]).map_err(|_| ExifError::NotExtracted);
+        let text = std::str::from_utf8(&self.data[from.clone()..to.clone()])
+            .map_err(|_| ExifError::NotExtracted);
         text
     }
 
@@ -119,11 +120,13 @@ impl ExifTraits for Exif<ComfyUI> {
 
 #[cfg(test)]
 mod tests {
+    use std::assert_matches;
+
     use super::*;
 
     #[test]
-    fn text_range_finds_the_json_span() -> std::io::Result<()> {
-        let data = std::fs::read("./samples/inputs/saber.png")?;
+    fn can_extract_exif() -> std::io::Result<()> {
+        let data = std::fs::read("./samples/inputs/images/saber.comfy.png")?;
         let exif = Exif::<ComfyUI>::new(data);
         let text = exif.text();
         print!("raw: {}\n", text);
@@ -140,6 +143,24 @@ mod tests {
         print!("negative: {}\n", negative);
         assert!(negative.starts_with("lowres, bad anatomy"));
         assert!(negative.ends_with("username, blurry"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn invalid_doesnot_panic() -> std::io::Result<()> {
+        let data = std::fs::read("./samples/inputs/images/elysia.a1111.png")?;
+        let exif = Exif::<ComfyUI>::new(data);
+        let text = exif.text();
+        assert_eq!(text, "");
+        let checkpoint = exif.checkpoint();
+        assert_matches!(checkpoint, Err(ExifError::ParsingFailed));
+
+        let positive = exif.positive();
+        assert_matches!(positive, Err(ExifError::ParsingFailed));
+
+        let negative = exif.negative();
+        assert_matches!(negative, Err(ExifError::ParsingFailed));
 
         Ok(())
     }

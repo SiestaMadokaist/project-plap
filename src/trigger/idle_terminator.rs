@@ -1,6 +1,6 @@
 use crate::{
     application::usecases::agent::{
-        manage_compute::ManageCompute,
+        h_compute::ManageCompute,
         traits::{AgentClients, AgentRepos},
     },
     domain::commands::compute::{ComputeArgs, ComputeCommand, ComputeInstanceID, ComputeRegion},
