@@ -5,12 +5,7 @@ use std::{
 };
 
 use aws_config::SdkConfig;
-use aws_sdk_s3::{
-    primitives::ByteStream,
-    types::{ObjectCannedAcl::PublicRead, ObjectVersion},
-    Client,
-};
-use chrono::DateTime;
+use aws_sdk_s3::{primitives::ByteStream, types::ObjectCannedAcl::PublicRead, Client};
 use tokio::process::Command;
 
 use crate::{
@@ -18,7 +13,7 @@ use crate::{
     domain::{
         commands::compute::ComputeRegion,
         errors::DomainError,
-        storage::{ItemVersion, StorageBucket, StoragePath, StoragePrefix},
+        storage::{StorageBucket, StoragePath, StoragePrefix},
     },
 };
 
@@ -329,6 +324,7 @@ impl StorageClient for S3Storage {
         vs
     }
 
+    #[cfg(feature = "future")]
     async fn versions(&self, path: &StoragePath) -> Result<ItemVersion, DomainError> {
         todo!();
     }
@@ -349,6 +345,7 @@ impl StorageClient for S3Storage {
     }
 }
 
+#[cfg(feature = "future")]
 impl From<ObjectVersion> for ItemVersion {
     fn from(value: ObjectVersion) -> Self {
         ItemVersion {

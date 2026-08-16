@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use crate::domain::{
     errors::DomainError,
-    storage::{ItemVersion, StorageBucket, StoragePath, StoragePrefix},
+    storage::{StorageBucket, StoragePath, StoragePrefix},
 };
 
 #[allow(async_fn_in_trait)]
@@ -13,6 +13,8 @@ pub trait StorageClient {
     async fn write(&self, path: &StoragePath, data: &Vec<u8>) -> Result<(), DomainError>;
     fn public_url(&self, path: &StoragePath) -> String;
     async fn ls(&self, prefix: &StoragePrefix) -> Vec<String>;
+
+    #[cfg(feature = "future")]
     async fn versions(&self, path: &StoragePath) -> Result<ItemVersion, DomainError>;
 
     #[cfg(feature = "datatransfer")]

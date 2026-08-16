@@ -5,11 +5,7 @@ use tokio::io::AsyncWriteExt;
 use crate::{
     application::ports::clients::inference_model_provider::InferenceModelProvider,
     pkg::{
-        civitai::{
-            self,
-            dto::{model_detail::ModelDetailDTO, model_version::ModelVersionDTO},
-            typing,
-        },
+        civitai::{self, dto::model_version::ModelVersionDTO, typing},
         id::InferenceModelId,
         types::strings::URL,
     },
@@ -38,20 +34,21 @@ impl CivitaiAPI {
         let res = b.header("Authorization", authorization).send().await?;
         Ok(res)
     }
+
+    #[cfg(feature = "future")]
+    async fn model_detail(&self, id: &civitai::typing::ModelId) -> anyhow::Result<ModelDetailDTO> {
+        let url = self.host.e("/api/v1/model").e(&id.to_string());
+        let req = self.client.get(url.to_string());
+        let resp = self.send(req).await?;
+        let data = resp
+            .json::<civitai::dto::model_detail::ModelDetailDTO>()
+            .await?;
+        Ok(data)
+    }
 }
 
 #[async_trait::async_trait(?Send)]
 impl InferenceModelProvider for CivitaiAPI {
-    // async fn model_detail(&self, id: &civitai::typing::ModelId) -> anyhow::Result<ModelDetailDTO> {
-    //     let url = self.host.e("/api/v1/model").e(&id.to_string());
-    //     let req = self.client.get(url.to_string());
-    //     let resp = self.send(req).await?;
-    //     let data = resp
-    //         .json::<civitai::dto::model_detail::ModelDetailDTO>()
-    //         .await?;
-    //     Ok(data)
-    // }
-
     async fn get_detail(&self, id: &InferenceModelId) -> anyhow::Result<ModelVersionDTO> {
         let url = self.host.e("/api/v1/version").e(&id.to_string());
         let req = self.client.get(url.to_string());

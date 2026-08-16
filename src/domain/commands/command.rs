@@ -1,4 +1,3 @@
-use aws_sdk_s3::config::retry::ShouldAttempt::No;
 use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{
@@ -9,7 +8,7 @@ use crate::{
     pkg::{
         macros::id_type,
         types::{
-            time::{self, Second, Timestamp},
+            time::{Second, Timestamp},
             unit::{self, Index0, INDEX_ZERO},
         },
     },

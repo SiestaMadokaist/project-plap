@@ -1,6 +1,3 @@
-use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
-
 use crate::pkg::macros::id_type;
 
 id_type!(StorageBucket);
@@ -21,6 +18,7 @@ impl StoragePrefix {
     }
 }
 
+#[cfg(feature = "future")]
 #[derive(Serialize, Deserialize)]
 pub struct ItemVersion {
     pub key: Option<String>,

@@ -13,6 +13,7 @@ impl PromptRepository {
 }
 
 impl PromptHistoryRepository for PromptRepository {
+    #[cfg(feature = "future")]
     async fn fuzzy_search(
         &self,
         tags: &CommaSeparated,

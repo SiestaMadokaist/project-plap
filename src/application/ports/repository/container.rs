@@ -1,6 +1,6 @@
 use crate::application::ports::repository::{
     agent_command::AgentCommandRepository, hot_reload::HotReloadRepository,
-    prompt_history::PromptHistoryRepository, r#macro::impl_has, translation::TranslationRepository,
+    prompt_history::PromptHistoryRepository, translation::TranslationRepository,
     user::UserRepository,
 };
 

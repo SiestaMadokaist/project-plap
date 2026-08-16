@@ -18,10 +18,12 @@ path = "src/bin/cron/main.rs"
 [[bin]]
 name = "diffusion-agent"
 path = "src/bin/diffusions/main.rs"
+required-features = ["datatransfer"]
 
 [features]
 arkhamstep = ["dep:sqlx"]
 datatransfer = []
+future = []
 
 [dependencies]
 lambda_runtime = "0.13"

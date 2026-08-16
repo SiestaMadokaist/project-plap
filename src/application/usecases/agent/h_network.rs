@@ -116,7 +116,7 @@ mod tests {
     use super::*;
     use crate::{
         application::ports::clients::inference_model_provider::InferenceModelProvider,
-        domain::storage::{ItemVersion, StorageBucket, StoragePrefix},
+        domain::storage::{StorageBucket, StoragePrefix},
         pkg::{civitai::typing::ModelCategory, id::InferenceModelId},
     };
 
@@ -140,9 +140,6 @@ mod tests {
             todo!()
         }
         async fn ls(&self, prefix: &StoragePrefix) -> Vec<String> {
-            todo!()
-        }
-        async fn versions(&self, path: &StoragePath) -> Result<ItemVersion, DomainError> {
             todo!()
         }
         #[cfg(feature = "datatransfer")]

@@ -1,7 +1,9 @@
+#[cfg(feature = "future")]
+use crate::pkg::types::strings::CommaSeparated;
+
 use crate::{
     application::ports::repository::error::RepositoryError,
     domain::{prompts::ImagePromptDomain, storage::StoragePath},
-    pkg::types::strings::CommaSeparated,
 };
 
 pub type PromptHistoryError = RepositoryError<StoragePath>;
@@ -23,6 +25,8 @@ pub trait PromptHistoryRepository {
        WHERE match_count >= ${minimum}
        ORDER BY match_count DESC`;
     */
+
+    #[cfg(feature = "future")]
     async fn fuzzy_search(
         &self,
         tags: &CommaSeparated,
