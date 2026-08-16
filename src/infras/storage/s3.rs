@@ -27,8 +27,23 @@ pub struct S3Storage {
     region: ComputeRegion,
     bucket: String,
     bucket_region: OnceCell<String>,
+    /*
+     * @desecription
+     * valid prefix = ""
+     * this will generate:
+     * "" + <remote_path> => "s3://<bucket>/remote_path/to/target/file";
+     * remote_path must not start with "/", so the "/", if needed should be added on the prefix
+     *
+     * another valid prefix = "root/"
+     * this will generate:
+     * "root/" + <remote_path> => "s3://<bucket>/root/remote_path/to/target/file"
+     *
+     * prefix = "/"
+     * this make ugly remote_path
+     * "/" + <remote_path> => "s3://<bucket>//remote_path/to/target/file" <- double "//" after <bucket>
+     */
     prefix: String,
-    max_size: i64, // in bytes? (e.g: 50 GB) => (50 * 1024 * 1024 * 1024);
+    max_size: i64, // in bytes (e.g: 50 GB) => (50 * 1024 * 1024 * 1024);
 }
 
 impl S3Storage {
@@ -257,10 +272,8 @@ impl StorageClient for S3Storage {
             );
             return Err(err);
         }
-
         let size = Self::local_size(local).map_err(|e| DomainError::Disconnected(e.to_string()))?;
         self.assert_within_limit(size)?;
-
         let recursive = local.is_dir();
         let args = self.upload_args(remote, local, recursive)?;
         self.spawn_cp(&args).await
@@ -276,7 +289,6 @@ impl StorageClient for S3Storage {
             .send()
             .await
             .map_err(|e| DomainError::Disconnected(e.to_string()))?;
-
         let bytes = out
             .body
             .collect()
@@ -288,8 +300,8 @@ impl StorageClient for S3Storage {
 
     fn public_url(&self, path: &StoragePath) -> String {
         return format!(
-            "https://{}.s3.ap-southeast-1.amazonaws.com/{}",
-            self.bucket, path.0,
+            "https://{}.s3.{}.amazonaws.com/{}",
+            self.bucket, self.region, path.0,
         );
     }
 
@@ -348,5 +360,59 @@ impl From<ObjectVersion> for ItemVersion {
             size: value.size,
             e_tag: value.e_tag,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use super::*;
+    #[test]
+    fn test_download_args() -> Result<(), DomainError> {
+        let config = SdkConfig::builder()
+            .behavior_version(aws_config::BehaviorVersion::latest())
+            .build();
+        let storage = S3Storage::new(
+            config,
+            ComputeRegion::AWSUsEast1,
+            "test-bucket".into(),
+            "models/".into(),
+            100,
+        );
+        let remote = StoragePath("checkpoints/1322/x.safetensors".into());
+        let local = PathBuf::from_str("models/checkpoints/x.safetensors")
+            .map_err(|x| DomainError::UnknownError(x.to_string()))?;
+        let recursive = true;
+        let args = storage.download_args(&remote, &local, recursive)?;
+        let expected =
+            "s3 cp s3://test-bucket/models/checkpoints/1322/x.safetensors models/checkpoints/x.safetensors --recursive";
+        let actual = args.join(" ");
+        assert_eq!(&actual, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn test_upload_args() -> Result<(), DomainError> {
+        let config = SdkConfig::builder()
+            .behavior_version(aws_config::BehaviorVersion::latest())
+            .build();
+        let storage = S3Storage::new(
+            config,
+            ComputeRegion::AWSUsEast1,
+            "test-bucket".into(),
+            "models/".into(),
+            100,
+        );
+        let remote = StoragePath("checkpoints/1322/x.safetensors".into());
+        let local = PathBuf::from_str("models/checkpoints/x.safetensors")
+            .map_err(|x| DomainError::UnknownError(x.to_string()))?;
+        let recursive = true;
+        let args = storage.upload_args(&remote, &local, recursive)?;
+        let expected =
+            "s3 cp models/checkpoints/x.safetensors s3://test-bucket/models/checkpoints/1322/x.safetensors --recursive";
+        let actual = args.join(" ");
+        assert_eq!(&actual, expected);
+        Ok(())
     }
 }

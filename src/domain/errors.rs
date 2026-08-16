@@ -5,6 +5,9 @@ pub enum DomainError {
     #[error("failed")]
     Unhandled,
 
+    #[error("unknown error: {0}")]
+    UnknownError(String),
+
     #[error("prerequisite not satisfied")]
     Prerequisite(String),
 
