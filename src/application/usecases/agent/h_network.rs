@@ -1,7 +1,7 @@
 use crate::{
     application::ports::clients::container::{HasInferenceModelProvider, HasModelStorage},
     application::ports::clients::storage::StorageClient,
-    domain::storage::{StorageBucket, StoragePath, StoragePrefix},
+    domain::storage::StoragePath,
     domain::{
         commands::{
             command::CommandStage,
@@ -108,18 +108,17 @@ impl<'a, C: HandleNetworkClients> HandleNetwork<'a, C> {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "datatransfer"))]
 mod tests {
     #[cfg(feature = "datatransfer")]
     use std::path::PathBuf;
 
+    use super::*;
     use crate::{
         application::ports::clients::inference_model_provider::InferenceModelProvider,
-        domain::storage::{ItemVersion, StorageBucket},
+        domain::storage::{ItemVersion, StorageBucket, StoragePrefix},
         pkg::{civitai::typing::ModelCategory, id::InferenceModelId},
     };
-
-    use super::*;
 
     struct MockStorage {}
 
@@ -131,7 +130,6 @@ mod tests {
         fn bucket(&self) -> StorageBucket {
             StorageBucket("mock-bucket".into())
         }
-
         async fn read(&self, path: &StoragePath) -> Result<String, DomainError> {
             todo!()
         }
@@ -160,15 +158,12 @@ mod tests {
 
     #[async_trait::async_trait(?Send)]
     impl InferenceModelProvider for MockInferenceModelProvider {
-        // async fn model_detail(&self, id: &ModelId) -> anyhow::Result<ModelDetailDTO>;
         async fn get_detail(&self, id: &InferenceModelId) -> anyhow::Result<ModelVersionDTO> {
             todo!()
         }
-
         fn abs_path(&self, id: &InferenceModelId, category: &ModelCategory, name: &str) -> PathBuf {
             todo!()
         }
-
         #[cfg(feature = "datatransfer")]
         async fn download(&self, id: &InferenceModelId, dst: &PathBuf) -> anyhow::Result<()> {
             todo!()
@@ -178,6 +173,16 @@ mod tests {
     struct MockContainer {
         storage: MockStorage,
         civitai: MockInferenceModelProvider,
+    }
+
+    impl MockContainer {
+        fn rc() -> Rc<Self> {
+            let container = Self {
+                storage: MockStorage {},
+                civitai: MockInferenceModelProvider {},
+            };
+            Rc::new(container)
+        }
     }
 
     impl HasModelStorage for MockContainer {
@@ -193,12 +198,15 @@ mod tests {
         }
     }
 
-    #[test]
-    fn s32localhost() -> std::io::Result<()> {
-        let clients = MockContainer {
-            storage: MockStorage {},
-            civitai: MockInferenceModelProvider {},
-        };
+    #[tokio::test]
+    async fn s32localhost() -> Result<(), DomainError> {
+        let clients = MockContainer::rc();
+        let arg_json =
+            serde_json::from_str(r"{}").map_err(|x| DomainError::Serialize(x.to_string()))?;
+        let args: NetworkArgs =
+            serde_json::from_value(arg_json).map_err(|x| DomainError::Serialize(x.to_string()))?;
+        let handler = HandleNetwork::new(clients, &args);
+        let result = handler.exec().await;
         Ok(())
     }
 }

@@ -167,12 +167,9 @@ impl S3Storage {
         }
     }
 
-    async fn spawn_cp(&self, src: &str, dst: &str, recursive: bool) -> Result<(), DomainError> {
+    async fn spawn_cp(&self, args: &Vec<String>) -> Result<(), DomainError> {
         let mut cmd = Command::new("aws");
-        cmd.args(["s3", "cp", src, dst]);
-        if recursive {
-            cmd.arg("--recursive");
-        }
+        cmd.args(args);
         let output = cmd
             .stdin(Stdio::null())
             .output()
@@ -185,6 +182,44 @@ impl S3Storage {
             )));
         }
         Ok(())
+    }
+}
+
+impl S3Storage {
+    fn download_args(
+        &self,
+        remote: &StoragePath,
+        local: &PathBuf,
+        recursive: bool,
+    ) -> Result<Vec<String>, DomainError> {
+        let key = self.key(remote);
+        let src = format!("s3://{}/{key}", self.bucket);
+        let dst = local
+            .to_str()
+            .ok_or_else(|| DomainError::Serialize("local path is not valid UTF-8".into()))?;
+        let mut args = vec!["s3".into(), "cp".into(), src.into(), dst.into()];
+        if recursive {
+            args.push("--recursive".into());
+        }
+        Ok(args)
+    }
+
+    fn upload_args(
+        &self,
+        remote: &StoragePath,
+        local: &PathBuf,
+        recursive: bool,
+    ) -> Result<Vec<String>, DomainError> {
+        let key = self.key(remote);
+        let src = local
+            .to_str()
+            .ok_or_else(|| DomainError::Serialize("local path is not valid UTF-8".into()))?;
+        let dst = format!("s3://{}/{key}", self.bucket);
+        let mut args = vec!["s3".into(), "cp".into(), src.into(), dst.into()];
+        if recursive {
+            args.push("--recursive".into());
+        }
+        Ok(args)
     }
 }
 
@@ -209,12 +244,8 @@ impl StorageClient for S3Storage {
         let key = self.key(remote);
         let (size, recursive) = self.remote_extent(&key).await?;
         self.assert_within_limit(size)?;
-
-        let src = format!("s3://{}/{key}", self.bucket);
-        let dst = local
-            .to_str()
-            .ok_or_else(|| DomainError::Serialize("local path is not valid UTF-8".into()))?;
-        self.spawn_cp(&src, dst, recursive).await
+        let args = self.download_args(remote, local, recursive)?;
+        self.spawn_cp(&args).await
     }
 
     #[cfg(feature = "datatransfer")]
@@ -231,12 +262,9 @@ impl StorageClient for S3Storage {
         self.assert_within_limit(size)?;
 
         let recursive = local.is_dir();
-        let key = self.key(remote);
-        let src = local
-            .to_str()
-            .ok_or_else(|| DomainError::Serialize("local path is not valid UTF-8".into()))?;
-        let dst = format!("s3://{}/{key}", self.bucket);
-        self.spawn_cp(src, &dst, recursive).await
+        let args = self.upload_args(remote, local, recursive)?;
+        self.spawn_cp(&args).await
+        // self.spawn_cp(src, &dst, recursive).await
     }
 
     async fn read(&self, path: &StoragePath) -> Result<String, DomainError> {
