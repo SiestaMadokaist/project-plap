@@ -6,21 +6,21 @@ const args = {
     provider: "s3",
     data: {
       bucket: parsed.MODEL_BUCKET,
-      path: "comfy-playground",
+      path: "comfy-playground/",
     }
   },
   dst: {
     provider: "localhost",
     data: {
       forward: false,
-      path: "comfyui/comfyui/models"
+      path: "models/"
     }
   }
 }
 const template = {
   "path": "/agent/command/fetch",
   "httpMethod": "POST",
-  body: JSON.stringify({ args, priority: Date.now() })
+  body: JSON.stringify({ action_id: `${Date.now()}`, args, priority: Date.now() })
 }
 
 fs.writeFileSync('/tmp/api.json', JSON.stringify(template));

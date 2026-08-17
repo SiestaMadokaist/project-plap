@@ -34,7 +34,7 @@ enum GSI {
 impl From<GSI> for String {
     fn from(value: GSI) -> Self {
         let s = match value {
-            GSI::StagePriority => "stage-priority-index",
+            GSI::StagePriority => "stage-priority",
         };
         String::from(s)
     }
@@ -76,16 +76,16 @@ impl AgentCommandRepository for DDBAgentCommandRepository {
      * and those that's still queueing
      */
     async fn in_progress(&self, limit: i32) -> Result<Vec<CommandDomain>, AgentCommandError> {
-        let in_progress = CommandStage::InProgress;
-        let result = self
+        let in_progress: String = CommandStage::InProgress.into();
+        let query = self
             .query()
             .key_condition_expression("stage = :stage")
-            .expression_attribute_values(":stage", AttributeValue::S(in_progress.into()))
+            .expression_attribute_values(":stage", AttributeValue::S(in_progress))
             .index_name(GSI::StagePriority)
-            .limit(limit)
-            .send()
-            .await
-            .map_err(|e| RepositoryError::Disconnected(e.to_string()))?;
+            .limit(limit);
+        let result = query.send().await.map_err(|e| {
+            RepositoryError::Disconnected(["it fails here".to_string(), e.to_string()].join("\n"))
+        })?;
         let items = result.items.unwrap_or_default();
         let serialized = items.iter().map(|item| {
             from_item::<CommandDomain>(item.clone()).map_err(|e| {

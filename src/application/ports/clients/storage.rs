@@ -21,4 +21,7 @@ pub trait StorageClient {
     async fn upload(&self, local: &PathBuf, remote: &StoragePath) -> Result<(), DomainError>;
     #[cfg(feature = "datatransfer")]
     async fn download(&self, remote: &StoragePath, local: &PathBuf) -> Result<(), DomainError>;
+
+    #[cfg(feature = "datatransfer")]
+    async fn abs_path(&self, path: &PathBuf) -> PathBuf;
 }

@@ -22,7 +22,10 @@ fmt:
 	cargo fmt
 
 test:
-	cargo test
+	cargo test --features="datatransfer"
+
+coverage:
+	cargo llvm-cov --features datatransfer --html && open target/llvm-cov/html/index.html
 
 # --- build & package ---
 # Requires: cargo-lambda (cargo install cargo-lambda)

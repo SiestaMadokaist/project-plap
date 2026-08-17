@@ -15,13 +15,17 @@ use crate::{
 };
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
+// #[serde(rename_all = "lowercase")]
 pub enum CommandStage {
+    #[serde(rename = "in_progress")]
     InProgress,
     // Running is skipped
     // we use InProgress { started_at: Some } to mark its Running
+    #[serde(rename = "completed")]
     Completed,
+    #[serde(rename = "cancelled")]
     Cancelled,
+    #[serde(rename = "failed")]
     Failed,
 }
 
@@ -44,6 +48,7 @@ pub struct Progression {
     total: unit::Index0,
     progress: unit::Index0,
     finished_at: Option<Timestamp>,
+    failed_at: Option<Timestamp>,
 }
 
 impl Progression {
@@ -52,10 +57,15 @@ impl Progression {
             total,
             progress,
             finished_at: None,
+            failed_at: None,
         }
     }
 
     pub fn start(&mut self) -> () {}
+
+    pub fn fail(&mut self) -> () {
+        self.failed_at = Some(Timestamp::now());
+    }
 
     pub fn increment(&mut self) -> () {
         let now = Timestamp::now();
@@ -66,7 +76,7 @@ impl Progression {
     }
 
     pub fn is_done(&self) -> bool {
-        return self.progress == self.total;
+        return self.failed_at.is_none() && self.progress == self.total;
     }
 
     pub fn is_started(&self) -> bool {
@@ -112,6 +122,7 @@ impl CommandDomain {
                 total: Index0(1),
                 progress: Index0(0),
                 finished_at: None,
+                failed_at: None,
             },
             priority,
             stage: CommandStage::InProgress,

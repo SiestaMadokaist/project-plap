@@ -48,6 +48,7 @@ impl<R: CommandHandlerRepos, C: CommandHandlerClients> CommandHandler<R, C> {
     async fn record_progress(&self, progress: &Progression) -> Result<CommandStage, DomainError> {
         let agent_repo = self.repo.agent_command();
         let id = &self.params.action_id;
+        tracing::info!("recording progress: {}", id);
         let updated = agent_repo
             .set_progress(id, progress)
             .await
@@ -62,8 +63,11 @@ impl<R: CommandHandlerRepos, C: CommandHandlerClients> CommandHandler<R, C> {
     #[cfg(feature = "datatransfer")]
     async fn handle_network(&self, args: &NetworkArgs) -> Result<CommandStage, DomainError> {
         use crate::application::usecases::agent::h_network::HandleNetwork;
-        let handler = HandleNetwork::new(self.clients.clone(), args);
-        handler.exec().await
+        let progress = self.params.progress.clone();
+        let handler = HandleNetwork::new(self.clients.clone(), args, progress);
+        let updated = handler.exec().await?;
+        let command_stage = self.record_progress(&updated).await?;
+        Ok(command_stage)
     }
 
     async fn handle_inference(&self, arg: &InferenceArgs) -> Result<CommandStage, DomainError> {

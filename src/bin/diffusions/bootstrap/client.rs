@@ -62,6 +62,7 @@ impl EC2DiffusionClients {
                     .expect("env.output_region must be a valid region"),
                 env.output_bucket.clone(),
                 env.output_prefix.clone(),
+                env.workdir.clone(),
                 env.max_data_transfer,
             ),
             civitai: CivitaiAPI::new(
@@ -77,6 +78,7 @@ impl EC2DiffusionClients {
                     .expect("env.model_region must be a valid region"),
                 env.model_bucket.clone(),
                 env.model_prefix.clone(),
+                env.workdir.clone(),
                 env.max_data_transfer,
             ),
             notification: Discord::new(env.discord_webhook_url.clone()),

@@ -56,6 +56,7 @@ impl CronClients {
                     .expect("env.tl_region must be a valid REGION"),
                 env.tl_bucket.clone(),
                 env.tl_prefix.clone(),
+                "/tmp/".into(),
                 env.max_data_transfer,
             ),
             notification: Discord::new(env.discord_webhook_url),

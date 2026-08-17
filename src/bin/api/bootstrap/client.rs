@@ -43,6 +43,7 @@ impl ApiClients {
                     .expect("env.output_region must be a valid region"),
                 env.output_bucket.clone(),
                 env.output_prefix.clone(),
+                "/tmp/".into(),
                 MAX_SIZE,
             ),
             model_storage: S3Storage::new(
@@ -53,6 +54,7 @@ impl ApiClients {
                     .expect("env.model_region must be a valid region"),
                 env.model_bucket.clone(),
                 env.model_prefix.clone(),
+                "/tmp/".into(),
                 MAX_SIZE,
             ),
         }

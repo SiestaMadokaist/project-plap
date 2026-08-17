@@ -37,7 +37,8 @@ pub struct S3Storage {
      * this make ugly remote_path
      * "/" + <remote_path> => "s3://<bucket>//remote_path/to/target/file" <- double "//" after <bucket>
      */
-    prefix: String,
+    remote_prefix: String,
+    local_workdir: String,
     max_size: i64, // in bytes (e.g: 50 GB) => (50 * 1024 * 1024 * 1024);
 }
 
@@ -46,7 +47,8 @@ impl S3Storage {
         config: SdkConfig,
         region: ComputeRegion,
         bucket: String,
-        prefix: String,
+        remote_prefix: String,
+        local_workdir: String,
         max_size: i64,
     ) -> Self {
         let mut builder = config.to_builder();
@@ -59,7 +61,8 @@ impl S3Storage {
             region,
             bucket,
             bucket_region: OnceCell::new(),
-            prefix,
+            remote_prefix,
+            local_workdir,
             max_size,
         }
     }
@@ -102,7 +105,7 @@ impl S3Storage {
     }
 
     fn key(&self, path: &StoragePath) -> String {
-        format!("{}{}", self.prefix, path.0)
+        format!("{}{}", self.remote_prefix, path.0)
     }
 
     fn assert_within_limit(&self, size: i64) -> Result<(), DomainError> {
@@ -180,6 +183,7 @@ impl S3Storage {
     async fn spawn_cp(&self, args: &Vec<String>) -> Result<(), DomainError> {
         let mut cmd = Command::new("aws");
         cmd.args(args);
+        tracing::info!("spawning aws command: aws {}", args.join(" "));
         let output = cmd
             .stdin(Stdio::null())
             .output()
@@ -236,6 +240,13 @@ impl S3Storage {
 impl StorageClient for S3Storage {
     fn provider_name() -> String {
         "s3".into()
+    }
+
+    #[cfg(feature = "datatransfer")]
+    async fn abs_path(&self, path: &PathBuf) -> PathBuf {
+        let path_str = path.to_str().unwrap_or_default();
+        let dst = format!("{}{}", self.local_workdir, path_str);
+        PathBuf::from(dst)
     }
 
     fn bucket(&self) -> StorageBucket {
@@ -375,6 +386,7 @@ mod tests {
             ComputeRegion::AWSUsEast1,
             "test-bucket".into(),
             "models/".into(),
+            "models/".into(),
             100,
         );
         let remote = StoragePath("checkpoints/1322/x.safetensors".into());
@@ -398,6 +410,7 @@ mod tests {
             config,
             ComputeRegion::AWSUsEast1,
             "test-bucket".into(),
+            "models/".into(),
             "models/".into(),
             100,
         );

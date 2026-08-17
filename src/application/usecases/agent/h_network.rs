@@ -1,3 +1,5 @@
+#[cfg(feature = "datatransfer")]
+use crate::domain::commands::command::Progression;
 use crate::{
     application::ports::clients::container::{HasInferenceModelProvider, HasModelStorage},
     application::ports::clients::storage::StorageClient,
@@ -26,13 +28,17 @@ pub struct HandleNetwork<'a, C: HandleNetworkClients> {
     args: &'a NetworkArgs,
     // c: StorageClient
     // network command always complete in 1 execution?
-    // progress: Progression
+    progress: Progression,
 }
 
 #[cfg(feature = "datatransfer")]
 impl<'a, C: HandleNetworkClients> HandleNetwork<'a, C> {
-    pub fn new(clients: Rc<C>, args: &'a NetworkArgs) -> Self {
-        Self { clients, args }
+    pub fn new(clients: Rc<C>, args: &'a NetworkArgs, progress: Progression) -> Self {
+        Self {
+            clients,
+            args,
+            progress,
+        }
     }
 
     fn remote_path(mv: &ModelVersionDTO, ext: &str) -> StoragePath {
@@ -43,9 +49,10 @@ impl<'a, C: HandleNetworkClients> HandleNetwork<'a, C> {
         StoragePath(s)
     }
 
-    async fn handle_network(&self) -> Result<CommandStage, DomainError> {
+    async fn handle_network(&self) -> Result<Progression, DomainError> {
         let arg = self.args;
-        let result: Result<CommandStage, DomainError> = match &arg.src {
+        let mut progress = self.progress.clone();
+        let result: Result<Progression, DomainError> = match &arg.src {
             ModelSrc::S3(s) => match &arg.dst {
                 ModelDst::Local(d) => {
                     let storage = self.clients.model_storage();
@@ -58,10 +65,12 @@ impl<'a, C: HandleNetworkClients> HandleNetwork<'a, C> {
                             Err(err.into())
                         } else {
                             storage.upload(&d.path, &StoragePath(fwd.into())).await?;
-                            Ok(CommandStage::Completed)
+                            progress.increment();
+                            Ok(progress)
                         }
                     } else {
-                        Ok(CommandStage::Completed)
+                        progress.increment();
+                        Ok(progress)
                     }
                 }
                 ModelDst::S3(_) => {
@@ -96,14 +105,15 @@ impl<'a, C: HandleNetworkClients> HandleNetwork<'a, C> {
                             .write(&info_path, &info.to_string().into_bytes())
                             .await?;
                     }
-                    Ok(CommandStage::Completed)
+                    progress.increment();
+                    Ok(progress)
                 }
             },
         };
         result
     }
 
-    pub async fn exec(&self) -> Result<CommandStage, DomainError> {
+    pub async fn exec(&self) -> Result<Progression, DomainError> {
         self.handle_network().await
     }
 }
@@ -117,7 +127,11 @@ mod tests {
     use crate::{
         application::ports::clients::inference_model_provider::InferenceModelProvider,
         domain::storage::{StorageBucket, StoragePrefix},
-        pkg::{civitai::typing::ModelCategory, id::InferenceModelId},
+        pkg::{
+            civitai::typing::ModelCategory,
+            id::InferenceModelId,
+            types::unit::{Index0, INDEX_ZERO},
+        },
     };
 
     struct MockStorage {}
@@ -148,6 +162,10 @@ mod tests {
         }
         #[cfg(feature = "datatransfer")]
         async fn download(&self, remote: &StoragePath, local: &PathBuf) -> Result<(), DomainError> {
+            todo!()
+        }
+        #[cfg(feature = "datatransfer")]
+        async fn abs_path(&self, local: &PathBuf) -> PathBuf {
             todo!()
         }
     }
@@ -202,7 +220,7 @@ mod tests {
             serde_json::from_str(r"{}").map_err(|x| DomainError::Serialize(x.to_string()))?;
         let args: NetworkArgs =
             serde_json::from_value(arg_json).map_err(|x| DomainError::Serialize(x.to_string()))?;
-        let handler = HandleNetwork::new(clients, &args);
+        let handler = HandleNetwork::new(clients, &args, Progression::new(Index0(1), INDEX_ZERO));
         let result = handler.exec().await;
         Ok(())
     }
