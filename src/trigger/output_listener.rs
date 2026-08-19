@@ -100,13 +100,14 @@ impl<C: AgentClients, R: AgentRepos> NewOutputListener<C, R> {
         let mut watcher = notify::recommended_watcher(move |res| {
             let _ = tx.send(res);
         })?;
-        tracing::debug!("listening to changes in: {}", &self.dir);
+        tracing::info!("listening to changes in: {}", &self.dir);
         watcher.watch(Path::new(&self.dir), RecursiveMode::Recursive)?;
         self.watcher.set(watcher).expect("should succeed");
         Ok(rx)
     }
 
     pub async fn run(&self) -> anyhow::Result<()> {
+        tracing::info!("running listener");
         let mut rx = self.init_watch().await?;
         while let Some(res) = rx.recv().await {
             let event = res?;

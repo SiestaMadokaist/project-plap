@@ -58,8 +58,8 @@ deploy-api: package-api
 deploy-bin:
 	cargo build --release --features datatransfer --bin diffusion-agent
 	SANITY_RUN=true ENV_PATH="./.env.diffusion" ./target/release/diffusion-agent
-	aws s3 cp target/release/diffusion-agent $(S3_BIN_BUCKET)/diffusion-agent
 	aws s3 cp .env.diffusion $(S3_BIN_BUCKET)/.env.diffusion
+	aws s3 cp target/release/diffusion-agent $(S3_BIN_BUCKET)/diffusion-agent
 
 # --- local run ---
 # Starts a local Lambda API server on http://localhost:9000

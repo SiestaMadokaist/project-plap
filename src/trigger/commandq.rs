@@ -29,10 +29,12 @@ impl<R: CommandHandlerRepos, C: CommandHandlerClients> CommandQ<R, C> {
         let loader = self.repos.agent_command();
         // could just load 1 at a time, but idk.
         let in_progress = loader.in_progress(1).await?;
+        if in_progress.len() > 0 {
+            tracing::info!("found {} in progress command", in_progress.len());
+        }
         // "lowest" priority score first
         // lowest mean earliest being put...
         // or, just some command with higher urgency.
-        tracing::info!("found {} in progress command", in_progress.len());
         for command in in_progress.into_iter() {
             let mut handler =
                 CommandHandler::new(self.repos.clone(), self.clients.clone(), command);

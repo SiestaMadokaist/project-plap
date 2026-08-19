@@ -243,7 +243,7 @@ impl StorageClient for S3Storage {
     }
 
     #[cfg(feature = "datatransfer")]
-    async fn abs_path(&self, path: &PathBuf) -> PathBuf {
+    fn abs_path(&self, path: &PathBuf) -> PathBuf {
         let path_str = path.to_str().unwrap_or_default();
         let dst = format!("{}{}", self.local_workdir, path_str);
         PathBuf::from(dst)

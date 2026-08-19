@@ -85,11 +85,8 @@ impl<C: SaveOutputClient, R: SaveOutputRepos> SaveOutput<C, R> {
         let now = self.now;
         let ds = now.to_datestring();
         let date_string = ds.as_str();
-        let relative_path = self.relative_path();
-        let path = relative_path
-            .to_str()
-            .expect("relative_path cannot be converted to str???");
-        let s = format!("{}/{}", date_string, path);
+        let filename = format!("{}.png", now.0);
+        let s = format!("{}/{}", date_string, filename);
         StoragePath(s)
     }
 
@@ -115,7 +112,7 @@ impl<C: SaveOutputClient, R: SaveOutputRepos> SaveOutput<C, R> {
         let data = self.ioread().await?;
         let remote_path = self.store_path();
         let local_path = self.relative_path();
-        tracing::debug!("uploading {} to {}", local_path.display(), storage.bucket());
+        tracing::info!("uploading {} to {}", local_path.display(), storage.bucket());
         let err_msg = format!(
             "file transfer failure when uploading {} to {}",
             local_path.display(),

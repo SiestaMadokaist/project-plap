@@ -26,7 +26,8 @@ trait_clients!(
     CommandHandlerClients,
     clients::container::HasDiffusion,
     clients::container::HasModelStorage,
-    clients::container::HasInferenceModelProvider
+    clients::container::HasInferenceModelProvider,
+    clients::container::HasNotification
 );
 trait_repos!(CommandHandlerRepos, repository::container::HasAgentCommand);
 
@@ -62,11 +63,18 @@ impl<R: CommandHandlerRepos, C: CommandHandlerClients> CommandHandler<R, C> {
 
     #[cfg(feature = "datatransfer")]
     async fn handle_network(&self, args: &NetworkArgs) -> Result<CommandStage, DomainError> {
-        use crate::application::usecases::agent::h_network::HandleNetwork;
+        use crate::application::{
+            ports::clients::notification::NotificationClient,
+            usecases::agent::h_network::HandleNetwork,
+        };
         let progress = self.params.progress.clone();
         let handler = HandleNetwork::new(self.clients.clone(), args, progress);
         let updated = handler.exec().await?;
         let command_stage = self.record_progress(&updated).await?;
+        let json = serde_json::to_string_pretty(args)?;
+        let message = format!("network request is completed.\n```{}```", json);
+        let notifier = self.clients.notification();
+        notifier.notify(&message).await?;
         Ok(command_stage)
     }
 

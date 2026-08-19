@@ -5,10 +5,7 @@ use crate::{
     application::ports::clients::storage::StorageClient,
     domain::storage::StoragePath,
     domain::{
-        commands::{
-            command::CommandStage,
-            network::{ModelDst, ModelSrc, NetworkArgs},
-        },
+        commands::network::{ModelDst, ModelSrc, NetworkArgs},
         errors::DomainError,
     },
     pkg::civitai::{self, dto::model_version::ModelVersionDTO},
@@ -56,7 +53,8 @@ impl<'a, C: HandleNetworkClients> HandleNetwork<'a, C> {
             ModelSrc::S3(s) => match &arg.dst {
                 ModelDst::Local(d) => {
                     let storage = self.clients.model_storage();
-                    storage.download(&s.path, &d.path).await?;
+                    let abs_path = storage.abs_path(&d.path);
+                    storage.download(&s.path, &abs_path).await?;
                     if d.forward {
                         let fwd = d.path.to_str().unwrap_or_default();
                         if fwd == "" {
@@ -64,7 +62,8 @@ impl<'a, C: HandleNetworkClients> HandleNetwork<'a, C> {
                             let err = DomainError::Prerequisite(msg.into());
                             Err(err.into())
                         } else {
-                            storage.upload(&d.path, &StoragePath(fwd.into())).await?;
+                            let abs_path = storage.abs_path(&d.path);
+                            storage.upload(&abs_path, &StoragePath(fwd.into())).await?;
                             progress.increment();
                             Ok(progress)
                         }
@@ -165,7 +164,7 @@ mod tests {
             todo!()
         }
         #[cfg(feature = "datatransfer")]
-        async fn abs_path(&self, local: &PathBuf) -> PathBuf {
+        fn abs_path(&self, local: &PathBuf) -> PathBuf {
             todo!()
         }
     }
