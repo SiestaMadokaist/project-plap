@@ -14,5 +14,5 @@ terraform/*.tfvars.json
 .claude/
 o.txt
 samples/outputs
-samples/inputs
+samples/inputs/images
 playground

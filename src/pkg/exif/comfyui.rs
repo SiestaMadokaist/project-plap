@@ -126,7 +126,7 @@ mod tests {
 
     #[test]
     fn can_extract_exif() -> std::io::Result<()> {
-        let data = std::fs::read("./samples/inputs/images/saber.comfy.png")?;
+        let data = std::fs::read("./samples/inputs/mocks/saber.comfy.png")?;
         let exif = Exif::<ComfyUI>::new(data);
         let text = exif.text();
         print!("raw: {}\n", text);
@@ -149,7 +149,7 @@ mod tests {
 
     #[test]
     fn invalid_doesnot_panic() -> std::io::Result<()> {
-        let data = std::fs::read("./samples/inputs/images/elysia.a1111.png")?;
+        let data = std::fs::read("./samples/inputs/mocks/elysia.a1111.png")?;
         let exif = Exif::<ComfyUI>::new(data);
         let text = exif.text();
         assert_eq!(text, "");
