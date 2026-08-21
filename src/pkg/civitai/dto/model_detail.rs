@@ -10,3 +10,31 @@ pub struct ModelDetailDTO {
     #[serde(rename = "baseModels")]
     base_models: Vec<BaseModel>,
 }
+
+#[cfg(test)]
+mod tests {
+    use serde::Serialize;
+
+    use crate::{
+        displayable,
+        pkg::civitai::dto::{model_detail::ModelDetailDTO, model_version::ModelVersionDTO},
+    };
+
+    #[derive(Debug, thiserror::Error, Serialize)]
+    enum E {
+        Openfile(String),
+        Serialize(String),
+    }
+    displayable!(E);
+
+    #[test]
+    fn shape_test() -> Result<(), E> {
+        let buffer = std::fs::read("./samples/inputs/jsons/infras/civitai/resp.model.json")
+            .map_err(|x| E::Openfile(x.to_string()))?;
+        let resp: ModelDetailDTO =
+            serde_json::from_slice(&buffer).map_err(|x| E::Serialize(x.to_string()))?;
+        assert_eq!(resp.id.0, 1998102);
+        assert_eq!(resp.name, "YozakuraKiss");
+        Ok(())
+    }
+}

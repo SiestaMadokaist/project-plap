@@ -180,6 +180,10 @@ impl S3Storage {
         }
     }
 
+    /**
+     * using spawn aws s3 cp because it is much more faster than buffer streaming.
+     * because aws s3 cp is performing the task in multiple connection.
+     */
     async fn spawn_cp(&self, args: &Vec<String>) -> Result<(), DomainError> {
         let mut cmd = Command::new("aws");
         cmd.args(args);

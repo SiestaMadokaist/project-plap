@@ -53,9 +53,7 @@ pub enum ComputeCommand {
 
 #[cfg(test)]
 mod tests {
-    use crate::domain::commands::compute::{
-        ComputeArgs, ComputeCommand, ComputeInstanceID, ComputeRegion,
-    };
+    use crate::domain::commands::compute::{ComputeArgs, ComputeCommand, ComputeRegion};
 
     #[test]
     fn shape_test() -> anyhow::Result<()> {
