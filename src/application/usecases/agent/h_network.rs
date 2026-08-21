@@ -212,6 +212,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "future")]
     #[tokio::test]
     async fn s32localhost() -> Result<(), DomainError> {
         let clients = MockContainer::rc();
