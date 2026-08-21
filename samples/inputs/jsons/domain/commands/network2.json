@@ -1,0 +1,13 @@
+{
+    "src": {
+        "provider": "civitai",
+        "data": 132
+    },
+    "dst": {
+        "provider": "localhost",
+        "data": {
+            "forward": false,
+            "path": "path/to/dst"
+        }
+    }
+}

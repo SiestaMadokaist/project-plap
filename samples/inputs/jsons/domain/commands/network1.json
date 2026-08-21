@@ -1,0 +1,16 @@
+{
+    "src": {
+        "provider": "s3",
+        "data": {
+            "bucket": "test-bucket",
+            "path": "path/from/src"
+        }
+    },
+    "dst": {
+        "provider": "localhost",
+        "data": {
+            "forward": false,
+            "path": "path/to/dst"
+        }
+    }
+}

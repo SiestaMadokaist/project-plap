@@ -53,3 +53,77 @@ pub struct NetworkArgs {
     #[serde(skip)]
     _marker: std::marker::PhantomData<()>,
 }
+
+#[cfg(test)]
+mod tests {
+    use serde::Serialize;
+
+    use crate::{
+        displayable,
+        domain::commands::network::{ModelDst, ModelSrc, NetworkArgs},
+    };
+
+    #[derive(Debug, thiserror::Error, Serialize)]
+    pub enum E {
+        Serialize(String),
+        Openfile(String),
+        Misread(String),
+    }
+    displayable!(E);
+
+    fn is_s32local(path: &str) -> Result<(), E> {
+        // s3 to localhost
+        let buffer = std::fs::read(path).map_err(|e| E::Openfile(e.to_string()))?;
+        let command: NetworkArgs =
+            serde_json::from_slice(&buffer).map_err(|e| E::Serialize(e.to_string()))?;
+        match command.src {
+            ModelSrc::S3(src) => match command.dst {
+                ModelDst::Local(dst) => {
+                    assert_eq!(&src.bucket.0, "test-bucket");
+                    assert_eq!(&src.path.0, "path/from/src");
+                    assert_eq!(&dst.forward, &false);
+                    assert_eq!(&dst.path, "path/to/dst");
+                }
+                _ => return Err(E::Misread("dst should be local".into())),
+            },
+            _ => return Err(E::Misread("src should be s3".into())),
+        }
+        Ok(())
+    }
+
+    fn is_civit2local(path: &str) -> Result<(), E> {
+        let buffer = std::fs::read(path).map_err(|e| E::Openfile(e.to_string()))?;
+        let command: NetworkArgs =
+            serde_json::from_slice(&buffer).map_err(|e| E::Serialize(e.to_string()))?;
+        match command.src {
+            ModelSrc::Civitai(src) => match command.dst {
+                ModelDst::Local(dst) => {
+                    assert_eq!(src.0, 132);
+                    assert_eq!(&dst.forward, &false);
+                    assert_eq!(&dst.path, "path/to/dst");
+                }
+                _ => return Err(E::Misread("dst should be local".into())),
+            },
+            _ => return Err(E::Misread("src should be civitai".into())),
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_s32local() -> Result<(), E> {
+        let ok = is_s32local("./samples/inputs/jsons/domain/commands/network1.json");
+        assert!(matches!(ok, Ok(_)));
+        let not_ok = is_s32local("./samples/inputs/jsons/domain/commands/network2.json");
+        assert!(matches!(not_ok, Err(_)));
+        Ok(())
+    }
+
+    #[test]
+    fn test_civit2local() -> Result<(), E> {
+        let ok = is_s32local("./samples/inputs/jsons/domain/commands/network1.json");
+        assert!(matches!(ok, Ok(_)));
+        let not_ok = is_s32local("./samples/inputs/jsons/domain/commands/network2.json");
+        assert!(matches!(not_ok, Err(_)));
+        Ok(())
+    }
+}

@@ -1,0 +1,5 @@
+{
+    "command": "terminate",
+    "instance_id": "test123",
+    "region": "us-east-1"
+}

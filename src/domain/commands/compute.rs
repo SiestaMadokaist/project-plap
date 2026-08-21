@@ -43,10 +43,27 @@ pub struct ComputeArgs {
 }
 id_type!(ComputeInstanceID);
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum ComputeCommand {
     Terminate,
     Stop,
     Reboot,
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::domain::commands::compute::{
+        ComputeArgs, ComputeCommand, ComputeInstanceID, ComputeRegion,
+    };
+
+    #[test]
+    fn shape_test() -> anyhow::Result<()> {
+        let buffer = std::fs::read("./samples/inputs/jsons/domain/commands/compute.json")?;
+        let command: ComputeArgs = serde_json::from_slice(&buffer)?;
+        assert_eq!(command.command, ComputeCommand::Terminate);
+        assert_eq!(command.region, ComputeRegion::AWSUsEast1);
+        assert_eq!(command.instance_id.0, "test123");
+        Ok(())
+    }
 }
