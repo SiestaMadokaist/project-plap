@@ -136,7 +136,7 @@ impl AgentCommandRepository for DDBAgentCommandRepository {
                 .send()
                 .await
                 .map_err(|e| {
-                    tracing::error!(error = %e, debug = ?e, "update progres to done failed");
+                    tracing::error!(error = %e, debug = ?e, "update progress to done failed");
                     RepositoryError::Disconnected(e.to_string())
                 })?;
             return Ok(current);
@@ -156,7 +156,7 @@ impl AgentCommandRepository for DDBAgentCommandRepository {
                 .send()
                 .await
                 .map_err(|e| {
-                    tracing::error!(error = %e, debug = ?e, "update progres to done failed");
+                    tracing::error!(error = %e, debug = ?e, "update progress to done failed");
                     RepositoryError::Disconnected(e.to_string())
                 })?;
             // is output.attributes actually the whole command domain tho?

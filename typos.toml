@@ -4,4 +4,8 @@ extend-exclude = [
     "dist/",
     "Cargo.lock",
     "terraform/.terraform/",
+    # third-party API fixtures: full of random hex hashes, not real words
+    "samples/inputs/",
 ]
+[default.extend-words] 
+tipe = "tipe"

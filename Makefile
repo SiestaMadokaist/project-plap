@@ -6,16 +6,20 @@ S3_BIN_BUCKET := s3://virginia-ramadoka/bin
 
 TF_VARS := -var="stage=$(STAGE)"
 
-.PHONY: all verify fmt test build package plan deploy run \
+.PHONY: all verify check lint fmt test typos build package plan deploy run \
         invoke-api invoke-ws invoke-cron tf-init clean deploy-bin \
         build-api package-api deploy-api
 
-all: verify test build
+all: verify build
 
 # --- code quality ---
 
-verify:
+verify: check lint test typos
+
+check:
 	cargo check
+
+lint:
 	cargo clippy -- -D warnings
 
 fmt:
@@ -23,6 +27,9 @@ fmt:
 
 test:
 	cargo test --features="datatransfer"
+
+typos:
+	typos
 
 coverage:
 	cargo llvm-cov --features datatransfer --html && open target/llvm-cov/html/index.html
