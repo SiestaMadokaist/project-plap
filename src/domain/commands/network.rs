@@ -120,10 +120,10 @@ mod tests {
 
     #[test]
     fn test_civit2local() -> Result<(), E> {
-        let ok = is_s32local("./samples/inputs/jsons/domain/commands/network1.json");
-        assert!(matches!(ok, Ok(_)));
-        let not_ok = is_s32local("./samples/inputs/jsons/domain/commands/network2.json");
+        let not_ok = is_civit2local("./samples/inputs/jsons/domain/commands/network1.json");
         assert!(matches!(not_ok, Err(_)));
+        let ok = is_civit2local("./samples/inputs/jsons/domain/commands/network2.json");
+        assert!(matches!(ok, Ok(_)));
         Ok(())
     }
 }
