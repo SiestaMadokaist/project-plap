@@ -8,10 +8,18 @@ use crate::{
 
 id_type!(ImagePromptId);
 
+/**
+ * data structure to be stored in bigquery
+ * mostly to be used as search engine of past generated prompt
+ * for the full data / comfyui workflow just extract it from the image exif
+ */
 #[derive(Serialize, Deserialize)]
-pub struct ImagePromptDomain {
-    pub prompts: String,
-    pub negatives: String,
+pub struct PromptHistory {
+    /* positive clip used as prompt on text encoder */
+    pub positive: String,
+    /* negative clip used as prompt text encoder */
+    pub negative: String,
+    /* comma separated value of loras used on creating this image */
     pub loras: String,
     pub checkpoint: String,
     pub bucket: StorageBucket,

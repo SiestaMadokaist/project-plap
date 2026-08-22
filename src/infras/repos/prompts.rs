@@ -1,6 +1,6 @@
 use crate::{
     application::ports::repository::prompt_history::{PromptHistoryError, PromptHistoryRepository},
-    domain::{prompts::ImagePromptDomain, storage::StoragePath},
+    domain::{prompts::PromptHistory, storage::StoragePath},
     pkg::types::strings::CommaSeparated,
 };
 
@@ -21,7 +21,7 @@ impl PromptHistoryRepository for PromptRepository {
         todo!();
     }
 
-    async fn insert(&self, row: ImagePromptDomain) -> Result<(), PromptHistoryError> {
+    async fn insert(&self, row: PromptHistory) -> Result<(), PromptHistoryError> {
         todo!();
     }
 }

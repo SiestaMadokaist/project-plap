@@ -33,7 +33,10 @@ impl ApiClients {
         let regions = vec![ComputeRegion::AWSApSoutheast2, ComputeRegion::AWSUsEast1];
         let engines = EC2MultiRegion::new(regions, ec2sdk.clone());
         Self {
-            notification: Discord::new(env.discord_webhook_url.clone()),
+            notification: Discord::new(
+                env.discord_username.clone(),
+                env.discord_webhook_url.clone(),
+            ),
             engines,
             output_storage: S3Storage::new(
                 config.clone(),

@@ -14,7 +14,8 @@ pub struct DiffusionEnv {
     pub max_data_transfer: i64,
     pub watch_dir: String,
     // pub aws_region: String,
-    pub discord_webhook_url: String,
+    pub discord_username: String,
+    pub discord_webhook_url: URL,
 
     pub civitai_apikey: String,
     pub workdir: String,
@@ -50,7 +51,9 @@ impl DiffusionEnv {
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(DEFAULT_MAX_DATA_TRANSFER_BYTES),
             // aws_region: var_or("AWS_REGION", "us-east-1"),
+            discord_username: var_or("DISCORD_USERNAME", "diffusion-agent"),
             discord_webhook_url: env::var("DISCORD_WEBHOOK_URL")
+                .map(URL)
                 .expect("DISCORD_WEBHOOK_URL must be set"),
 
             model_region: env::var("MODEL_REGION").expect("MODEL REGION must not be empty"),

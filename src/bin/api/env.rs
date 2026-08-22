@@ -1,11 +1,12 @@
-use rust_api::pkg::{enums::stage::Stage, utils::var_or};
+use rust_api::pkg::{enums::stage::Stage, types::strings::URL, utils::var_or};
 use std::env;
 
 pub struct ApiEnv {
     stage: String,
     sanity_run: String,
 
-    pub discord_webhook_url: String,
+    pub discord_username: String,
+    pub discord_webhook_url: URL,
 
     pub output_region: String,
     pub output_bucket: String,
@@ -21,7 +22,9 @@ impl ApiEnv {
         Self {
             sanity_run: var_or("SANITY_RUN", "false"),
             stage: env::var("STAGE").expect("stage must be set"),
+            discord_username: var_or("DISCORD_USERNAME", "lambda-api"),
             discord_webhook_url: env::var("DISCORD_WEBHOOK_URL")
+                .map(URL)
                 .expect("DISCORD_WEBHOOK_URL must be set"),
 
             output_region: var_or("OUTPUT_REGION", "ap-southeast-1"),

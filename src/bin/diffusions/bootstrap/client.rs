@@ -81,7 +81,10 @@ impl EC2DiffusionClients {
                 env.workdir.clone(),
                 env.max_data_transfer,
             ),
-            notification: Discord::new(env.discord_webhook_url.clone()),
+            notification: Discord::new(
+                env.discord_username.clone(),
+                env.discord_webhook_url.clone(),
+            ),
             // TODO: pick A1111 vs ComfyUI at runtime (e.g. from Env), not wired yet
             diffusion: Box::new(A1111::new(String::new())),
             // TODO: not wired to Env yet, stub only

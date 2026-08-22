@@ -3,6 +3,7 @@ use serde::Serialize;
 
 use crate::{
     application::ports::clients::notification::NotificationClient, domain::errors::DomainError,
+    pkg::types::strings::URL,
 };
 
 #[derive(Serialize)]
@@ -13,12 +14,14 @@ struct WebhookPayload<'a> {
 
 pub struct Discord {
     client: Client,
-    webhook_url: String,
+    username: String,
+    webhook_url: URL,
 }
 
 impl Discord {
-    pub fn new(webhook_url: String) -> Self {
+    pub fn new(username: String, webhook_url: URL) -> Self {
         Self {
+            username,
             client: Client::new(),
             webhook_url,
         }
@@ -28,11 +31,11 @@ impl Discord {
 impl NotificationClient for Discord {
     async fn notify(&self, info: &str) -> Result<(), DomainError> {
         let payload = WebhookPayload {
-            username: "zero-translation",
+            username: &self.username,
             content: info,
         };
         self.client
-            .post(&self.webhook_url)
+            .post(&self.webhook_url.0)
             .json(&payload)
             .send()
             .await?;

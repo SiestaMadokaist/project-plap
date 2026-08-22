@@ -3,13 +3,13 @@ use crate::pkg::types::strings::CommaSeparated;
 
 use crate::{
     application::ports::repository::error::RepositoryError,
-    domain::{prompts::ImagePromptDomain, storage::StoragePath},
+    domain::{prompts::PromptHistory, storage::StoragePath},
 };
 
 pub type PromptHistoryError = RepositoryError<StoragePath>;
 #[allow(async_fn_in_trait)]
 pub trait PromptHistoryRepository {
-    async fn insert(&self, row: ImagePromptDomain) -> Result<(), PromptHistoryError>;
+    async fn insert(&self, row: PromptHistory) -> Result<(), PromptHistoryError>;
     /** @todo
        const queryTemplate = (tableId: string, tags: string[], minimum: number) => `WITH scored AS (
        SELECT *,

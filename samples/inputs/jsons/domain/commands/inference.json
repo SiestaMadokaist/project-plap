@@ -1,0 +1,15 @@
+{
+    "workflow_id": "test-wf-1",
+    "loras": [
+        "lora1.safetensors",
+        "lora2.safetensors"
+    ],
+    "positive": "(( highly detailed, photograph, realistic, photorealistic, cosplay photoshoot, detailed skin texture real skin ))\non stage, piano, playing piano\n(( concert, vip, room interior, spotlight, wide screen ))\n1girl, solo\nbackview, facing away, from behind, pov from behind, dynamic angle, side-view, from side\nADDCOMM",
+    "negative": "some negatives string",
+    "width": 800,
+    "height": 1000,
+    "steps": 30,
+    "n_iter": 1,
+    "seed": 1038232,
+    "references": []
+}

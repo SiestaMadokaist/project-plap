@@ -4,6 +4,7 @@ use tokio::io::AsyncWriteExt;
 
 use crate::{
     application::ports::clients::inference_model_provider::InferenceModelProvider,
+    domain::errors::DomainError,
     pkg::{
         civitai::{self, dto::model_version::ModelVersionDTO, typing},
         id::InferenceModelId,
@@ -50,13 +51,16 @@ impl CivitaiAPI {
 #[async_trait::async_trait(?Send)]
 impl InferenceModelProvider for CivitaiAPI {
     async fn get_detail(&self, id: &InferenceModelId) -> anyhow::Result<ModelVersionDTO> {
-        let url = self.host.e("/api/v1/version").e(&id.to_string());
+        let url = self.host.e("/api/v1/model-versions/").e(&id.to_string());
+        print!("url: {}", url.0);
         let req = self.client.get(url.to_string());
         let resp = self.send(req).await?;
+        // print!("resp: {}", &resp.json::<String>().await?);
         let data = resp
             .json::<civitai::dto::model_version::ModelVersionDTO>()
             .await?;
         Ok(data)
+        // Err(DomainError::NotImplemented.into())
     }
 
     fn abs_path(&self, id: &InferenceModelId, t: &typing::ModelCategory, name: &str) -> PathBuf {

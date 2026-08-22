@@ -15,7 +15,7 @@ impl A1111 {
 
 #[async_trait::async_trait(?Send)]
 impl DiffusionClient for A1111 {
-    async fn generate(&self, _params: &InferenceConfig) -> anyhow::Result<()> {
+    async fn generate(&self, _params: &InferenceConfig<String>) -> anyhow::Result<()> {
         let _ = &self.base_url;
         todo!()
     }

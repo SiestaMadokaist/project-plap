@@ -16,6 +16,8 @@ pub enum RouteId {
     ListModels,
     #[serde(rename = "/agent/command/fetch")]
     AgentCommandFetchModel,
+    #[serde(rename = "/test")]
+    TestEndpoint,
 }
 displayable!(RouteId);
 

@@ -90,14 +90,15 @@ impl<'a, C: HandleNetworkClients> HandleNetwork<'a, C> {
                         .get_detail(id)
                         .await
                         .map_err(|x| DomainError::ApiError(x.to_string()))?;
-                    let path = api.abs_path(&mv.id, &mv.category(), &mv.name);
+                    let path =
+                        api.abs_path(&mv.id, &mv.category(), &format!("{}.safetensors", &mv.name));
                     api.download(id, &path)
                         .await
                         .map_err(|x| DomainError::HttpConnectionFailed(x.to_string()))?;
                     if args.forward {
                         let storage = self.clients.model_storage();
                         let model_path = Self::remote_path(&mv, ".safetensors");
-                        let info_path = Self::remote_path(&mv, ".json");
+                        let info_path = Self::remote_path(&mv, ".civitai.json");
                         storage.upload(&path, &model_path).await?;
                         let info = serde_json::to_value(mv)?.to_string();
                         storage

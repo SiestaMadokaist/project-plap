@@ -1,6 +1,6 @@
 use std::env;
 
-use rust_api::pkg::{enums::stage::Stage, utils::var_or};
+use rust_api::pkg::{enums::stage::Stage, types::strings::URL, utils::var_or};
 pub struct CronEnv {
     stage: String,
     pub openai_model: String,
@@ -12,7 +12,8 @@ pub struct CronEnv {
     pub tl_region: String,
     pub tl_bucket: String,
     pub tl_prefix: String,
-    pub discord_webhook_url: String,
+    pub discord_username: String,
+    pub discord_webhook_url: URL,
     pub max_data_transfer: i64,
 }
 
@@ -31,7 +32,9 @@ impl CronEnv {
             tl_region: env::var("TL_REGION").expect("TL_REGION must be set"),
             tl_bucket: env::var("TL_BUCKET").expect("TL_BUCKET must be set"),
             tl_prefix: var_or("TL_PREFIX", ""),
+            discord_username: var_or("DISCORD_USERNAME", "lambda-cron"),
             discord_webhook_url: env::var("DISCORD_WEBHOOK_URL")
+                .map(URL)
                 .expect("DISCORD_WEBHOOK_URL must be set"),
             max_data_transfer: env::var("MAX_DATA_TRANSFER")
                 .ok()

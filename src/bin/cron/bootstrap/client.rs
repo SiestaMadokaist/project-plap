@@ -59,7 +59,7 @@ impl CronClients {
                 "/tmp/".into(),
                 env.max_data_transfer,
             ),
-            notification: Discord::new(env.discord_webhook_url),
+            notification: Discord::new(env.discord_username, env.discord_webhook_url),
         };
         general_clients
     }

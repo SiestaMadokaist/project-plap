@@ -14,11 +14,11 @@ trait_clients!(HandleInferenceClient, HasDiffusion);
 pub struct HandleInference<'a, C: HandleInferenceClient> {
     clients: Rc<C>,
     progress: Progression,
-    config: &'a InferenceConfig,
+    config: &'a InferenceConfig<String>,
 }
 
 impl<'a, C: HandleInferenceClient> HandleInference<'a, C> {
-    pub fn new(clients: Rc<C>, progress: Progression, config: &'a InferenceConfig) -> Self {
+    pub fn new(clients: Rc<C>, progress: Progression, config: &'a InferenceConfig<String>) -> Self {
         Self {
             clients,
             progress,
