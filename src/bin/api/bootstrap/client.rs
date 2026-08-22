@@ -48,6 +48,7 @@ impl ApiClients {
                 env.output_prefix.clone(),
                 "/tmp/".into(),
                 MAX_SIZE,
+                None,
             ),
             model_storage: S3Storage::new(
                 config.clone(),
@@ -59,6 +60,7 @@ impl ApiClients {
                 env.model_prefix.clone(),
                 "/tmp/".into(),
                 MAX_SIZE,
+                None,
             ),
         }
     }

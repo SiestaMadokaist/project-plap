@@ -5,7 +5,11 @@ use std::{
 };
 
 use aws_config::SdkConfig;
-use aws_sdk_s3::{primitives::ByteStream, types::ObjectCannedAcl::PublicRead, Client};
+use aws_sdk_s3::{
+    primitives::ByteStream,
+    types::ObjectCannedAcl::{self, PublicRead},
+    Client,
+};
 use tokio::process::Command;
 
 use crate::{
@@ -22,6 +26,8 @@ pub struct S3Storage {
     region: ComputeRegion,
     bucket: String,
     bucket_region: OnceCell<String>,
+    // set none if bucket doesnt allow acl
+    acl: Option<ObjectCannedAcl>,
     /*
      * @desecription
      * valid prefix = ""
@@ -50,6 +56,7 @@ impl S3Storage {
         remote_prefix: String,
         local_workdir: String,
         max_size: i64,
+        acl: Option<ObjectCannedAcl>,
     ) -> Self {
         let mut builder = config.to_builder();
         let sregion: String = region.into();
@@ -64,6 +71,7 @@ impl S3Storage {
             remote_prefix,
             local_workdir,
             max_size,
+            acl,
         }
     }
 
@@ -199,6 +207,7 @@ impl S3Storage {
                 "aws s3 cp failed: {stderr}"
             )));
         }
+        tracing::info!("aws command finished\n({})", args.join(" "));
         Ok(())
     }
 }
@@ -346,12 +355,16 @@ impl StorageClient for S3Storage {
 
     async fn write(&self, path: &StoragePath, data: &Vec<u8>) -> Result<(), DomainError> {
         let bytes = ByteStream::from(data.clone());
-        self.client
+        let mut builder = self
+            .client
             .put_object()
             .bucket(&self.bucket)
             .key(self.key(&path))
-            .body(bytes)
-            .acl(PublicRead)
+            .body(bytes);
+        if let Some(acl) = &self.acl {
+            builder = builder.acl(acl.clone());
+        }
+        builder
             .send()
             .await
             .map_err(|e| DomainError::Disconnected(e.to_string()))?;
@@ -392,6 +405,7 @@ mod tests {
             "models/".into(),
             "models/".into(),
             100,
+            Some(PublicRead),
         );
         let remote = StoragePath("checkpoints/1322/x.safetensors".into());
         let local = PathBuf::from_str("models/checkpoints/x.safetensors")
@@ -417,6 +431,7 @@ mod tests {
             "models/".into(),
             "models/".into(),
             100,
+            Some(PublicRead),
         );
         let remote = StoragePath("checkpoints/1322/x.safetensors".into());
         let local = PathBuf::from_str("models/checkpoints/x.safetensors")

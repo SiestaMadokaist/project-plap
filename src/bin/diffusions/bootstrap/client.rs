@@ -3,6 +3,7 @@ use std::rc::Rc;
 // use async_openai::{config::OpenAIConfig, Client as OpenAIClient};
 use aws_config::SdkConfig;
 
+use aws_sdk_s3::types::ObjectCannedAcl::PublicRead;
 use rust_api::{
     application::ports::clients::{
         compute_agent::ComputeAgent,
@@ -64,6 +65,7 @@ impl EC2DiffusionClients {
                 env.output_prefix.clone(),
                 env.workdir.clone(),
                 env.max_data_transfer,
+                Some(PublicRead),
             ),
             civitai: CivitaiAPI::new(
                 env.civitai_host(),
@@ -80,6 +82,7 @@ impl EC2DiffusionClients {
                 env.model_prefix.clone(),
                 env.workdir.clone(),
                 env.max_data_transfer,
+                None,
             ),
             notification: Discord::new(
                 env.discord_username.clone(),

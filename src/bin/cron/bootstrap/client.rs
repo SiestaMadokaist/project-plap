@@ -3,6 +3,7 @@ use std::rc::Rc;
 use async_openai::{config::OpenAIConfig, Client as OpenAIClient};
 use aws_config::SdkConfig;
 
+use aws_sdk_s3::types::ObjectCannedAcl::PublicRead;
 use rust_api::{
     application::ports::clients::container::{
         HasNotification, HasOutputStorage, HasRaws, HasTranslator,
@@ -58,6 +59,7 @@ impl CronClients {
                 env.tl_prefix.clone(),
                 "/tmp/".into(),
                 env.max_data_transfer,
+                Some(PublicRead),
             ),
             notification: Discord::new(env.discord_username, env.discord_webhook_url),
         };
