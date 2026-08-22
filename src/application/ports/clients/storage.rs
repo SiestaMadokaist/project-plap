@@ -5,6 +5,7 @@ use crate::domain::{
     storage::{StorageBucket, StoragePath, StoragePrefix},
 };
 
+#[cfg_attr(test, mockall::automock)]
 #[allow(async_fn_in_trait)]
 pub trait StorageClient {
     fn provider_name() -> String;

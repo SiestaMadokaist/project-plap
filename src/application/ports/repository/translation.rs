@@ -3,6 +3,7 @@ use crate::domain::{
     translation::{ChapterId, NovelId, RawSource, TranslationDomain},
 };
 
+#[cfg_attr(test, mockall::automock)]
 #[allow(async_fn_in_trait)]
 pub trait TranslationRepository {
     async fn latest(&self, id: &NovelId) -> Result<Option<TranslationDomain>, DomainError>;

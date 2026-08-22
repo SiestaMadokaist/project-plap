@@ -5,6 +5,7 @@ use crate::pkg::{
     id::InferenceModelId,
 };
 
+#[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait(?Send)]
 pub trait InferenceModelProvider {
     // async fn model_detail(&self, id: &ModelId) -> anyhow::Result<ModelDetailDTO>;

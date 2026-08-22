@@ -5,6 +5,7 @@ use crate::{
 
 pub type UserError = RepositoryError<UserId>;
 
+#[cfg_attr(test, mockall::automock)]
 #[allow(async_fn_in_trait)]
 pub trait UserRepository {
     async fn get(&self, id: &UserId) -> Result<User, UserError>;

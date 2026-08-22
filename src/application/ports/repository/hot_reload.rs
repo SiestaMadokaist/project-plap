@@ -4,6 +4,7 @@ use crate::{
 };
 
 pub type HotReloadError = RepositoryError<UserId>;
+#[cfg_attr(test, mockall::automock)]
 #[allow(async_fn_in_trait)]
 pub trait HotReloadRepository {
     async fn diffusion_config(&self, id: &UserId) -> Result<DiffusionConfigDomain, HotReloadError>;

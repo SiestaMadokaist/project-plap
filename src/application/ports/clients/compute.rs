@@ -1,4 +1,5 @@
 use crate::domain::commands::compute::{ComputeInstanceID, ComputeRegion};
+#[cfg_attr(test, mockall::automock)]
 #[allow(async_fn_in_trait)]
 pub trait ComputeEngine {
     async fn stop(&self, id: &ComputeInstanceID) -> anyhow::Result<()>;

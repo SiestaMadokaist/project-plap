@@ -52,7 +52,6 @@ impl CivitaiAPI {
 impl InferenceModelProvider for CivitaiAPI {
     async fn get_detail(&self, id: &InferenceModelId) -> anyhow::Result<ModelVersionDTO> {
         let url = self.host.e("/api/v1/model-versions/").e(&id.to_string());
-        print!("url: {}", url.0);
         let req = self.client.get(url.to_string());
         let resp = self.send(req).await?;
         // print!("resp: {}", &resp.json::<String>().await?);
@@ -64,7 +63,7 @@ impl InferenceModelProvider for CivitaiAPI {
     }
 
     fn abs_path(&self, id: &InferenceModelId, t: &typing::ModelCategory, name: &str) -> PathBuf {
-        let dst = format!("{}/models/{}/{}_{}", self.workdir, t, id, name);
+        let dst = format!("{}models/{}/{}_{}", self.workdir, t, id, name);
         PathBuf::from(dst)
     }
 

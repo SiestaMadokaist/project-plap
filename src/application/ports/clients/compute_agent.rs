@@ -1,4 +1,5 @@
 use crate::domain::commands::compute::{ComputeInstanceID, ComputeRegion};
+#[cfg_attr(test, mockall::automock)]
 #[async_trait::async_trait(?Send)]
 pub trait ComputeAgent {
     async fn ip(&self) -> anyhow::Result<String>;

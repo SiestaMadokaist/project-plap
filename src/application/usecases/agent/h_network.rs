@@ -41,7 +41,7 @@ impl<'a, C: HandleNetworkClients> HandleNetwork<'a, C> {
     fn remote_path(mv: &ModelVersionDTO, ext: &str) -> StoragePath {
         let category = mv.category();
         let id: &civitai::typing::VersionId = &mv.id;
-        let name = &mv.name;
+        let name = &mv.name();
         let s = format!("{category}/{id}/{name}{ext}");
         StoragePath(s)
     }
@@ -90,8 +90,11 @@ impl<'a, C: HandleNetworkClients> HandleNetwork<'a, C> {
                         .get_detail(id)
                         .await
                         .map_err(|x| DomainError::ApiError(x.to_string()))?;
-                    let path =
-                        api.abs_path(&mv.id, &mv.category(), &format!("{}.safetensors", &mv.name));
+                    let path = api.abs_path(
+                        &mv.id,
+                        &mv.category(),
+                        &format!("{}.safetensors", &mv.name()),
+                    );
                     api.download(id, &path)
                         .await
                         .map_err(|x| DomainError::HttpConnectionFailed(x.to_string()))?;
@@ -120,88 +123,46 @@ impl<'a, C: HandleNetworkClients> HandleNetwork<'a, C> {
 
 #[cfg(all(test, feature = "datatransfer"))]
 mod tests {
-    #[cfg(feature = "datatransfer")]
-    use std::path::PathBuf;
 
     use super::*;
     use crate::{
-        application::ports::clients::inference_model_provider::InferenceModelProvider,
-        domain::storage::{StorageBucket, StoragePrefix},
-        pkg::{
-            civitai::typing::ModelCategory,
-            id::InferenceModelId,
-            types::unit::{Index0, INDEX_ZERO},
+        application::ports::clients::{
+            inference_model_provider::{InferenceModelProvider, MockInferenceModelProvider},
+            storage::MockStorageClient,
         },
+        pkg::types::unit::{Index0, INDEX_ZERO},
     };
 
-    struct MockStorage {}
-
-    #[allow(async_fn_in_trait)]
-    impl StorageClient for MockStorage {
-        fn provider_name() -> String {
-            "mock".into()
-        }
-        fn bucket(&self) -> StorageBucket {
-            StorageBucket("mock-bucket".into())
-        }
-        async fn read(&self, path: &StoragePath) -> Result<String, DomainError> {
-            todo!()
-        }
-        async fn write(&self, path: &StoragePath, data: &Vec<u8>) -> Result<(), DomainError> {
-            todo!()
-        }
-        fn public_url(&self, path: &StoragePath) -> String {
-            todo!()
-        }
-        async fn ls(&self, prefix: &StoragePrefix) -> Vec<String> {
-            todo!()
-        }
-        #[cfg(feature = "datatransfer")]
-        async fn upload(&self, local: &PathBuf, remote: &StoragePath) -> Result<(), DomainError> {
-            todo!()
-        }
-        #[cfg(feature = "datatransfer")]
-        async fn download(&self, remote: &StoragePath, local: &PathBuf) -> Result<(), DomainError> {
-            todo!()
-        }
-        #[cfg(feature = "datatransfer")]
-        fn abs_path(&self, local: &PathBuf) -> PathBuf {
-            todo!()
-        }
-    }
-    struct MockInferenceModelProvider {}
-
-    #[async_trait::async_trait(?Send)]
-    impl InferenceModelProvider for MockInferenceModelProvider {
-        async fn get_detail(&self, id: &InferenceModelId) -> anyhow::Result<ModelVersionDTO> {
-            todo!()
-        }
-        fn abs_path(&self, id: &InferenceModelId, category: &ModelCategory, name: &str) -> PathBuf {
-            todo!()
-        }
-        #[cfg(feature = "datatransfer")]
-        async fn download(&self, id: &InferenceModelId, dst: &PathBuf) -> anyhow::Result<()> {
-            todo!()
-        }
-    }
-
     struct MockContainer {
-        storage: MockStorage,
+        storage: MockStorageClient,
         civitai: MockInferenceModelProvider,
     }
 
     impl MockContainer {
         fn rc() -> Rc<Self> {
-            let container = Self {
-                storage: MockStorage {},
-                civitai: MockInferenceModelProvider {},
-            };
+            let buffer =
+                std::fs::read("./samples/inputs/jsons/infras/civitai/resp.version.checkpoint.json")
+                    .expect("cannot find resp.version.checkpoint.json");
+            let mv: ModelVersionDTO =
+                serde_json::from_slice(&buffer).expect("cannot deserialize fixture");
+
+            let mut civitai = MockInferenceModelProvider::new();
+            civitai
+                .expect_get_detail()
+                .returning(move |_| Ok(mv.clone()));
+            civitai
+                .expect_abs_path()
+                .returning(|_, _, _| "/root/path/imp/to/x".into());
+            #[cfg(feature = "datatransfer")]
+            civitai.expect_download().returning(|_, _| Ok(()));
+            let storage = MockStorageClient::new();
+            let container = Self { storage, civitai };
             Rc::new(container)
         }
     }
 
     impl HasModelStorage for MockContainer {
-        type ModelStorage = MockStorage;
+        type ModelStorage = MockStorageClient;
         fn model_storage(&self) -> &Self::ModelStorage {
             &self.storage
         }
@@ -213,16 +174,17 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "future")]
     #[tokio::test]
     async fn s32localhost() -> Result<(), DomainError> {
+        let buffer = std::fs::read("./samples/inputs/jsons/domain/commands/network2.json")
+            .expect("cannot find network2.json");
+        let args: NetworkArgs = serde_json::from_slice(&buffer)
+            .expect("cannot deserialize buffer to InferenceConfig<String>");
+
         let clients = MockContainer::rc();
-        let arg_json =
-            serde_json::from_str(r"{}").map_err(|x| DomainError::Serialize(x.to_string()))?;
-        let args: NetworkArgs =
-            serde_json::from_value(arg_json).map_err(|x| DomainError::Serialize(x.to_string()))?;
         let handler = HandleNetwork::new(clients, &args, Progression::new(Index0(1), INDEX_ZERO));
-        let result = handler.exec().await;
+        let updated = handler.exec().await?;
+        assert!(updated.is_done());
         Ok(())
     }
 }

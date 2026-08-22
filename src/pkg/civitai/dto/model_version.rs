@@ -23,7 +23,7 @@ struct ModelVersionModelDTO {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ModelVersionDTO {
     pub id: civitai::typing::VersionId,
-    pub name: String,
+    name: String,
     #[serde(rename = "modelId")]
     pub model_id: civitai::typing::ModelId,
     #[serde(rename = "baseModel")]
@@ -32,6 +32,12 @@ pub struct ModelVersionDTO {
 }
 
 impl ModelVersionDTO {
+    pub fn name(&self) -> String {
+        let m = &self.model;
+        let name = format!("{}-{}", &m.name, &self.name);
+        name.to_lowercase().replace(" ", "_")
+    }
+
     pub fn category(&self) -> typing::ModelCategory {
         if matches!(self.model.tipe, ModelType::Lora) {
             typing::ModelCategory::Loras
@@ -40,6 +46,7 @@ impl ModelVersionDTO {
                 BaseModel::Illustrious => typing::ModelCategory::Checkpoints,
                 BaseModel::Krea2 => typing::ModelCategory::DiffusionModels,
                 BaseModel::ZIT => typing::ModelCategory::DiffusionModels,
+                BaseModel::Anima => typing::ModelCategory::DiffusionModels,
                 BaseModel::Other => typing::ModelCategory::DiffusionModels,
             }
         }

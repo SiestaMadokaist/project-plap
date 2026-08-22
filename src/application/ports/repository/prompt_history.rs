@@ -7,6 +7,7 @@ use crate::{
 };
 
 pub type PromptHistoryError = RepositoryError<StoragePath>;
+#[cfg_attr(test, mockall::automock)]
 #[allow(async_fn_in_trait)]
 pub trait PromptHistoryRepository {
     async fn insert(&self, row: PromptHistory) -> Result<(), PromptHistoryError>;

@@ -5,6 +5,7 @@ use crate::{
 
 pub type AgentCommandError = RepositoryError<ActionId>;
 
+#[cfg_attr(test, mockall::automock)]
 #[allow(async_fn_in_trait)]
 pub trait AgentCommandRepository {
     async fn insert(&self, command: CommandDomain) -> Result<ActionId, AgentCommandError>;

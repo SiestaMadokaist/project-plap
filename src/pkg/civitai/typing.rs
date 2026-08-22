@@ -18,6 +18,8 @@ pub enum BaseModel {
     Krea2,
     #[serde(rename = "ZImageTurbo")]
     ZIT,
+    #[serde(rename = "Anima")]
+    Anima,
     #[serde(other)]
     Other,
 }
