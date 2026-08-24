@@ -85,7 +85,7 @@ impl<R: CommandHandlerRepos, C: CommandHandlerClients> CommandHandler<R, C> {
         let config = &arg.config;
         let client = self.clients.clone();
         let mut handler = HandleInference::new(client, progress, config);
-        let updated_progress = handler.exec().await?;
+        let updated_progress = handler.exec().await;
         let command_stage = self.record_progress(&updated_progress).await?;
         Ok(command_stage)
     }
