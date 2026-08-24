@@ -17,7 +17,7 @@ mod tests {
 
     use crate::{
         displayable,
-        pkg::civitai::dto::{model_detail::ModelDetailDTO, model_version::ModelVersionDTO},
+        pkg::civitai::dto::model_detail::ModelDetailDTO,
     };
 
     #[derive(Debug, thiserror::Error, Serialize)]

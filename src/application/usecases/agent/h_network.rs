@@ -155,37 +155,35 @@ mod tests {
         civitai: MockInferenceModelProvider,
     }
 
+    fn civitai() -> MockInferenceModelProvider {
+        let buffer =
+            std::fs::read("./samples/inputs/jsons/infras/civitai/resp.version.checkpoint.json")
+                .expect("cannot find resp.version.checkpoint.json");
+        let mv: ModelVersionDTO =
+            serde_json::from_slice(&buffer).expect("cannot deserialize fixture");
+
+        let mut civitai = MockInferenceModelProvider::new();
+        civitai
+            .expect_get_detail()
+            .returning(move |_| Ok(mv.clone()));
+        // civitai.abs_path(id, category, name)
+        civitai
+            .expect_abs_path()
+            .returning(|_, _, _| PathBuf::from("/root/path/imp/to/x"));
+        #[cfg(feature = "datatransfer")]
+        civitai.expect_download().returning(|_, _| Ok(()));
+        civitai
+    }
+
+    fn storage() -> MockStorageClient {
+        let storage = MockStorageClient::new();
+        storage
+    }
+
     impl MockContainer {
         fn new(storage: MockStorageClient, civitai: MockInferenceModelProvider) -> Rc<Self> {
             let s = Self { storage, civitai };
             Rc::new(s)
-        }
-
-        fn civitai() -> MockInferenceModelProvider {
-            let buffer =
-                std::fs::read("./samples/inputs/jsons/infras/civitai/resp.version.checkpoint.json")
-                    .expect("cannot find resp.version.checkpoint.json");
-            let mv: ModelVersionDTO =
-                serde_json::from_slice(&buffer).expect("cannot deserialize fixture");
-
-            let mut civitai = MockInferenceModelProvider::new();
-            civitai
-                .expect_get_detail()
-                .returning(move |_| Ok(mv.clone()));
-            // civitai.abs_path(id, category, name)
-            civitai
-                .expect_abs_path()
-                .returning(|_, _, _| PathBuf::from("/root/path/imp/to/x"));
-            #[cfg(feature = "datatransfer")]
-            civitai.expect_download().returning(|_, _| Ok(()));
-            civitai
-        }
-
-        fn rc() -> Rc<Self> {
-            let civitai = Self::civitai();
-            let storage = MockStorageClient::new();
-            let container = Self::new(storage, civitai);
-            container
         }
     }
 
@@ -202,14 +200,21 @@ mod tests {
         }
     }
 
-    #[tokio::test]
-    async fn s32localhost() -> Result<(), DomainError> {
+    fn args() -> NetworkArgs {
         let buffer = std::fs::read("./samples/inputs/jsons/domain/commands/network2.json")
             .expect("cannot find network2.json");
-        let args: NetworkArgs = serde_json::from_slice(&buffer)
-            .expect("cannot deserialize buffer to InferenceConfig<String>");
+        serde_json::from_slice(&buffer)
+            .expect("cannot deserialize buffer to InferenceConfig<String>")
+    }
 
-        let clients = MockContainer::rc();
+    #[tokio::test]
+    async fn s32localhost() -> Result<(), DomainError> {
+        let mut storage = tests::storage();
+        let civitai = tests::civitai();
+        storage.expect_upload().returning(|_, _| Ok(()));
+        storage.expect_write().returning(|_, _| Ok(()));
+        let clients = MockContainer::new(storage, civitai);
+        let args = tests::args();
         let handler = HandleNetwork::new(clients, &args, Progression::new(Index0(1), INDEX_ZERO));
         let result = handler.exec().await;
         assert!(result.is_done());
@@ -218,16 +223,13 @@ mod tests {
 
     #[tokio::test]
     async fn can_handle_error() -> Result<(), DomainError> {
-        let buffer = std::fs::read("./samples/inputs/jsons/domain/commands/network2.json")
-            .expect("cannot find network2.json");
-        let args: NetworkArgs = serde_json::from_slice(&buffer)
-            .expect("cannot deserialize buffer to InferenceConfig<String>");
+        let args = tests::args();
+        let civitai = tests::civitai();
         let mut storage = MockStorageClient::new();
         storage.expect_upload().returning(|_, _| Ok(()));
         storage
             .expect_write()
             .returning(|_path, _data| Err(DomainError::Disconnected("service error".into())));
-        let civitai = MockContainer::civitai();
         let clients = MockContainer::new(storage, civitai);
         let handler = HandleNetwork::new(clients, &args, Progression::new(Index0(1), INDEX_ZERO));
         let result = handler.exec().await;

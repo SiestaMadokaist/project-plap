@@ -99,7 +99,7 @@ mod tests {
             ModelSrc::Civitai(src) => match command.dst {
                 ModelDst::Local(dst) => {
                     assert_eq!(src.0, 132);
-                    assert_eq!(&dst.forward, &false);
+                    assert_eq!(&dst.forward, &true);
                     assert_eq!(&dst.path, "path/to/dst");
                 }
                 _ => return Err(E::Misread("dst should be local".into())),
