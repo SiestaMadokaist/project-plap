@@ -69,7 +69,7 @@ impl<R: CommandHandlerRepos, C: CommandHandlerClients> CommandHandler<R, C> {
         };
         let progress = self.params.progress.clone();
         let handler = HandleNetwork::new(self.clients.clone(), args, progress);
-        let updated = handler.exec().await?;
+        let updated = handler.exec().await;
         let updated_json = serde_json::to_string_pretty(&updated)?;
         tracing::info!("recording updated progress: ```\n{}\n```", &updated_json);
         let command_stage = self.record_progress(&updated).await?;

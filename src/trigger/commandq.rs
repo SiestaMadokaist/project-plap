@@ -47,7 +47,7 @@ impl<R: CommandHandlerRepos, C: CommandHandlerClients> CommandQ<R, C> {
         loop {
             let interval = &self.interval;
             tokio::time::sleep(interval.into()).await;
-            self.on_interval().await?
+            self.on_interval().await?;
         }
     }
 }

@@ -6,7 +6,7 @@
     "dst": {
         "provider": "localhost",
         "data": {
-            "forward": false,
+            "forward": true,
             "path": "path/to/dst"
         }
     }

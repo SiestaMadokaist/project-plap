@@ -121,7 +121,26 @@ impl AgentCommandRepository for DDBAgentCommandRepository {
         id: &ActionId,
         progress: &Progression,
     ) -> Result<CommandDomain, AgentCommandError> {
-        if progress.is_done() {
+        if progress.is_failed() {
+            let mut current = self.get(id).await?;
+            current.stage = CommandStage::Failed;
+            let av_map =
+                to_item(&current).map_err(|e| RepositoryError::Serialize(e.to_string()))?;
+            tracing::info!(item = self.table, "tablename");
+            tracing::info!(item = ?av_map, "updating progress to failed");
+            self.client
+                .put_item()
+                .table_name(&self.table)
+                .condition_expression("attribute_exists(action_id)") // no need action_id = ??? here?
+                .set_item(Some(av_map))
+                .send()
+                .await
+                .map_err(|e| {
+                    tracing::error!(error = %e, debug = ?e, "update progress to failed failed");
+                    RepositoryError::Disconnected(e.to_string())
+                })?;
+            return Ok(current);
+        } else if progress.is_done() {
             let mut current = self.get(id).await?;
             current.stage = CommandStage::Completed;
             let av_map =

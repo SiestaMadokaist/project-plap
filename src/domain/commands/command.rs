@@ -75,8 +75,12 @@ impl Progression {
         }
     }
 
+    pub fn is_failed(&self) -> bool {
+        self.failed_at.is_none() == false
+    }
+
     pub fn is_done(&self) -> bool {
-        return self.failed_at.is_none() && self.progress == self.total;
+        self.failed_at.is_none() && self.progress == self.total
     }
 
     pub fn is_started(&self) -> bool {
