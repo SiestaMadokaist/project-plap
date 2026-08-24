@@ -4,7 +4,7 @@ locals {
 
 resource "aws_lambda_function" "api" {
   function_name    = "${var.service_name}-${var.stage}-api"
-  role             = aws_iam_role.lambda.arn
+  role             = aws_iam_role.api.arn
   runtime          = "provided.al2023"
   architectures    = ["arm64"]
   handler          = "bootstrap"
@@ -20,14 +20,14 @@ resource "aws_lambda_function" "api" {
   }
 
   depends_on = [
-    aws_iam_role_policy_attachment.basic_execution,
+    aws_iam_role_policy_attachment.api_basic_execution,
     aws_cloudwatch_log_group.api,
   ]
 }
 
 resource "aws_lambda_function" "ws" {
   function_name    = "${var.service_name}-${var.stage}-ws"
-  role             = aws_iam_role.lambda.arn
+  role             = aws_iam_role.ws.arn
   runtime          = "provided.al2023"
   architectures    = ["arm64"]
   handler          = "bootstrap"
@@ -43,14 +43,14 @@ resource "aws_lambda_function" "ws" {
   }
 
   depends_on = [
-    aws_iam_role_policy_attachment.basic_execution,
+    aws_iam_role_policy_attachment.ws_basic_execution,
     aws_cloudwatch_log_group.ws,
   ]
 }
 
 resource "aws_lambda_function" "cron" {
   function_name    = "${var.service_name}-${var.stage}-cron"
-  role             = aws_iam_role.lambda.arn
+  role             = aws_iam_role.cron.arn
   runtime          = "provided.al2023"
   architectures    = ["arm64"]
   handler          = "bootstrap"
@@ -66,7 +66,7 @@ resource "aws_lambda_function" "cron" {
   }
 
   depends_on = [
-    aws_iam_role_policy_attachment.basic_execution,
+    aws_iam_role_policy_attachment.cron_basic_execution,
     aws_cloudwatch_log_group.cron,
   ]
 }
