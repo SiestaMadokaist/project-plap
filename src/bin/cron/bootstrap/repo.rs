@@ -1,7 +1,6 @@
 use std::rc::Rc;
 
 use aws_sdk_dynamodb::Client;
-use serde::{Deserialize, Serialize};
 
 use rust_api::{
     application::ports::repository::container::{HasHotReload, HasTranslation},
@@ -9,7 +8,7 @@ use rust_api::{
     infras::repos::dynamo::{
         hotreload::DDBHotReloadRepository, translation::DDBTranslationRepository,
     },
-    pkg::{enums::stage::Stage, macros::displayable},
+    pkg::enums::stage::Stage,
 };
 
 pub struct CronRepos {

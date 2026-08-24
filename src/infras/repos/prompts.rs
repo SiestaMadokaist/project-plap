@@ -1,7 +1,6 @@
 use crate::{
     application::ports::repository::prompt_history::{PromptHistoryError, PromptHistoryRepository},
-    domain::{prompts::PromptHistory, storage::StoragePath},
-    pkg::types::strings::CommaSeparated,
+    domain::prompts::PromptHistory,
 };
 
 pub struct PromptRepository {}
@@ -21,7 +20,7 @@ impl PromptHistoryRepository for PromptRepository {
         todo!();
     }
 
-    async fn insert(&self, row: PromptHistory) -> Result<(), PromptHistoryError> {
+    async fn insert(&self, _row: PromptHistory) -> Result<(), PromptHistoryError> {
         todo!();
     }
 }

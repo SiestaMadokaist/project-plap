@@ -70,9 +70,9 @@ impl<C: AgentClients, R: AgentRepos> IdleTerminator<C, R> {
         let instance_id = self.instance_id().await?;
         let region = self.region().await?;
         let args = ComputeArgs {
-            region: region.clone(),
+            region,
             instance_id: instance_id.clone(),
-            command: command.clone(),
+            command: *command,
         };
         Ok(args)
     }
@@ -93,13 +93,10 @@ impl<C: AgentClients, R: AgentRepos> IdleTerminator<C, R> {
         );
         let args = self.compute_args().await?;
         let manage = ManageCompute::new(self.clients.clone(), args);
-        let termination = manage.exec().await;
-        match termination {
-            Err(x) => {
-                tracing::error!("termination failed with error: {}", x);
-            }
-            Ok(_) => {}
-        };
+        // let termination = manage.exec().await;
+        if let Err(x) = manage.exec().await {
+            tracing::error!("termination failed with error: {}", x);
+        }
         Ok(())
     }
 

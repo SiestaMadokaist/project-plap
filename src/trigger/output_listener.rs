@@ -54,10 +54,8 @@ impl<C: AgentClients, R: AgentRepos> NewOutputListener<C, R> {
         PathBuf::from(self.dir.clone())
     }
 
-    /**
-     */
     async fn handle_change(&self, event: &Event) -> anyhow::Result<()> {
-        let extensions = vec![".png", ".jpg", ".jpeg", ".mp4", ".webp"];
+        let extensions = [".png", ".jpg", ".jpeg", ".mp4", ".webp"];
         let files = event
             .paths
             .iter()
@@ -80,7 +78,7 @@ impl<C: AgentClients, R: AgentRepos> NewOutputListener<C, R> {
         Ok(())
     }
 
-    fn record_ok(&self) -> () {
+    fn record_ok(&self) {
         let now = Timestamp::now();
         self.last_active.set(now);
     }

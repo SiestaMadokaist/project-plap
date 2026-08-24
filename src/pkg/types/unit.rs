@@ -12,13 +12,13 @@ pub struct Index0(pub i32);
 pub struct Index1(pub i32);
 
 impl Index1 {
-    pub fn next(&mut self) -> () {
+    pub fn next(&mut self) {
         self.0 += 1;
     }
 }
 
 impl Index0 {
-    pub fn next(&mut self) -> () {
+    pub fn next(&mut self) {
         self.0 += 1;
     }
 }

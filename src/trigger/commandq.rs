@@ -29,7 +29,7 @@ impl<R: CommandHandlerRepos, C: CommandHandlerClients> CommandQ<R, C> {
         let loader = self.repos.agent_command();
         // could just load 1 at a time, but idk.
         let in_progress = loader.in_progress(1).await?;
-        if in_progress.len() > 0 {
+        if !in_progress.is_empty() {
             tracing::info!("found {} in progress command", in_progress.len());
         }
         // "lowest" priority score first

@@ -4,7 +4,6 @@ use tokio::io::AsyncWriteExt;
 
 use crate::{
     application::ports::clients::inference_model_provider::InferenceModelProvider,
-    domain::errors::DomainError,
     pkg::{
         civitai::{self, dto::model_version::ModelVersionDTO, typing},
         id::InferenceModelId,

@@ -34,7 +34,7 @@ pub struct ModelVersionDTO {
 impl ModelVersionDTO {
     pub fn name(&self) -> String {
         let m = &self.model;
-        let name = format!("{}-{}", &m.name, &self.name);
+        let name = format!("{}-{}", m.name, self.name);
         name.to_lowercase().replace(" ", "_")
     }
 

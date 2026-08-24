@@ -22,6 +22,9 @@ check:
 lint:
 	cargo clippy -- -D warnings
 
+fix:
+	cargo fix --allow-dirty --allow-staged --features datatransfer
+
 fmt:
 	cargo fmt
 

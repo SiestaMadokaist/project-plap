@@ -51,7 +51,7 @@ impl ChatGPT {
         requests.model = model.id.clone();
         let resp = chat.create(requests);
         let data = resp.await?;
-        if data.choices.len() == 0 {
+        if data.choices.is_empty() {
             return Err(DomainError::EmptyResponse);
         }
         let response = &data.choices[0].message.content;
@@ -84,7 +84,7 @@ impl TranslatorClient for ChatGPT {
             translations.push(translated);
         }
         let full_translation = translations.join("\n");
-        return Ok(full_translation);
+        Ok(full_translation)
     }
 }
 

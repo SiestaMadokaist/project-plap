@@ -46,8 +46,7 @@ impl Exif<ComfyUI> {
             return Err(ExifError::InvalidRange);
         }
         let (from, to) = self.text_range();
-        let text = std::str::from_utf8(&self.data[from.clone()..to.clone()])
-            .map_err(|_| ExifError::NotExtracted);
+        let text = std::str::from_utf8(&self.data[*from..*to]).map_err(|_| ExifError::NotExtracted);
         text
     }
 
@@ -102,17 +101,17 @@ impl Exif<ComfyUI> {
 
 impl ExifTraits for Exif<ComfyUI> {
     fn checkpoint(&self) -> Result<&str, ExifError> {
-        let wf = self.workflow().as_ref().map_err(|x| x.clone())?;
+        let wf = self.workflow().as_ref().map_err(|x| *x)?;
         let s = wf.checkpoint().unwrap_or("-");
         Ok(s)
     }
     fn negative(&self) -> Result<&str, ExifError> {
-        let wf = self.workflow().as_ref().map_err(|x| x.clone())?;
+        let wf = self.workflow().as_ref().map_err(|x| *x)?;
         let s = wf.negative().unwrap_or("-");
         Ok(s)
     }
     fn positive(&self) -> Result<&str, ExifError> {
-        let wf = self.workflow().as_ref().map_err(|x| x.clone())?;
+        let wf = self.workflow().as_ref().map_err(|x| *x)?;
         let s = wf.positive().unwrap_or("-");
         Ok(s)
     }

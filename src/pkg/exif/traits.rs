@@ -22,7 +22,7 @@ impl std::error::Error for ExifError {}
 
 impl From<ExifError> for std::io::Error {
     fn from(value: ExifError) -> Self {
-        std::io::Error::new(std::io::ErrorKind::Other, value)
+        std::io::Error::other(value)
     }
 }
 

@@ -51,8 +51,8 @@ impl ComfyWorkflow {
                 .nodes
                 .iter()
                 .map(|x| x.positive_clip())
-                .find(|x| matches!(x, Some(_)))??;
-            return Some(positive.trim().into());
+                .find(|x| x.is_some())??;
+            Some(positive.trim().into())
         });
         result.as_deref()
     }
@@ -63,8 +63,8 @@ impl ComfyWorkflow {
                 .nodes
                 .iter()
                 .map(|x| x.negative_clip())
-                .find(|x| matches!(x, Some(_)))??;
-            return Some(negative.trim().into());
+                .find(|x| x.is_some())??;
+            Some(negative.trim().into())
         });
         result.as_deref()
     }

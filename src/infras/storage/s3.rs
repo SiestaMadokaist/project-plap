@@ -7,7 +7,7 @@ use std::{
 use aws_config::SdkConfig;
 use aws_sdk_s3::{
     primitives::ByteStream,
-    types::ObjectCannedAcl::{self, PublicRead},
+    types::ObjectCannedAcl::{self},
     Client,
 };
 use tokio::process::Command;
@@ -391,6 +391,8 @@ impl From<ObjectVersion> for ItemVersion {
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
+
+    use aws_sdk_s3::types::ObjectCannedAcl::PublicRead;
 
     use super::*;
     #[test]
