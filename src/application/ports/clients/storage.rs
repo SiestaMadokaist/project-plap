@@ -1,4 +1,5 @@
-use std::path::PathBuf;
+#[cfg(feature = "datatransfer")]
+use std::path::{Path, PathBuf};
 
 use crate::domain::{
     errors::DomainError,
@@ -11,7 +12,7 @@ pub trait StorageClient {
     fn provider_name() -> String;
     fn bucket(&self) -> StorageBucket;
     async fn read(&self, path: &StoragePath) -> Result<String, DomainError>;
-    async fn write(&self, path: &StoragePath, data: &Vec<u8>) -> Result<(), DomainError>;
+    async fn write(&self, path: &StoragePath, data: &[u8]) -> Result<(), DomainError>;
     fn public_url(&self, path: &StoragePath) -> String;
     async fn ls(&self, prefix: &StoragePrefix) -> Vec<String>;
 
@@ -19,10 +20,10 @@ pub trait StorageClient {
     async fn versions(&self, path: &StoragePath) -> Result<ItemVersion, DomainError>;
 
     #[cfg(feature = "datatransfer")]
-    async fn upload(&self, local: &PathBuf, remote: &StoragePath) -> Result<(), DomainError>;
+    async fn upload(&self, local: &Path, remote: &StoragePath) -> Result<(), DomainError>;
     #[cfg(feature = "datatransfer")]
-    async fn download(&self, remote: &StoragePath, local: &PathBuf) -> Result<(), DomainError>;
+    async fn download(&self, remote: &StoragePath, local: &Path) -> Result<(), DomainError>;
 
     #[cfg(feature = "datatransfer")]
-    fn abs_path(&self, path: &PathBuf) -> PathBuf;
+    fn abs_path(&self, path: &Path) -> PathBuf;
 }

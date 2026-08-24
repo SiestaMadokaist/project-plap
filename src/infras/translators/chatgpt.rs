@@ -30,14 +30,14 @@ impl ChatGPT {
             .model_cache
             .get_or_try_init(async || {
                 let retrieved = self.client.models().retrieve(&self.model_name).await;
-                return retrieved;
+                retrieved
             })
             .await?;
-        return Ok(init);
+        Ok(init)
     }
 
     fn system_prompt(&self) -> ChatCompletionRequestMessage {
-        return ChatCompletionRequestMessage::System(SYSTEM_PROMPT.into());
+        ChatCompletionRequestMessage::System(SYSTEM_PROMPT.into())
     }
 
     async fn translate_partial(&self, text: &str) -> Result<String, DomainError> {
@@ -46,19 +46,21 @@ impl ChatGPT {
         let user_prompt = ChatCompletionRequestMessage::User(text.into());
         let chat = self.client.chat();
         let prompts = vec![system_prompt, user_prompt];
-        let mut requests: CreateChatCompletionRequest = CreateChatCompletionRequest::default();
-        requests.messages = prompts;
-        requests.model = model.id.clone();
+        let requests = CreateChatCompletionRequest {
+            messages: prompts,
+            model: model.id.clone(),
+            ..Default::default()
+        };
         let resp = chat.create(requests);
         let data = resp.await?;
         if data.choices.is_empty() {
             return Err(DomainError::EmptyResponse);
         }
         let response = &data.choices[0].message.content;
-        return match response {
+        match response {
             Some(s) => Ok(s.clone()),
             None => Err(DomainError::MissingContent),
-        };
+        }
     }
 }
 

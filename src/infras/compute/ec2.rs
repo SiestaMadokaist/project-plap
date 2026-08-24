@@ -25,7 +25,7 @@ impl ComputeEngines for EC2MultiRegion {
     type Engine = EC2;
     fn get(&self, region: &ComputeRegion) -> Option<Self::Engine> {
         let region = self.regions.iter().find(|x| x == &region)?;
-        let engine = EC2::new(region.clone(), self.client.clone());
+        let engine = EC2::new(*region, self.client.clone());
         Some(engine)
     }
 }
@@ -38,7 +38,7 @@ impl EC2 {
 
 impl ComputeEngine for EC2 {
     fn region(&self) -> ComputeRegion {
-        self.region.clone()
+        self.region
     }
 
     async fn stop(&self, _id: &ComputeInstanceID) -> anyhow::Result<()> {

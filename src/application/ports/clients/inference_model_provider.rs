@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::pkg::{
     civitai::{dto::model_version::ModelVersionDTO, typing::ModelCategory},
@@ -14,5 +14,5 @@ pub trait InferenceModelProvider {
     fn abs_path(&self, id: &InferenceModelId, category: &ModelCategory, name: &str) -> PathBuf;
 
     #[cfg(feature = "datatransfer")]
-    async fn download(&self, id: &InferenceModelId, dst: &PathBuf) -> anyhow::Result<()>;
+    async fn download(&self, id: &InferenceModelId, dst: &Path) -> anyhow::Result<()>;
 }

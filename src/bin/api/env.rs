@@ -38,7 +38,7 @@ impl ApiEnv {
     }
 
     pub fn sanity_run(&self) -> bool {
-        return self.sanity_run == "true";
+        self.sanity_run == "true"
     }
 
     pub fn stage(&self) -> Stage {

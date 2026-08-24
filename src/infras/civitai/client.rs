@@ -1,6 +1,4 @@
-use std::path::PathBuf;
-
-use tokio::io::AsyncWriteExt;
+use std::path::{Path, PathBuf};
 
 use crate::{
     application::ports::clients::inference_model_provider::InferenceModelProvider,
@@ -67,15 +65,16 @@ impl InferenceModelProvider for CivitaiAPI {
     }
 
     #[cfg(feature = "datatransfer")]
-    async fn download(&self, id: &InferenceModelId, dst: &PathBuf) -> anyhow::Result<()> {
+    async fn download(&self, id: &InferenceModelId, dst: &Path) -> anyhow::Result<()> {
         let url = self.host.e("/api/download/models/").e(&id.to_string());
         let req = self.client.get(url.to_string());
         let mut resp = self.send(req).await?.error_for_status()?;
         if let Some(parent) = dst.parent() {
             tokio::fs::create_dir_all(parent).await?;
         }
-        let mut file = tokio::fs::File::create(&dst).await?;
+        let mut file = tokio::fs::File::create(dst).await?;
         while let Some(chunk) = resp.chunk().await? {
+            use tokio::io::AsyncWriteExt;
             file.write_all(&chunk).await?;
         }
         Ok(())

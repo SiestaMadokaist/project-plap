@@ -3,12 +3,13 @@ use crate::{
     domain::prompts::PromptHistory,
 };
 
+#[derive(Default)]
 pub struct PromptRepository {}
 
 impl PromptRepository {
-    pub fn new() -> Self {
-        Self {}
-    }
+    // pub fn new() -> Self {
+    //     Self {}
+    // }
 }
 
 impl PromptHistoryRepository for PromptRepository {

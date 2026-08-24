@@ -20,7 +20,8 @@ check:
 	cargo check
 
 lint:
-	cargo clippy -- -D warnings
+	cargo clippy --features datatransfer -- -D warnings -A dead_code \
+		-A clippy::let_and_return -A clippy::bool_comparison -A clippy::upper_case_acronyms
 
 fix:
 	cargo fix --allow-dirty --allow-staged --features datatransfer

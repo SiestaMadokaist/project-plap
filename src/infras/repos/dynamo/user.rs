@@ -36,8 +36,8 @@ impl From<&User> for UserItem {
             id: u.id.0.clone(),
             email: u.email.clone(),
             name: u.name.clone(),
-            created_at: u.created_at.clone(),
-            updated_at: u.updated_at.clone(),
+            created_at: u.created_at,
+            updated_at: u.updated_at,
         }
     }
 }

@@ -1,8 +1,6 @@
-use std::{
-    cell::OnceCell,
-    path::{Path, PathBuf},
-    process::Stdio,
-};
+#[cfg(feature = "datatransfer")]
+use std::path::PathBuf;
+use std::{cell::OnceCell, path::Path, process::Stdio};
 
 use aws_config::SdkConfig;
 use aws_sdk_s3::{
@@ -213,10 +211,11 @@ impl S3Storage {
 }
 
 impl S3Storage {
+    #[cfg(feature = "datatransfer")]
     fn download_args(
         &self,
         remote: &StoragePath,
-        local: &PathBuf,
+        local: &Path,
         recursive: bool,
     ) -> Result<Vec<String>, DomainError> {
         let key = self.key(remote);
@@ -224,17 +223,18 @@ impl S3Storage {
         let dst = local
             .to_str()
             .ok_or_else(|| DomainError::Serialize("local path is not valid UTF-8".into()))?;
-        let mut args = vec!["s3".into(), "cp".into(), src.into(), dst.into()];
+        let mut args = vec!["s3".into(), "cp".into(), src, dst.into()];
         if recursive {
             args.push("--recursive".into());
         }
         Ok(args)
     }
 
+    #[cfg(feature = "datatransfer")]
     fn upload_args(
         &self,
         remote: &StoragePath,
-        local: &PathBuf,
+        local: &Path,
         recursive: bool,
     ) -> Result<Vec<String>, DomainError> {
         let key = self.key(remote);
@@ -242,7 +242,7 @@ impl S3Storage {
             .to_str()
             .ok_or_else(|| DomainError::Serialize("local path is not valid UTF-8".into()))?;
         let dst = format!("s3://{}/{key}", self.bucket);
-        let mut args = vec!["s3".into(), "cp".into(), src.into(), dst.into()];
+        let mut args: Vec<String> = vec!["s3".into(), "cp".into(), src.into(), dst];
         if recursive {
             args.push("--recursive".into());
         }
@@ -256,7 +256,7 @@ impl StorageClient for S3Storage {
     }
 
     #[cfg(feature = "datatransfer")]
-    fn abs_path(&self, path: &PathBuf) -> PathBuf {
+    fn abs_path(&self, path: &Path) -> PathBuf {
         let path_str = path.to_str().unwrap_or_default();
         let dst = format!("{}{}", self.local_workdir, path_str);
         PathBuf::from(dst)
@@ -267,7 +267,7 @@ impl StorageClient for S3Storage {
     }
 
     #[cfg(feature = "datatransfer")]
-    async fn download(&self, remote: &StoragePath, local: &PathBuf) -> Result<(), DomainError> {
+    async fn download(&self, remote: &StoragePath, local: &Path) -> Result<(), DomainError> {
         let same_region = self.is_same_region().await?;
         if !same_region {
             let err = DomainError::BillOptimization(
@@ -283,7 +283,7 @@ impl StorageClient for S3Storage {
     }
 
     #[cfg(feature = "datatransfer")]
-    async fn upload(&self, local: &PathBuf, remote: &StoragePath) -> Result<(), DomainError> {
+    async fn upload(&self, local: &Path, remote: &StoragePath) -> Result<(), DomainError> {
         let same_region = self.is_same_region().await?;
         if !same_region {
             let err = DomainError::BillOptimization(
@@ -304,7 +304,7 @@ impl StorageClient for S3Storage {
             .client
             .get_object()
             .bucket(&self.bucket)
-            .key(self.key(&path))
+            .key(self.key(path))
             .send()
             .await
             .map_err(|e| DomainError::Disconnected(e.to_string()))?;
@@ -318,10 +318,10 @@ impl StorageClient for S3Storage {
     }
 
     fn public_url(&self, path: &StoragePath) -> String {
-        return format!(
+        format!(
             "https://{}.s3.{}.amazonaws.com/{}",
             self.bucket, self.region, path.0,
-        );
+        )
     }
 
     async fn ls(&self, prefix: &StoragePrefix) -> Vec<String> {
@@ -339,8 +339,7 @@ impl StorageClient for S3Storage {
                 let vocs = vecs
                     .iter()
                     .map(|o| o.clone().key.unwrap_or(String::from("")))
-                    .filter(|x| x.len() > 0)
-                    .map(|x| String::from(x));
+                    .filter(|x| !x.is_empty());
                 let vcs: Vec<String> = vocs.collect();
                 vcs
             }
@@ -353,13 +352,13 @@ impl StorageClient for S3Storage {
         todo!();
     }
 
-    async fn write(&self, path: &StoragePath, data: &Vec<u8>) -> Result<(), DomainError> {
-        let bytes = ByteStream::from(data.clone());
+    async fn write(&self, path: &StoragePath, data: &[u8]) -> Result<(), DomainError> {
+        let bytes = ByteStream::from(data.to_vec());
         let mut builder = self
             .client
             .put_object()
             .bucket(&self.bucket)
-            .key(self.key(&path))
+            .key(self.key(path))
             .body(bytes);
         if let Some(acl) = &self.acl {
             builder = builder.acl(acl.clone());

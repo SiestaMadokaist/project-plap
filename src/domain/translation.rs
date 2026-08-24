@@ -10,14 +10,14 @@ pub struct ChapterId(pub i32);
 
 impl ChapterId {
     pub fn next(&self) -> ChapterId {
-        return ChapterId(self.0 + 1);
+        ChapterId(self.0 + 1)
     }
 
     pub fn until(&self, target: &ChapterId) -> impl Iterator<Item = ChapterId> {
         let start = self.0 + 1;
         let end = target.0;
         let iter = (start..=end).map(ChapterId);
-        return iter;
+        iter
     }
 }
 
@@ -59,7 +59,7 @@ pub trait TranslationGetter {
     fn chapter_id(&self) -> &ChapterId;
     fn novel_id(&self) -> &NovelId;
     fn source(&self) -> &RawSource;
-    fn status(&self) -> &Status;
+    fn status(&self) -> Status;
 }
 
 #[derive(Clone, Debug)]
@@ -76,52 +76,52 @@ pub struct TranslationDomain {
 impl TranslationDomain {
     pub fn new(
         novel_id: NovelId,
-        chapter: ChapterId,
+        chapter_id: ChapterId,
         title: &str,
         source: Option<RawSource>,
     ) -> Self {
-        return TranslationDomain {
-            chapter_id: chapter,
-            novel_id: novel_id,
+        TranslationDomain {
+            chapter_id,
+            novel_id,
             title: String::from(title),
             source: source.unwrap_or(RawSource::Syosetu),
             status: Status::Raw,
             created_at: Timestamp::now(),
             updated_at: Timestamp::now(),
-        };
+        }
     }
 
     pub fn title(&self) -> &String {
-        return &self.title;
+        &self.title
     }
 
-    pub fn status(&self) -> &Status {
-        return &self.status;
+    pub fn status(&self) -> Status {
+        self.status
     }
 
     pub fn created_at(&self) -> &Timestamp {
-        return &self.created_at;
+        &self.created_at
     }
 
     pub fn updated_at(&self) -> &Timestamp {
-        return &self.updated_at;
+        &self.updated_at
     }
 
     pub fn chapter_id(&self) -> &ChapterId {
-        return &self.chapter_id;
+        &self.chapter_id
     }
 
     pub fn novel_id(&self) -> &NovelId {
-        return &self.novel_id;
+        &self.novel_id
     }
 
     pub fn source(&self) -> &RawSource {
-        return &self.source;
+        &self.source
     }
 
     pub fn filepath(&self) -> StoragePath {
         let str = format!("{}/{}.txt", self.novel_id.0, self.chapter_id.0);
-        return StoragePath(str);
+        StoragePath(str)
     }
 }
 
@@ -134,7 +134,7 @@ impl<T: TranslationGetter> From<T> for TranslationDomain {
             title: tl.title().clone(),
             created_at: *tl.created_at(),
             updated_at: *tl.updated_at(),
-            status: tl.status().clone(),
+            status: tl.status(),
         }
     }
 }

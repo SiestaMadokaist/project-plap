@@ -7,7 +7,7 @@ id_type!(StoragePrefix);
 impl StoragePrefix {
     pub fn at(&self, other: StoragePrefix) -> StoragePrefix {
         if other.0.starts_with("/") {
-            return other;
+            other
         } else if other.0.starts_with("./") {
             let s = format!("{}/{}", self.0, other.0.replacen("./", "", 1));
             StoragePrefix(s)

@@ -139,7 +139,7 @@ impl AgentCommandRepository for DDBAgentCommandRepository {
                     tracing::error!(error = %e, debug = ?e, "update progress to failed failed");
                     RepositoryError::Disconnected(e.to_string())
                 })?;
-            return Ok(current);
+            Ok(current)
         } else if progress.is_done() {
             let mut current = self.get(id).await?;
             current.stage = CommandStage::Completed;
@@ -158,7 +158,7 @@ impl AgentCommandRepository for DDBAgentCommandRepository {
                     tracing::error!(error = %e, debug = ?e, "update progress to done failed");
                     RepositoryError::Disconnected(e.to_string())
                 })?;
-            return Ok(current);
+            Ok(current)
         } else {
             let av_map =
                 to_item(progress).map_err(|e| RepositoryError::Serialize(e.to_string()))?;

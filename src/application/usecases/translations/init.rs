@@ -30,9 +30,9 @@ struct Memo {
 
 impl Memo {
     fn new() -> Self {
-        return Memo {
+        Memo {
             latest_raw: OnceCell::new(),
-        };
+        }
     }
 }
 
@@ -45,12 +45,12 @@ pub struct Init<R: TLRepos, C: TLClients> {
 
 impl<R: TLRepos, C: TLClients> Init<R, C> {
     pub fn new(repo: Rc<R>, client: Rc<C>, params: Params) -> Self {
-        return Init {
+        Init {
             repo,
             client,
             params,
             memo: Memo::new(),
-        };
+        }
     }
 
     async fn latest_raw(&self) -> Result<&ChapterId, DomainError> {
@@ -60,10 +60,10 @@ impl<R: TLRepos, C: TLClients> Init<R, C> {
             .get_or_try_init(async || {
                 let raw_client = self.client.raws();
                 let ch = raw_client.latest(&self.params.novel_id).await;
-                return ch;
+                ch
             })
             .await?;
-        return Ok(chapter);
+        Ok(chapter)
     }
 
     async fn starting_chapter(&self) -> Result<&ChapterId, DomainError> {
@@ -71,7 +71,7 @@ impl<R: TLRepos, C: TLClients> Init<R, C> {
             None => self.latest_raw().await,
             Some(x) => Ok(x),
         }?;
-        return Ok(starting_chapter);
+        Ok(starting_chapter)
     }
 }
 
@@ -89,6 +89,6 @@ impl<R: TLRepos, C: TLClients> Usecase<TranslationResponse> for Init<R, C> {
             )
             .await?;
         let dto = TranslationDTO::new(init);
-        return Ok(dto);
+        Ok(dto)
     }
 }

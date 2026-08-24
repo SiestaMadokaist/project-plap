@@ -32,7 +32,7 @@ impl From<&TranslationDomain> for TranslationDDB {
             title: tl.title().clone(),
             created_at: *tl.created_at(),
             updated_at: *tl.updated_at(),
-            status: tl.status().clone(),
+            status: tl.status(),
         }
     }
 }
@@ -42,8 +42,8 @@ impl TranslationGetter for TranslationDDB {
         &self.title
     }
 
-    fn status(&self) -> &Status {
-        &self.status
+    fn status(&self) -> Status {
+        self.status
     }
 
     fn created_at(&self) -> &Timestamp {

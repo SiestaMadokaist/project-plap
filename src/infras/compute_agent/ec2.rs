@@ -54,7 +54,15 @@ impl EC2Agent {
             },
         }
     }
+}
 
+impl Default for EC2Agent {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl EC2Agent {
     async fn token(&self) -> anyhow::Result<String> {
         let token = self
             .client

@@ -33,7 +33,7 @@ impl EC2DiffusionRepo {
                 client.clone(),
                 DDBTable::HotReloads.table_name(stage),
             ),
-            prompt: PromptRepository::new(),
+            prompt: PromptRepository::default(),
         }
     }
 }

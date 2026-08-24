@@ -17,6 +17,6 @@ impl TranslationDTO {
 
 impl DTO<TranslationDomain> for TranslationDTO {
     fn represent(self) -> Result<TranslationResponse, DomainError> {
-        return Ok(self.translation);
+        Ok(self.translation)
     }
 }

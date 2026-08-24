@@ -4,6 +4,6 @@ pub struct VoidDTO {}
 
 impl DTO<()> for VoidDTO {
     fn represent(self) -> Result<(), DomainError> {
-        return Ok(());
+        Ok(())
     }
 }

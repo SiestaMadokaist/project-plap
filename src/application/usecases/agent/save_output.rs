@@ -5,7 +5,7 @@ use crate::{
     },
     domain::{errors::DomainError, storage::StoragePath},
     pkg::{
-        exif::{comfyui::ComfyUI, exif::Exif},
+        exif::{comfyui::ComfyUI, traits::Exif},
         macros::{trait_clients, trait_repos},
         types::time::Timestamp,
     },

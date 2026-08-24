@@ -1,4 +1,7 @@
 #[cfg(feature = "datatransfer")]
+use std::rc::Rc;
+
+#[cfg(feature = "datatransfer")]
 use crate::domain::commands::command::Progression;
 use crate::{
     application::ports::clients::container::{HasInferenceModelProvider, HasModelStorage},
@@ -11,7 +14,6 @@ use crate::{
     pkg::civitai::{self, dto::model_version::ModelVersionDTO},
     pkg::macros::trait_clients,
 };
-use std::rc::Rc;
 
 trait_clients!(
     HandleNetworkClients,
@@ -57,10 +59,10 @@ impl<'a, C: HandleNetworkClients> HandleNetwork<'a, C> {
                     storage.download(&s.path, &abs_path).await?;
                     if d.forward {
                         let fwd = d.path.to_str().unwrap_or_default();
-                        if fwd == "" {
+                        if fwd.is_empty() {
                             let msg = "local path must be defined first";
                             let err = DomainError::Prerequisite(msg.into());
-                            Err(err.into())
+                            Err(err)
                         } else {
                             let abs_path = storage.abs_path(&d.path);
                             storage.upload(&abs_path, &StoragePath(fwd.into())).await?;
@@ -75,14 +77,14 @@ impl<'a, C: HandleNetworkClients> HandleNetwork<'a, C> {
                 ModelDst::S3(_) => {
                     let msg = "transfer between s3 is not supported";
                     let err = DomainError::NotAllowed(msg.into());
-                    Err(err.into())
+                    Err(err)
                 }
             },
             ModelSrc::Civitai(id) => match &arg.dst {
                 ModelDst::S3(_) => {
                     let msg = "external to s3 must use local with forward = true";
                     let err = DomainError::NotAllowed(msg.into());
-                    Err(err.into())
+                    Err(err)
                 }
                 ModelDst::Local(args) => {
                     let api = self.clients.inference_model_provider();
@@ -93,7 +95,7 @@ impl<'a, C: HandleNetworkClients> HandleNetwork<'a, C> {
                     let path = api.abs_path(
                         &mv.id,
                         &mv.category(),
-                        &format!("{}.safetensors", &mv.name()),
+                        &format!("{}.safetensors", mv.name()),
                     );
                     api.download(id, &path)
                         .await
@@ -139,7 +141,7 @@ impl<'a, C: HandleNetworkClients> HandleNetwork<'a, C> {
 #[cfg(all(test, feature = "datatransfer"))]
 mod tests {
 
-    use std::path::PathBuf;
+    use std::{path::PathBuf, rc::Rc};
 
     use super::*;
     use crate::{

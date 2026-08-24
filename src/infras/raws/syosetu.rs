@@ -21,7 +21,7 @@ pub struct Syosetu {
     client: Client,
 }
 
-static SELECTOR: &'static str = ".p-novel__body";
+static SELECTOR: &str = ".p-novel__body";
 impl Syosetu {
     pub fn new(host: String, proxy: Option<ProxyConfig>) -> Self {
         let mut headers = header::HeaderMap::new();
@@ -63,7 +63,7 @@ impl Syosetu {
                 return Ok(col.join("\n"));
             }
         };
-        return source;
+        source
     }
 }
 
@@ -104,6 +104,6 @@ impl RawsClient for Syosetu {
         novel_id: &NovelId,
         chapter_id: &ChapterId,
     ) -> Result<String, DomainError> {
-        self.fetch(&novel_id, chapter_id).await
+        self.fetch(novel_id, chapter_id).await
     }
 }

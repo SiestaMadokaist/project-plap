@@ -65,7 +65,7 @@ impl<R: TLRepos, C: TLClients> Run<R, C> {
             .translation()
             .latest(&self.params.novel_id)
             .await?;
-        return Ok(result);
+        Ok(result)
     }
 
     async fn latest_raw(&self) -> Result<&ChapterId, DomainError> {
@@ -74,7 +74,7 @@ impl<R: TLRepos, C: TLClients> Run<R, C> {
             .latest_raw
             .get_or_try_init(async || self.client.raws().latest(&self.params.novel_id).await)
             .await?;
-        return Ok(chapter);
+        Ok(chapter)
     }
 
     async fn untranslated(&self) -> Result<&Vec<ChapterId>, DomainError> {
@@ -93,7 +93,7 @@ impl<R: TLRepos, C: TLClients> Run<R, C> {
                 )
             })
             .await?;
-        return Ok(result);
+        Ok(result)
     }
 
     async fn run_translation(&self, prev: &TranslationDomain) -> Result<VoidDTO, DomainError> {
@@ -111,7 +111,7 @@ impl<R: TLRepos, C: TLClients> Run<R, C> {
             let translated = self.client.translator().translate(&raw).await?;
             let inserted = tl_repo.insert(prev, chapter_id).await?;
             storage
-                .write(&inserted.filepath(), &translated.bytes().collect())
+                .write(&inserted.filepath(), &translated.bytes().collect::<Vec<u8>>())
                 .await?;
             let public_url = storage.public_url(&inserted.filepath());
             let message = format!(
@@ -122,7 +122,7 @@ impl<R: TLRepos, C: TLClients> Run<R, C> {
             );
             notification.notify(&message).await?;
         }
-        return Ok(VoidDTO {});
+        Ok(VoidDTO {})
     }
 }
 

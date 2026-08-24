@@ -6,11 +6,18 @@ use crate::{
 pub struct LocalhostAgent {
     name: String,
 }
+
 impl LocalhostAgent {
     pub fn new() -> Self {
         Self {
             name: "localhost".into(),
         }
+    }
+}
+
+impl Default for LocalhostAgent {
+    fn default() -> Self {
+        Self::new()
     }
 }
 #[async_trait::async_trait(?Send)]

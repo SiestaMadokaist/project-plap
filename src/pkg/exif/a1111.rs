@@ -1,7 +1,4 @@
-use crate::pkg::exif::{
-    exif::Exif,
-    traits::{ExifError, ExifTraits, WebUI},
-};
+use crate::pkg::exif::traits::{Exif, ExifError, ExifTraits, WebUI};
 
 pub struct A1111 {}
 

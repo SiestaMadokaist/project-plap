@@ -41,13 +41,13 @@ impl<'a, C: HandleInferenceClient> HandleInference<'a, C> {
     pub async fn exec(&mut self) -> Progression {
         let result = self.generate().await;
         match result {
-            Ok(p) => {
+            Ok(_p) => {
                 self.progress.increment();
-                self.progress
+                self.progress.clone()
             }
             Err(_) => {
                 self.progress.fail();
-                self.progress
+                self.progress.clone()
             }
         }
     }

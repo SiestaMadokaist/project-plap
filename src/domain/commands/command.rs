@@ -43,7 +43,7 @@ impl From<CommandStage> for String {
 
 id_type!(ActionId);
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Progression {
     total: unit::Index0,
     progress: unit::Index0,
@@ -61,13 +61,13 @@ impl Progression {
         }
     }
 
-    pub fn start(&mut self) -> () {}
+    pub fn start(&mut self) {}
 
-    pub fn fail(&mut self) -> () {
+    pub fn fail(&mut self) {
         self.failed_at = Some(Timestamp::now());
     }
 
-    pub fn increment(&mut self) -> () {
+    pub fn increment(&mut self) {
         let now = Timestamp::now();
         self.progress.next();
         if self.is_done() {
