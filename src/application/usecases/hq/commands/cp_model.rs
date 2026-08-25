@@ -28,13 +28,13 @@ pub struct Payload {
     priority: u64,
 }
 json_type!(Payload);
-trait_repos!(IRepos, HasAgentCommand);
-pub struct CPModel<R: IRepos> {
+trait_repos!(CPModelRepos, HasAgentCommand);
+pub struct CPModel<R: CPModelRepos> {
     repos: Rc<R>,
     payload: Payload,
 }
 
-impl<R: IRepos> CPModel<R> {
+impl<R: CPModelRepos> CPModel<R> {
     pub fn new(repos: Rc<R>, payload: Payload) -> Self {
         Self { repos, payload }
     }

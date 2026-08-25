@@ -16,12 +16,12 @@ pub struct Payload {
 json_type!(Payload);
 
 trait_clients!(IClients, HasModelStorage);
-pub struct GetListModel<C: IClients> {
+pub struct GetList<C: IClients> {
     clients: Rc<C>,
     payload: Payload,
 }
 
-impl<C: IClients> GetListModel<C> {
+impl<C: IClients> GetList<C> {
     pub fn new(clients: Rc<C>, payload: Payload) -> Self {
         Self { clients, payload }
     }

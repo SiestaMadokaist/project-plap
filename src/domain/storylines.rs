@@ -64,9 +64,12 @@ mod tests {
         let story =
             testhelper::read_json::<Storyline>("./samples/inputs/jsons/domain/storyline.json")?;
         let mc = story.variables.get("mc:male").unwrap();
-        let expected_mc: String = "mizuki arknights".into();
+        let expected1: String = "mizuki from arknights".into();
+        let mc2 = story.variables.get("mc:female").unwrap();
+        let expected2: String = "w from arknights".into();
         let line = story.inferences.first().unwrap();
-        assert_eq!(mc, &expected_mc);
+        assert_eq!(mc, &expected1);
+        assert_eq!(mc2, &expected2);
         assert_eq!(story.loras().len(), 2);
         assert_eq!(line.seed, -1);
         Ok(())

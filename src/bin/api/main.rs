@@ -4,7 +4,7 @@ use lambda_runtime::{run, service_fn, Error, LambdaEvent};
 use matchit::Router;
 use rust_api::{
     application::usecases::hq::commands::cp_model::CPModel,
-    application::usecases::hq::models::list::GetListModel, domain::errors::DomainError,
+    application::usecases::hq::models::list::GetList, domain::errors::DomainError,
 };
 
 mod bootstrap;
@@ -42,7 +42,7 @@ async fn handler(
         Ok(matched) => {
             let resp: Result<serde_json::Value, DomainError> = match matched.value {
                 RouteId::ListModels => {
-                    GetListModel::new(clients.clone(), event.body()?.try_into()?)
+                    GetList::new(clients.clone(), event.body()?.try_into()?)
                         .exec()
                         .await
                 }
