@@ -1,6 +1,6 @@
 use crate::{
     application::ports::clients::diffusions::DiffusionClient,
-    domain::commands::inference::InferenceConfig,
+    domain::commands::inference::InferenceConfig, pkg::exif::comfyui::nodes::ComfyWorkflow,
 };
 
 pub struct A1111 {
@@ -15,7 +15,11 @@ impl A1111 {
 
 #[async_trait::async_trait(?Send)]
 impl DiffusionClient for A1111 {
-    async fn generate(&self, _params: &InferenceConfig<String>) -> anyhow::Result<()> {
+    async fn generate(
+        &self,
+        _params: &InferenceConfig<String>,
+        workflow: Option<ComfyWorkflow>,
+    ) -> anyhow::Result<()> {
         let _ = &self.base_url;
         todo!()
     }

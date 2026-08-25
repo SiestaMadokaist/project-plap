@@ -1,15 +1,18 @@
 use std::rc::Rc;
 
 use crate::{
-    application::ports::clients::container::HasDiffusion,
+    application::ports::clients::{
+        container::{HasDiffusion, HasModelStorage},
+        storage::StorageClient,
+    },
     domain::{
         commands::{command::Progression, inference::InferenceConfig},
         errors::DomainError,
     },
-    pkg::macros::trait_clients,
+    pkg::{exif::comfyui::nodes::ComfyWorkflow, macros::trait_clients},
 };
 
-trait_clients!(HandleInferenceClient, HasDiffusion);
+trait_clients!(HandleInferenceClient, HasDiffusion, HasModelStorage);
 
 pub struct HandleInference<'a, C: HandleInferenceClient> {
     clients: Rc<C>,
@@ -30,9 +33,18 @@ impl<'a, C: HandleInferenceClient> HandleInference<'a, C> {
         if self.progress.is_done() {
             return Ok(());
         }
+        let expand = match &self.config.workflow_id {
+            None => None,
+            Some(path) => {
+                let storage = self.clients.model_storage();
+                let string = storage.read(&path).await?;
+                let deserialized: ComfyWorkflow = serde_json::from_str(&string)?;
+                Some(deserialized)
+            }
+        };
         let diffusion = self.clients.diffusion();
         diffusion
-            .generate(self.config)
+            .generate(self.config, expand)
             .await
             .map_err(|x| DomainError::ApiError(x.to_string()))?;
         Ok(())
@@ -58,19 +70,38 @@ mod tests {
 
     use super::*;
     use crate::{
-        application::ports::clients::diffusions::{DiffusionClient, MockDiffusionClient},
+        application::ports::clients::{
+            diffusions::{DiffusionClient, MockDiffusionClient},
+            storage::MockStorageClient,
+        },
         pkg::types::unit::{Index0, INDEX_ZERO},
     };
 
     struct MockContainer {
         diffuser: Box<dyn DiffusionClient>,
+        storage: MockStorageClient,
     }
 
     impl MockContainer {
         fn new(diffuser: MockDiffusionClient) -> Rc<Self> {
             let boxed: Box<dyn DiffusionClient> = Box::new(diffuser);
-            let s = Self { diffuser: boxed };
+            let mut storage = MockStorageClient::new();
+            storage.expect_read().returning(|_| {
+                let text = r#"{"id": "xxx", "nodes": []}"#;
+                Ok(text.into())
+            });
+            let s = Self {
+                diffuser: boxed,
+                storage,
+            };
             Rc::new(s)
+        }
+    }
+
+    impl HasModelStorage for MockContainer {
+        type ModelStorage = MockStorageClient;
+        fn model_storage(&self) -> &Self::ModelStorage {
+            &self.storage
         }
     }
 
@@ -91,7 +122,7 @@ mod tests {
     #[tokio::test]
     async fn test_partial_ok() {
         let mut diffuser = MockDiffusionClient::new();
-        diffuser.expect_generate().returning(|_| Ok(()));
+        diffuser.expect_generate().returning(|_, _| Ok(()));
         let container = MockContainer::new(diffuser);
         let progress = Progression::new(Index0(2), INDEX_ZERO);
         let config = cfg();
@@ -105,7 +136,7 @@ mod tests {
     #[tokio::test]
     async fn test_partial_done1() {
         let mut diffuser = MockDiffusionClient::new();
-        diffuser.expect_generate().returning(|_| Ok(()));
+        diffuser.expect_generate().returning(|_, _| Ok(()));
         let container = MockContainer::new(diffuser);
         let progress = Progression::new(Index0(1), INDEX_ZERO);
         let config = cfg();
@@ -119,7 +150,7 @@ mod tests {
     #[tokio::test]
     async fn test_partial_done2() {
         let mut diffuser = MockDiffusionClient::new();
-        diffuser.expect_generate().returning(|_| Ok(()));
+        diffuser.expect_generate().returning(|_, _| Ok(()));
         let container = MockContainer::new(diffuser);
         let progress = Progression::new(Index0(2), Index0(1));
         let config = cfg();
@@ -135,7 +166,7 @@ mod tests {
         let mut diffuser = MockDiffusionClient::new();
         diffuser
             .expect_generate()
-            .returning(|_| Err(DomainError::RateLimited.into()));
+            .returning(|_, _| Err(DomainError::RateLimited.into()));
         let container = MockContainer::new(diffuser);
         let progress = Progression::new(Index0(2), Index0(1));
         let config = cfg();

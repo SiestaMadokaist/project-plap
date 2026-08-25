@@ -33,7 +33,7 @@ impl Inferrable for String {}
  */
 #[derive(Debug, Serialize, Deserialize)]
 pub struct InferenceConfig<S: Inferrable> {
-    workflow_id: Option<WorkflowId>,
+    pub workflow_id: Option<StoragePath>,
     pub loras: Vec<StoragePath>,
     positive: S,
     negative: S,
