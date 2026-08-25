@@ -1,6 +1,7 @@
 use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{
+    displayable,
     domain::commands::{
         command::Action::Network, compute::ComputeArgs, inference::InferenceArgs,
         network::NetworkArgs,
@@ -14,7 +15,7 @@ use crate::{
     },
 };
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 // #[serde(rename_all = "lowercase")]
 pub enum CommandStage {
     #[serde(rename = "in_progress")]
@@ -28,19 +29,7 @@ pub enum CommandStage {
     #[serde(rename = "failed")]
     Failed,
 }
-
-impl From<CommandStage> for String {
-    fn from(value: CommandStage) -> Self {
-        let s: &str = match value {
-            CommandStage::InProgress => "in_progress",
-            CommandStage::Completed => "completed",
-            CommandStage::Cancelled => "cancelled",
-            CommandStage::Failed => "failed",
-        };
-        String::from(s)
-    }
-}
-
+displayable!(CommandStage);
 id_type!(ActionId);
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

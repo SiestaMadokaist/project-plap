@@ -1,0 +1,41 @@
+{
+    "name": "boy meets boy",
+    "inferences": [
+        {
+            "workflow_id": "123",
+            "loras": [
+                "path/to/a.safetensors"
+            ],
+            "positive": "hello, world {{mc:male}}",
+            "negative": "-",
+            "width": 1200,
+            "height": 500,
+            "steps": 8,
+            "n_iter": 3,
+            "seed": -1,
+            "references": [
+                "https://abc.com/example.png"
+            ]
+        },
+        {
+            "workflow_id": "123",
+            "loras": [
+                "path/to/b.safetensors",
+                "path/to/a.safetensors"
+            ],
+            "positive": "hello, world {{mc:male}}",
+            "negative": "-",
+            "width": 1200,
+            "height": 500,
+            "steps": 8,
+            "n_iter": 3,
+            "seed": -1,
+            "references": [
+                "https://abc.com/example.png"
+            ]
+        }
+    ],
+    "variables": {
+        "mc:male": "mizuki arknights"
+    }
+}

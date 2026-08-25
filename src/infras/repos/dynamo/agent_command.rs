@@ -75,12 +75,16 @@ impl AgentCommandRepository for DDBAgentCommandRepository {
      * including the one that's currently running
      * and those that's still queueing
      */
-    async fn in_progress(&self, limit: i32) -> Result<Vec<CommandDomain>, AgentCommandError> {
-        let in_progress: String = CommandStage::InProgress.into();
+    async fn by_stage(
+        &self,
+        stage: CommandStage,
+        limit: i32,
+    ) -> Result<Vec<CommandDomain>, AgentCommandError> {
+        // let in_progress: String = CommandStage::InProgress.into();
         let query = self
             .query()
             .key_condition_expression("stage = :stage")
-            .expression_attribute_values(":stage", AttributeValue::S(in_progress))
+            .expression_attribute_values(":stage", AttributeValue::S(stage.into()))
             .index_name(GSI::StagePriority)
             .limit(limit);
         let result = query.send().await.map_err(|e| {

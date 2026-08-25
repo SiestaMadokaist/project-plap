@@ -7,6 +7,7 @@ use crate::{
             CommandHandler, CommandHandlerClients, CommandHandlerRepos,
         },
     },
+    domain::commands::command::CommandStage,
     pkg::types::time::Second,
 };
 
@@ -27,8 +28,9 @@ impl<R: CommandHandlerRepos, C: CommandHandlerClients> CommandQ<R, C> {
 
     async fn on_interval(&self) -> anyhow::Result<()> {
         let loader = self.repos.agent_command();
-        // could just load 1 at a time, but idk.
-        let in_progress = loader.in_progress(1).await?;
+        // load 1 at a time, so that if priority is changed, the effect immediately applied
+        // even if the task only partially done.
+        let in_progress = loader.by_stage(CommandStage::InProgress, 1).await?;
         if !in_progress.is_empty() {
             tracing::info!("found {} in progress command", in_progress.len());
         }

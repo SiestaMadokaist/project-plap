@@ -34,7 +34,7 @@ impl Inferrable for String {}
 #[derive(Debug, Serialize, Deserialize)]
 pub struct InferenceConfig<S: Inferrable> {
     workflow_id: Option<WorkflowId>,
-    loras: Vec<StoragePath>,
+    pub loras: Vec<StoragePath>,
     positive: S,
     negative: S,
     width: unit::Px,
@@ -43,7 +43,7 @@ pub struct InferenceConfig<S: Inferrable> {
     /// how many image generated per request
     #[serde(deserialize_with = "deserialize_n_iter")]
     n_iter: unit::Index1,
-    seed: u32,
+    pub seed: i32,
     /// workflow will iterate for each node
     /// if a node that consume reference, the next node
     /// that need reference will use the next reference
