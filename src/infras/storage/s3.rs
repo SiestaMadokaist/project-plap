@@ -395,6 +395,7 @@ mod tests {
 
     use super::*;
     #[test]
+    #[cfg(feature = "datatransfer")]
     fn test_download_args() -> Result<(), DomainError> {
         let config = SdkConfig::builder()
             .behavior_version(aws_config::BehaviorVersion::latest())
@@ -420,6 +421,7 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(feature = "datatransfer")]
     #[test]
     fn test_upload_args() -> Result<(), DomainError> {
         let config = SdkConfig::builder()
