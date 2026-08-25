@@ -2,12 +2,13 @@ use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
-use crate::domain::{
-    commands::inference::{InferenceConfig, Inferrable},
-    storage::StoragePath,
+use crate::{
+    domain::{
+        commands::inference::{InferenceConfig, Inferrable},
+        storage::StoragePath,
+    },
+    pkg::macros::id_type,
 };
-
-pub struct PromptRequest {}
 
 /**
  * the original unevaluated string
@@ -28,13 +29,15 @@ pub struct PromptRequest {}
 pub struct Template(String);
 impl Inferrable for Template {}
 
+id_type!(StorylineId);
+
 /**
  * data structure stored in S3 as file.
  * directly targeted by filename.
  */
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Storyline {
-    name: String,
+    name: StorylineId,
     inferences: Vec<InferenceConfig<Template>>,
     variables: HashMap<String, String>,
 }

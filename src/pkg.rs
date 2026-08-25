@@ -1,3 +1,4 @@
+pub mod auth;
 pub mod civitai;
 pub mod enums;
 pub mod exif;
