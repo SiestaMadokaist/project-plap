@@ -37,3 +37,7 @@ impl Hex {
         hex::decode(&self.0)
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct JWT(pub String);
+displayable!(JWT);

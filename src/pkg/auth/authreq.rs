@@ -13,6 +13,10 @@ pub struct AuthSecret(String);
 displayable!(AuthSecret);
 
 impl AuthSecret {
+    pub fn new(secret: impl Into<String>) -> Self {
+        Self(secret.into())
+    }
+
     pub fn as_bytes(&self) -> &[u8] {
         self.0.as_bytes()
     }
@@ -33,6 +37,14 @@ impl AuthReq {
 
     pub fn msg(&self) -> String {
         format!("{}-{}", self.client_time.0, self.nonce)
+    }
+
+    /// EIP-191 personal-sign framing: what a wallet's personal_sign/eth_sign actually hashes
+    /// and signs, not the raw `msg()`. Signing/verification must both go through this, or a
+    /// correctly-produced signature will silently fail to verify.
+    pub fn prefixed(&self) -> String {
+        let msg = self.msg();
+        format!("\x19Ethereum Signed Message:\n{}{}", msg.len(), msg)
     }
 }
 
