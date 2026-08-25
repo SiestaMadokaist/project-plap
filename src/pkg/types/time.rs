@@ -70,6 +70,16 @@ impl From<DateTime<Utc>> for Timestamp {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Second(pub i64);
 
+impl Second {
+    pub fn abs(&self) -> Self {
+        if self.0 < 0 {
+            Self(self.0 * -1)
+        } else {
+            self.clone()
+        }
+    }
+}
+
 impl From<i64> for Second {
     fn from(value: i64) -> Self {
         Second(value)

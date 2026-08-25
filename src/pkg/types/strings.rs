@@ -1,3 +1,5 @@
+use std::str::Bytes;
+
 use serde::{Deserialize, Serialize};
 
 use crate::pkg::macros::displayable;
@@ -25,3 +27,13 @@ impl URL {
     }
 }
 displayable!(URL);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct Hex(pub String);
+displayable!(Hex);
+
+impl Hex {
+    pub fn to_bytes(&self) -> Result<Vec<u8>, hex::FromHexError> {
+        hex::decode(&self.0)
+    }
+}

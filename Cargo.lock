@@ -3248,6 +3248,7 @@ dependencies = [
  "aws-sdk-s3",
  "chrono",
  "dotenvy",
+ "hex",
  "jsonwebtoken",
  "k256",
  "lambda_runtime",
