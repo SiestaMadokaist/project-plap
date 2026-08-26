@@ -8,7 +8,7 @@ TF_VARS := -var="stage=$(STAGE)"
 
 .PHONY: all verify check lint fmt test typos build package plan deploy run \
         invoke-api invoke-ws invoke-cron tf-init clean deploy-bin \
-        build-api package-api deploy-api
+        build-api package-api deploy-api frontend-serve frontend-build
 
 all: verify build
 
@@ -17,32 +17,32 @@ all: verify build
 verify: check lint test typos
 
 check:
-	cargo check
+	cargo check -p backend
 
 lint:
-	cargo clippy --features datatransfer -- -D warnings -A dead_code \
+	cargo clippy -p backend --features datatransfer -- -D warnings -A dead_code \
 		-A clippy::let_and_return -A clippy::bool_comparison -A clippy::upper_case_acronyms
 
 fix:
-	cargo fix --allow-dirty --allow-staged --features datatransfer
+	cargo fix -p backend --allow-dirty --allow-staged --features datatransfer
 
 fmt:
 	cargo fmt
 
 test:
-	cargo test --features="datatransfer"
+	cargo test -p backend --features="datatransfer"
 
 typos:
 	typos
 
 coverage:
-	cargo llvm-cov --features datatransfer --html && open target/llvm-cov/html/index.html
+	cargo llvm-cov -p backend --features datatransfer --html && open target/llvm-cov/html/index.html
 
 # --- build & package ---
 # Requires: cargo-lambda (cargo install cargo-lambda)
 
 build:
-	cargo lambda build --release --arm64 --bin api --bin ws --bin cron
+	cargo lambda build -p backend --release --arm64 --bin api --bin ws --bin cron
 
 package: build
 	mkdir -p $(DIST_DIR)
@@ -54,7 +54,7 @@ package: build
 # --- deploy just the api function (skips ws/cron, still WIP) ---
 
 build-api:
-	cargo lambda build --release --arm64 --bin api
+	cargo lambda build -p backend --release --arm64 --bin api
 
 package-api: build-api
 	mkdir -p $(DIST_DIR)
@@ -67,10 +67,18 @@ deploy-api: package-api
 # --- standalone binary deploy (e.g. diffusion-agent on EC2) ---
 
 deploy-bin:
-	cargo build --release --features datatransfer --bin diffusion-agent
+	cargo build -p backend --release --features datatransfer --bin diffusion-agent
 	SANITY_RUN=true ENV_PATH="./.env.diffusion" ./target/release/diffusion-agent
 	aws s3 cp .env.diffusion $(S3_BIN_BUCKET)/.env.diffusion
 	aws s3 cp target/release/diffusion-agent $(S3_BIN_BUCKET)/diffusion-agent
+
+# --- frontend (Leptos CSR, requires: cargo install trunk) ---
+
+frontend-serve:
+	cd crates/frontend && trunk serve
+
+frontend-build:
+	cd crates/frontend && trunk build --release
 
 # --- local run ---
 # Starts a local Lambda API server on http://localhost:9000

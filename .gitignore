@@ -1,5 +1,6 @@
 /target
 /dist
+crates/frontend/dist
 .env.*
 !.env.example
 

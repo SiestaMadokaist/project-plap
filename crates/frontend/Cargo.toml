@@ -1,0 +1,17 @@
+[package]
+name = "frontend"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+domain = { path = "../domain" }
+pkg = { path = "../pkg" }
+leptos = { version = "0.7", features = ["csr"] }
+gloo-net = "0.6"
+wasm-bindgen = "0.2"
+console_error_panic_hook = "0.1"
+serde = { version = "1", features = ["derive"] }
+# transitively required by pkg -> k256's rand dependency to target wasm32 in the browser
+# (two getrandom majors are in the dependency graph, each needs its own wasm feature enabled)
+getrandom = { version = "0.2", features = ["js"] }
+getrandom4 = { package = "getrandom", version = "0.4", features = ["wasm_js"] }
