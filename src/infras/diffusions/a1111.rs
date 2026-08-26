@@ -18,7 +18,7 @@ impl DiffusionClient for A1111 {
     async fn generate(
         &self,
         _params: &InferenceConfig<String>,
-        workflow: Option<ComfyWorkflow>,
+        _workflow: Option<ComfyWorkflow>,
     ) -> anyhow::Result<()> {
         let _ = &self.base_url;
         todo!()

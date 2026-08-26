@@ -5,7 +5,10 @@ use crate::{
         self,
         compute::{ComputeEngine, ComputeEngines},
     },
-    domain::commands::compute::{ComputeArgs, ComputeCommand, ComputeError},
+    domain::{
+        commands::compute::{ComputeArgs, ComputeCommand},
+        errors::DomainError,
+    },
     pkg::macros::trait_clients,
 };
 
@@ -25,17 +28,13 @@ impl<C: ManageComputeClients> ManageCompute<C> {
         Self { clients, args }
     }
 
-    pub async fn exec(&self) -> anyhow::Result<()> {
+    pub async fn exec(&self) -> Result<(), DomainError> {
         let engines = self.clients.engines();
         let command = &self.args.command;
         let id = &self.args.instance_id;
         let region = &self.args.region;
         let opt_engine = engines.get(region);
-        if opt_engine.is_none() {
-            let err = ComputeError::InvalidRegion(region.into());
-            return Err(err.into());
-        }
-        let engine = opt_engine.expect("msg");
+        let engine = opt_engine.ok_or(DomainError::InvalidRegion(region.to_string()))?;
         match command {
             ComputeCommand::Terminate => engine.terminate(id).await?,
             ComputeCommand::Reboot => engine.reboot(id).await?,

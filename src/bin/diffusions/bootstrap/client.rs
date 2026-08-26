@@ -39,7 +39,7 @@ pub struct EC2DiffusionClients {
 
 impl EC2DiffusionClients {
     pub fn rc(env: &DiffusionEnv, config: SdkConfig) -> Rc<Self> {
-        Rc::new(Self::new(&env, config))
+        Rc::new(Self::new(env, config))
     }
 
     fn agent(env: &DiffusionEnv) -> Box<dyn ComputeAgent> {

@@ -1,12 +1,8 @@
 use std::rc::Rc;
 
 use crate::{
-    application::{
-        ports::repository::container::HasAgentCommand,
-        usecases::hq::commands::cp_model::CPModelRepos,
-    },
-    domain::commands::command::ActionId,
-    pkg::{macros::trait_repos, types::time::Timestamp},
+    application::ports::repository::container::HasAgentCommand,
+    domain::commands::command::ActionId, pkg::macros::trait_repos,
 };
 
 pub struct Payload {

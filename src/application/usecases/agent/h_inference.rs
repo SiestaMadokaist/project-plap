@@ -37,7 +37,7 @@ impl<'a, C: HandleInferenceClient> HandleInference<'a, C> {
             None => None,
             Some(path) => {
                 let storage = self.clients.model_storage();
-                let string = storage.read(&path).await?;
+                let string = storage.read(path).await?;
                 let deserialized: ComfyWorkflow = serde_json::from_str(&string)?;
                 Some(deserialized)
             }

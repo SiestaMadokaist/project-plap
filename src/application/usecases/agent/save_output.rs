@@ -84,7 +84,7 @@ impl<C: SaveOutputClient, R: SaveOutputRepos> SaveOutput<C, R> {
     fn store_path(&self) -> StoragePath {
         let now = self.now;
         let ds = now.to_datestring();
-        let date_string = ds.as_str();
+        let date_string = ds.unwrap_or("UNKNOWN-DATE".into());
         let filename = format!("{}.png", now.0);
         let s = format!("{}/{}", date_string, filename);
         StoragePath(s)

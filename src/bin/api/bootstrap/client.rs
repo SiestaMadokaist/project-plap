@@ -29,7 +29,7 @@ impl ApiClients {
     }
 
     pub fn new(env: &ApiEnv, config: &SdkConfig) -> Self {
-        let ec2sdk = aws_sdk_ec2::Client::new(&config);
+        let ec2sdk = aws_sdk_ec2::Client::new(config);
         let regions = vec![ComputeRegion::AWSApSoutheast2, ComputeRegion::AWSUsEast1];
         let engines = EC2MultiRegion::new(regions, ec2sdk.clone());
         Self {

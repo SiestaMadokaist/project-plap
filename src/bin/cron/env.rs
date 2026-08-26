@@ -17,7 +17,7 @@ pub struct CronEnv {
     pub max_data_transfer: i64,
 }
 
-const LAMBDA_MAX_DATA_TRANSFER_BYTES: i64 = 1 * 1024 * 1024 * 1024;
+const LAMBDA_MAX_DATA_TRANSFER_BYTES: i64 = 2 * 1024 * 1024 * 1024;
 
 impl CronEnv {
     pub fn from_env() -> Self {

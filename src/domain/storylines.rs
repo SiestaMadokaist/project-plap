@@ -46,7 +46,7 @@ impl Storyline {
     pub fn loras(&self) -> HashSet<StoragePath> {
         let mut hash = HashSet::<StoragePath>::new();
         let inferences = &self.inferences;
-        for inf in inferences.into_iter() {
+        for inf in inferences.iter() {
             for lora in &inf.loras {
                 hash.insert(lora.clone());
             }

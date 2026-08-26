@@ -2,7 +2,10 @@ use aws_sdk_ec2::Client;
 
 use crate::{
     application::ports::clients::compute::{ComputeEngine, ComputeEngines},
-    domain::commands::compute::{ComputeInstanceID, ComputeRegion},
+    domain::{
+        commands::compute::{ComputeInstanceID, ComputeRegion},
+        errors::DomainError,
+    },
 };
 
 pub struct EC2 {
@@ -24,8 +27,8 @@ impl EC2MultiRegion {
 impl ComputeEngines for EC2MultiRegion {
     type Engine = EC2;
     fn get(&self, region: &ComputeRegion) -> Option<Self::Engine> {
-        let region = self.regions.iter().find(|x| x == &region)?;
-        let engine = EC2::new(*region, self.client.clone());
+        let region = self.regions.iter().copied().find(|x| x == region)?;
+        let engine = EC2::new(region, self.client.clone());
         Some(engine)
     }
 }
@@ -41,19 +44,19 @@ impl ComputeEngine for EC2 {
         self.region
     }
 
-    async fn stop(&self, _id: &ComputeInstanceID) -> anyhow::Result<()> {
+    async fn stop(&self, _id: &ComputeInstanceID) -> Result<(), DomainError> {
         todo!()
     }
 
-    async fn launch(&self, _id: &ComputeInstanceID) -> anyhow::Result<()> {
+    async fn launch(&self, _id: &ComputeInstanceID) -> Result<(), DomainError> {
         todo!()
     }
 
-    async fn terminate(&self, _id: &ComputeInstanceID) -> anyhow::Result<()> {
+    async fn terminate(&self, _id: &ComputeInstanceID) -> Result<(), DomainError> {
         todo!()
     }
 
-    async fn reboot(&self, _id: &ComputeInstanceID) -> anyhow::Result<()> {
+    async fn reboot(&self, _id: &ComputeInstanceID) -> Result<(), DomainError> {
         todo!()
     }
 }

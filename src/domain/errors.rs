@@ -47,6 +47,9 @@ pub enum DomainError {
     #[error("invalid selector: {0}")]
     InvalidSelector(String),
 
+    #[error("Invalid region: {0}")]
+    InvalidRegion(String),
+
     #[error("Bill Optimization: {0}")]
     BillOptimization(String),
 

@@ -46,11 +46,10 @@ impl Timestamp {
         Second(dt)
     }
 
-    pub fn to_datestring(&self) -> String {
-        let dt: DateTime<Utc> = (*self)
-            .try_into()
-            .expect("timestamp out of range for DateTime<Utc>");
-        dt.format("%Y-%m-%d").to_string()
+    pub fn to_datestring(&self) -> Option<String> {
+        let dt: Result<DateTime<Utc>, _> = (*self).try_into();
+        let ds = dt.ok().map(|t| t.format("%Y-%m-%d").to_string());
+        ds
     }
 }
 
@@ -73,7 +72,7 @@ pub struct Second(pub i64);
 impl Second {
     pub fn abs(&self) -> Self {
         if self.0 < 0 {
-            Self(self.0 * -1)
+            Self(-self.0)
         } else {
             self.clone()
         }
