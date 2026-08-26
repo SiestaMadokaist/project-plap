@@ -1,6 +1,6 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, thiserror::Error, Serialize)]
+#[derive(Debug, thiserror::Error, Serialize, Deserialize, Clone)]
 pub enum DomainError {
     #[error("failed")]
     Unhandled,
@@ -16,6 +16,9 @@ pub enum DomainError {
 
     #[error("not implemented")]
     NotImplemented,
+
+    #[error("not found")]
+    NotFound,
 
     #[error("disconnected error: {0}")]
     Disconnected(String),

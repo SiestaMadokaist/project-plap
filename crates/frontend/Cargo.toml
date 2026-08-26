@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 domain = { path = "../domain" }
+dto = { path = "../dto" }
 pkg = { path = "../pkg" }
 leptos = { version = "0.7", features = ["csr"] }
 gloo-net = "0.6"

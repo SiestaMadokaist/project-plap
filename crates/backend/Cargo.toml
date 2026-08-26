@@ -27,6 +27,7 @@ future = []
 
 [dependencies]
 domain = { path = "../domain" }
+dto = { path = "../dto" }
 pkg = { path = "../pkg" }
 lambda_runtime = "0.13"
 tokio = { version = "1", features = ["macros", "process"] }
@@ -46,7 +47,7 @@ scraper = { version = "0.22" }
 async-trait = "0.1"
 dotenvy = "0.15"
 aws-sdk-s3 = "1.133.0"
-aws-sdk-ec2 = "1.242.0"
+aws-sdk-ec2 = "=1.242.0"
 anyhow = "1.0.104"
 notify = "8.2.0"
 matchit = "0.9.2"

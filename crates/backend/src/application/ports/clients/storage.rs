@@ -14,7 +14,7 @@ pub trait StorageClient {
     async fn read(&self, path: &StoragePath) -> Result<String, DomainError>;
     async fn write(&self, path: &StoragePath, data: &[u8]) -> Result<(), DomainError>;
     fn public_url(&self, path: &StoragePath) -> String;
-    async fn ls(&self, prefix: &StoragePrefix) -> Vec<String>;
+    async fn ls(&self, prefix: &StoragePrefix) -> Vec<StoragePath>;
 
     #[cfg(feature = "future")]
     async fn versions(&self, path: &StoragePath) -> Result<ItemVersion, DomainError>;

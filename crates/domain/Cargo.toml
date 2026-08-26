@@ -12,6 +12,7 @@ serde_json = "1"
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "2"
 pkg = { path = "../pkg" }
+tracing = "0.1"
 
 [dev-dependencies]
 anyhow = "1.0.104"

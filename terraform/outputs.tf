@@ -17,3 +17,15 @@ output "lambda_ws_arn" {
 output "lambda_cron_arn" {
   value = aws_lambda_function.cron.arn
 }
+
+output "frontend_url" {
+  value = "https://${var.frontend_domain}"
+}
+
+output "frontend_bucket" {
+  value = aws_s3_bucket.frontend.bucket
+}
+
+output "frontend_distribution_id" {
+  value = aws_cloudfront_distribution.frontend.id
+}

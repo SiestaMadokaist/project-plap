@@ -3,36 +3,39 @@ use std::rc::Rc;
 use crate::application::ports::repository::{
     agent_command::AgentCommandRepository, container::HasAgentCommand,
 };
-use domain::{
-    commands::command::{CommandDomain, CommandStage},
-    errors::DomainError,
-};
+use domain::errors::DomainError;
+use dto::resources::commands as resource;
 use pkg::macros::trait_repos;
 
 trait_repos!(ListCommandRepos, HasAgentCommand);
 
-pub struct Payload {
-    stage: CommandStage,
-    limit: i32,
-}
 pub struct ListCommand<R: ListCommandRepos> {
     repos: Rc<R>,
-    payload: Payload,
+    payload: resource::GetListPayload,
 }
 
 impl<R: ListCommandRepos> ListCommand<R> {
-    pub fn new(repos: Rc<R>, payload: Payload) -> Self {
+    pub fn new(repos: Rc<R>, payload: resource::GetListPayload) -> Self {
         Self { repos, payload }
     }
 
-    pub async fn exec(&self) -> Result<Vec<CommandDomain>, DomainError> {
+    pub async fn run(&self) -> Result<resource::GetListResponse, DomainError> {
         let command_repo = self.repos.agent_command();
         let payload = &self.payload;
         let in_progress = command_repo
             .by_stage(payload.stage, payload.limit)
             .await
             .map_err(|x| DomainError::Disconnected(x.to_string()))?;
-        Ok(in_progress)
+        let response = resource::GetListResponse {
+            commands: in_progress,
+        };
+        Ok(response)
+    }
+
+    pub async fn exec(&self) -> Result<serde_json::Value, DomainError> {
+        let result = self.run().await?;
+        let value = serde_json::to_value(result)?;
+        Ok(value)
     }
 }
 
@@ -43,9 +46,10 @@ mod tests {
             agent_command::MockAgentCommandRepository, container::HasAgentCommand,
             error::RepositoryError,
         },
-        usecases::hq::commands::list_command::{self, ListCommand},
+        usecases::hq::commands::list_command::ListCommand,
     };
     use domain::{commands::command::CommandStage, errors::DomainError};
+    use dto::resources::commands as resource;
     use std::rc::Rc;
 
     struct MockRepos {
@@ -68,7 +72,7 @@ mod tests {
 
     #[tokio::test]
     async fn error_handling() -> Result<(), DomainError> {
-        let payload = list_command::Payload {
+        let payload = resource::GetListPayload {
             stage: CommandStage::InProgress,
             limit: -1,
         };
@@ -78,7 +82,7 @@ mod tests {
             .returning(|_, _| Err(RepositoryError::Database("something went wrong".into())));
         let repos = MockRepos::rc(agent);
         let usecase = ListCommand::new(repos, payload);
-        let result = usecase.exec().await;
+        let result = usecase.run().await;
         assert!(matches!(result, Err(DomainError::Disconnected(_))));
         Ok(())
     }

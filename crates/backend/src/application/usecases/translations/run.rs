@@ -1,31 +1,23 @@
+use dto::response::Placeholder;
 use serde::Deserialize;
 use std::rc::Rc;
 use tokio::sync::OnceCell;
 
 use crate::application::{
-    dto::void::VoidDTO,
     ports::{
         clients::{
             notification::NotificationClient, raws::RawsClient, storage::StorageClient,
             translator::TranslatorClient,
         },
         repository::translation::TranslationRepository,
+        usecase::UsecaseAPI,
     },
-    usecases::{
-        bases::Usecase,
-        translations::traits::{TLClients, TLRepos},
-    },
+    usecases::translations::traits::{TLClients, TLRepos},
 };
 use domain::{
     errors::DomainError,
-    translation::{ChapterId, NovelId, TranslationDomain},
+    translation::{ChapterId, TranslationDomain},
 };
-
-#[derive(Deserialize)]
-pub struct Params {
-    pub novel_id: NovelId,
-}
-
 struct Memo {
     latest_raw: OnceCell<ChapterId>,
     untranslated_chapters: OnceCell<Vec<ChapterId>>,
@@ -43,12 +35,16 @@ impl Memo {
 pub struct Run<R: TLRepos, C: TLClients> {
     repo: Rc<R>,
     client: Rc<C>,
-    params: Params,
+    params: dto::resources::translations::RunPayload,
     memo: Memo,
 }
 
 impl<R: TLRepos, C: TLClients> Run<R, C> {
-    pub fn new(repo: Rc<R>, client: Rc<C>, params: Params) -> Self {
+    pub fn new(
+        repo: Rc<R>,
+        client: Rc<C>,
+        params: dto::resources::translations::RunPayload,
+    ) -> Self {
         Run {
             repo,
             client,
@@ -94,7 +90,7 @@ impl<R: TLRepos, C: TLClients> Run<R, C> {
         Ok(result)
     }
 
-    async fn run_translation(&self, prev: &TranslationDomain) -> Result<VoidDTO, DomainError> {
+    async fn run_translation(&self, prev: &TranslationDomain) -> Result<Placeholder, DomainError> {
         tracing::info!(item = ?prev, "latest translation");
         let untranslated = self.untranslated().await?;
         let tl_repo = self.repo.translation();
@@ -109,7 +105,10 @@ impl<R: TLRepos, C: TLClients> Run<R, C> {
             let translated = self.client.translator().translate(&raw).await?;
             let inserted = tl_repo.insert(prev, chapter_id).await?;
             storage
-                .write(&inserted.filepath(), &translated.bytes().collect::<Vec<u8>>())
+                .write(
+                    &inserted.filepath(),
+                    &translated.bytes().collect::<Vec<u8>>(),
+                )
                 .await?;
             let public_url = storage.public_url(&inserted.filepath());
             let message = format!(
@@ -120,14 +119,12 @@ impl<R: TLRepos, C: TLClients> Run<R, C> {
             );
             notification.notify(&message).await?;
         }
-        Ok(VoidDTO {})
+        Ok(Placeholder(200))
     }
 }
 
-impl<R: TLRepos, C: TLClients> Usecase<()> for Run<R, C> {
-    type Output = VoidDTO;
-
-    async fn exec(self) -> Result<VoidDTO, DomainError> {
+impl<R: TLRepos, C: TLClients> UsecaseAPI<Placeholder> for Run<R, C> {
+    async fn exec(&self) -> Result<Placeholder, DomainError> {
         let latest = self.latest_translation().await?;
         match latest {
             None => Err(DomainError::Prerequisite("story not initialized".into())),

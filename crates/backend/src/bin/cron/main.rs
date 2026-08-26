@@ -1,10 +1,10 @@
 use std::rc::Rc;
 
-use lambda_runtime::{run, service_fn, Error, LambdaEvent};
-use backend::application::usecases::{
-    bases::Usecase,
-    translations::{init, run},
+use backend::application::{
+    ports::usecase::UsecaseAPI,
+    usecases::translations::{init, run},
 };
+use lambda_runtime::{run, service_fn, Error, LambdaEvent};
 use serde::Deserialize;
 
 mod bootstrap;
@@ -34,12 +34,14 @@ async fn handler(
     let proxy = &path_params.proxy;
     match proxy.as_str() {
         "cron/translate" => {
-            let params: run::Params = serde_json::from_value(path_params.data.clone())?;
+            let params: dto::resources::translations::RunPayload =
+                serde_json::from_value(path_params.data.clone())?;
             let action = run::Run::new(repo.clone(), client.clone(), params);
             action.exec().await?;
         }
         "cron/init" => {
-            let params: init::Params = serde_json::from_value(path_params.data.clone())?;
+            let params: dto::resources::translations::InitPayload =
+                serde_json::from_value(path_params.data.clone())?;
             let action = init::Init::new(repo.clone(), client.clone(), params);
             action.exec().await?;
         }

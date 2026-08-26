@@ -322,7 +322,7 @@ impl StorageClient for S3Storage {
         )
     }
 
-    async fn ls(&self, prefix: &StoragePrefix) -> Vec<String> {
+    async fn ls(&self, prefix: &StoragePrefix) -> Vec<StoragePath> {
         let result = self
             .client
             .list_objects()
@@ -338,7 +338,7 @@ impl StorageClient for S3Storage {
                     .iter()
                     .map(|o| o.clone().key.unwrap_or(String::from("")))
                     .filter(|x| !x.is_empty());
-                let vcs: Vec<String> = vocs.collect();
+                let vcs: Vec<StoragePath> = vocs.map(StoragePath).collect();
                 vcs
             }
         };

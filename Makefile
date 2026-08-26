@@ -6,9 +6,13 @@ S3_BIN_BUCKET := s3://virginia-ramadoka/bin
 
 TF_VARS := -var="stage=$(STAGE)"
 
+# Pulled from terraform outputs (empty until the frontend stack is applied).
+FRONTEND_BUCKET          = $(shell cd terraform && terraform output -raw frontend_bucket 2>/dev/null)
+FRONTEND_DISTRIBUTION_ID = $(shell cd terraform && terraform output -raw frontend_distribution_id 2>/dev/null)
+
 .PHONY: all verify check lint fmt test typos build package plan deploy run \
         invoke-api invoke-ws invoke-cron tf-init clean deploy-bin \
-        build-api package-api deploy-api frontend-serve frontend-build
+        build-api package-api deploy-api frontend-serve frontend-build frontend-deploy
 
 all: verify build
 
@@ -80,12 +84,24 @@ frontend-serve:
 frontend-build:
 	cd crates/frontend && trunk build --release
 
+# Upload dist/ to S3 and bust the CloudFront cache.
+# Hashed JS/WASM get a 1-year immutable cache; index.html is never cached.
+frontend-deploy: frontend-build
+	@test -n "$(FRONTEND_BUCKET)" || { echo "no frontend_bucket output — run 'make tf-init && cd terraform && terraform apply $(TF_VARS)' first"; exit 1; }
+	aws s3 sync crates/frontend/dist/ s3://$(FRONTEND_BUCKET)/ --delete \
+		--exclude ".stage/*" --exclude "index.html" \
+		--cache-control "public,max-age=31536000,immutable"
+	aws s3 cp crates/frontend/dist/index.html s3://$(FRONTEND_BUCKET)/index.html \
+		--cache-control "no-cache"
+	aws cloudfront create-invalidation \
+		--distribution-id $(FRONTEND_DISTRIBUTION_ID) --paths "/*"
+
 # --- local run ---
 # Starts a local Lambda API server on http://localhost:9000
 # Then use make invoke-* or curl/wscat to test
 
 run-api:
-	cargo lambda watch --invoke-address 127.0.0.1 --env-file .env.api
+	cargo lambda start --invoke-address 127.0.0.1 --env-file .env.api
 
 invoke-api:
 	@cargo lambda invoke api --invoke-address 127.0.0.1 --data-file /tmp/api.json

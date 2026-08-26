@@ -1,36 +1,39 @@
 use std::rc::Rc;
 
-use crate::application::ports::clients::{container::HasModelStorage, storage::StorageClient};
-use domain::{errors::DomainError, storage::StoragePrefix};
-use pkg::{json_type, macros::trait_clients};
-use serde::{Deserialize, Serialize};
+use crate::application::ports::{
+    clients::{container::HasModelStorage, storage::StorageClient},
+    usecase::UsecaseAPI,
+};
+use domain::errors::DomainError;
+use dto::resources::models as resource;
+use pkg::macros::trait_clients;
 use serde_json;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Payload {
-    prefix: StoragePrefix,
-}
-json_type!(Payload);
 
 trait_clients!(IClients, HasModelStorage);
 pub struct GetList<C: IClients> {
     clients: Rc<C>,
-    payload: Payload,
+    payload: resource::GetListPayload,
 }
 
 impl<C: IClients> GetList<C> {
-    pub fn new(clients: Rc<C>, payload: Payload) -> Self {
+    pub fn new(clients: Rc<C>, payload: resource::GetListPayload) -> Self {
         Self { clients, payload }
     }
 
-    async fn run(&self) -> anyhow::Result<Vec<String>> {
+    async fn run(&self) -> Result<resource::GetListResponse, DomainError> {
         let storage = self.clients.model_storage();
-        let items = storage.ls(&self.payload.prefix).await;
-        Ok(items)
+        let paths = storage.ls(&self.payload.prefix).await;
+        let resp = resource::GetListResponse { paths };
+        Ok(resp)
     }
 
-    pub async fn exec(&self) -> Result<serde_json::Value, DomainError> {
-        let result = self.run().await.map_err(|_| DomainError::Unhandled)?;
-        Ok(result.into())
+    // pub async fn exec(&self) -> Result<serde_json::Value, DomainError> {
+    // }
+}
+
+impl<C: IClients> UsecaseAPI<resource::GetListResponse> for GetList<C> {
+    async fn exec(&self) -> Result<resource::GetListResponse, DomainError> {
+        let result = self.run().await?;
+        Ok(result)
     }
 }

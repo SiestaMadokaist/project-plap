@@ -1,8 +1,7 @@
 use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::commands::{
-    command::Action::Network, compute::ComputeArgs, inference::InferenceArgs,
-    network::NetworkArgs,
+    command::Action::Network, compute::ComputeArgs, inference::InferenceArgs, network::NetworkArgs,
 };
 use pkg::{
     macros::{displayable, id_type},
@@ -13,7 +12,6 @@ use pkg::{
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy)]
-// #[serde(rename_all = "lowercase")]
 pub enum CommandStage {
     #[serde(rename = "in_progress")]
     InProgress,

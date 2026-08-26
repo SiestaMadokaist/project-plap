@@ -1,21 +1,26 @@
 use std::rc::Rc;
 
-use lambda_runtime::{run, service_fn, Error, LambdaEvent};
-use matchit::Router;
-use backend::{
-    application::usecases::hq::commands::cp_model::CPModel,
-    application::usecases::hq::models::list::GetList,
+use backend::application::{
+    ports::usecase::UsecaseAPI,
+    usecases::hq::{commands::cp_model::CPModel, models::list::GetList},
 };
 use domain::errors::DomainError;
+use dto::response::{Placeholder, ToResp};
+use lambda_runtime::{run, service_fn, Error, LambdaEvent};
+use matchit::Router;
 
 mod bootstrap;
 mod env;
+mod resp;
 mod routes;
 
 use bootstrap::{client::ApiClients, repo::ApiRepos};
 use env::ApiEnv;
 
-use crate::routes::{err_response, json_response, ApiEvent, ApiResponse, HttpEvent, RouteId};
+use crate::{
+    resp::{no, yes, ServerResponse},
+    routes::{ApiEvent, HttpEvent, RouteId},
+};
 
 fn routes() -> Router<RouteId> {
     let mut router = Router::new();
@@ -37,28 +42,26 @@ async fn handler(
     clients: Rc<ApiClients>,
     router: Rc<Router<RouteId>>,
     event: HttpEvent,
-) -> Result<ApiResponse, DomainError> {
+) -> Result<ServerResponse, DomainError> {
     let path = event.path();
-    let resp = match router.at(path) {
-        Ok(matched) => {
-            let resp: Result<serde_json::Value, DomainError> = match matched.value {
-                RouteId::ListModels => {
-                    GetList::new(clients.clone(), event.body()?.try_into()?)
-                        .exec()
-                        .await
-                }
-                RouteId::AgentCommandFetchModel => {
-                    CPModel::new(repos.clone(), event.body()?.try_into()?)
-                        .exec()
-                        .await
-                }
-                _ => Err(DomainError::NotImplemented),
-            };
-            json_response(200, resp?.to_string())
-        }
-        Err(_) => json_response(404, r#"{"error":"not found"}"#),
+    let route = router.at(path);
+    let resp: Result<dto::response::Response<serde_json::Value>, DomainError> = match route {
+        Err(x) => Err(DomainError::Prerequisite(x.to_string())),
+        Ok(matched) => match matched.value {
+            RouteId::ListModels => GetList::new(clients.clone(), event.body()?.try_into()?)
+                .exec()
+                .await
+                .to_result(),
+            RouteId::AgentCommandFetchModel => {
+                CPModel::new(repos.clone(), event.body()?.try_into()?)
+                    .exec()
+                    .await
+                    .to_result()
+            }
+            _ => Err::<Placeholder, DomainError>(DomainError::NotFound).to_result(),
+        },
     };
-    Ok(resp)
+    resp.and_then(yes)
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -83,16 +86,16 @@ async fn main() -> Result<(), Error> {
         let rt = router.clone();
         let http_event = HttpEvent(event);
         async move {
-            let handled: Result<ApiResponse, DomainError> = handler(r, c, rt, http_event).await;
-            let converted: ApiResponse = match handled {
+            let handled: Result<ServerResponse, DomainError> = handler(r, c, rt, http_event).await;
+            let converted: ServerResponse = match handled {
                 Ok(x) => x,
                 Err(e) => {
                     tracing::error!("unhandled exception: {}", e);
-                    err_response(&e)
+                    no(e)
                 }
             };
             tracing::debug!("final resp = {}", serde_json::to_value(&converted)?);
-            Ok::<ApiResponse, Error>(converted)
+            Ok::<ServerResponse, Error>(converted)
         }
     }))
     .await

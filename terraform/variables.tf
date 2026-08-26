@@ -21,3 +21,23 @@ variable "memory_size" {
 variable "log_retention_days" {
   default = 7
 }
+
+variable "root_domain" {
+  description = "Existing Route53 public hosted zone"
+  default     = "ramadoka.com"
+}
+
+variable "frontend_domain" {
+  description = "Hostname that serves the Leptos frontend"
+  default     = "plap.ramadoka.com"
+}
+
+variable "frontend_bucket_name" {
+  description = "S3 bucket for frontend assets (no dots — CloudFront OAC dislikes dotted bucket names)"
+  default     = "plap-frontend-production"
+}
+
+variable "frontend_price_class" {
+  description = "CloudFront price class. PriceClass_All keeps the Jakarta + Singapore edge locations active for lowest latency from Indonesia."
+  default     = "PriceClass_All"
+}

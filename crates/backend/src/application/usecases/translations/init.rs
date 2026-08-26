@@ -1,26 +1,19 @@
 use std::rc::Rc;
 
-use serde::Deserialize;
+use dto::{resources::translations::InitPayload, response::Placeholder};
 use tokio::sync::OnceCell;
 
 use crate::application::{
-    dto::translation::{TranslationDTO, TranslationResponse},
-    ports::{clients::raws::RawsClient, repository::translation::TranslationRepository},
-    usecases::{
-        bases::Usecase,
-        translations::traits::{TLClients, TLRepos},
+    ports::{
+        clients::raws::RawsClient, repository::translation::TranslationRepository,
+        usecase::UsecaseAPI,
     },
+    usecases::translations::traits::{TLClients, TLRepos},
 };
 use domain::{
     errors::DomainError,
-    translation::{ChapterId, NovelId, RawSource},
+    translation::{ChapterId, RawSource},
 };
-#[derive(Deserialize)]
-pub struct Params {
-    pub novel_id: NovelId,
-    pub starting_chapter: Option<ChapterId>,
-    pub title: String,
-}
 
 struct Memo {
     latest_raw: OnceCell<ChapterId>,
@@ -37,12 +30,12 @@ impl Memo {
 pub struct Init<R: TLRepos, C: TLClients> {
     repo: Rc<R>,
     client: Rc<C>,
-    params: Params,
+    params: InitPayload,
     memo: Memo,
 }
 
 impl<R: TLRepos, C: TLClients> Init<R, C> {
-    pub fn new(repo: Rc<R>, client: Rc<C>, params: Params) -> Self {
+    pub fn new(repo: Rc<R>, client: Rc<C>, params: InitPayload) -> Self {
         Init {
             repo,
             client,
@@ -73,9 +66,8 @@ impl<R: TLRepos, C: TLClients> Init<R, C> {
     }
 }
 
-impl<R: TLRepos, C: TLClients> Usecase<TranslationResponse> for Init<R, C> {
-    type Output = TranslationDTO;
-    async fn exec(self) -> Result<TranslationDTO, DomainError> {
+impl<R: TLRepos, C: TLClients> UsecaseAPI<Placeholder> for Init<R, C> {
+    async fn exec(&self) -> Result<Placeholder, DomainError> {
         let starting_chapter = self.starting_chapter().await?;
         let repo = self.repo.translation();
         let init = repo
@@ -86,7 +78,6 @@ impl<R: TLRepos, C: TLClients> Usecase<TranslationResponse> for Init<R, C> {
                 RawSource::Syosetu,
             )
             .await?;
-        let dto = TranslationDTO::new(init);
-        Ok(dto)
+        Ok(Placeholder(200))
     }
 }
