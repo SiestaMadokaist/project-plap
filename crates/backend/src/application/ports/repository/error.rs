@@ -12,4 +12,6 @@ pub enum RepositoryError<Id: fmt::Debug + fmt::Display> {
     Serialize(String),
     #[error("serialization failure: {0}")]
     Database(String),
+    #[error("conflict: {0}")]
+    Conflict(String),
 }

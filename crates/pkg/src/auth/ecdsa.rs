@@ -8,11 +8,10 @@ use crate::{auth::errors::AuthError, types::strings::Hex};
 
 /// hex-decode, tolerating an optional `0x`/`0X` prefix (which `hex::decode` itself rejects).
 fn decode_hex(h: &Hex) -> Result<Vec<u8>, AuthError> {
-    let s = h
-        .0
-        .strip_prefix("0x")
-        .or_else(|| h.0.strip_prefix("0X"))
-        .unwrap_or(&h.0);
+    let s =
+        h.0.strip_prefix("0x")
+            .or_else(|| h.0.strip_prefix("0X"))
+            .unwrap_or(&h.0);
     hex::decode(s).map_err(|_| AuthError::Deserialize)
 }
 
@@ -27,7 +26,7 @@ fn keccak(msg: &Challenge) -> [u8; 32] {
     out
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, PartialOrd)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, PartialOrd, Debug)]
 pub struct AddressETH(pub String);
 
 impl AddressETH {

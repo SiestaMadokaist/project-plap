@@ -1,4 +1,7 @@
-use aws_sdk_dynamodb::{types::AttributeValue, Client};
+use aws_sdk_dynamodb::{
+    types::{AttributeValue, ReturnValue},
+    Client,
+};
 use serde::{Deserialize, Serialize};
 use serde_dynamo::{from_item, to_item};
 
@@ -7,35 +10,50 @@ use crate::application::ports::repository::{
     user::{UserError, UserRepository},
 };
 use domain::user::{User, UserId};
-use pkg::types::{strings::Email, time::Timestamp};
+use pkg::{
+    auth::ecdsa::AddressETH,
+    types::time::{Timestamp, TimestampMS},
+};
 
-use super::table::{user_pk, USER_SK};
+/// GSI whose partition key is the `address` attribute.
+const ADDRESS_INDEX: &str = "address";
 
-// Internal DynamoDB representation — PK/SK envelope wrapping domain fields.
-// Kept private: callers only see User and UserRepoError.
+/// domain keeps wall-clock seconds; the DynamoDB record stores milliseconds.
+fn to_ms(ts: Timestamp) -> TimestampMS {
+    TimestampMS(ts.0 * 1_000)
+}
+fn to_secs(ms: TimestampMS) -> Timestamp {
+    Timestamp(ms.0 / 1_000)
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 struct UserItem {
-    #[serde(rename = "PK")]
-    pk: String,
-    #[serde(rename = "SK")]
-    sk: String,
-    id: String,
-    email: Email,
-    name: String,
-    created_at: Timestamp,
-    updated_at: Timestamp,
+    // partition key
+    username: String,
+    // GSI `address` partition key
+    address: AddressETH,
+    #[serde(rename = "createdAt")]
+    created_at: TimestampMS,
+    // absent until activated / first login - kept absent (not NULL) so the
+    // `attribute_not_exists(lastLogin)` guard in `login` works.
+    #[serde(
+        rename = "activatedAt",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    activated_at: Option<TimestampMS>,
+    #[serde(rename = "lastLogin", default, skip_serializing_if = "Option::is_none")]
+    last_login: Option<TimestampMS>,
 }
 
 impl From<&User> for UserItem {
     fn from(u: &User) -> Self {
         Self {
-            pk: user_pk(&u.id),
-            sk: USER_SK.to_string(),
-            id: u.id.0.clone(),
-            email: u.email.clone(),
-            name: u.name.clone(),
-            created_at: u.created_at,
-            updated_at: u.updated_at,
+            username: u.username.clone(),
+            address: u.address.clone(),
+            created_at: to_ms(u.created_at),
+            activated_at: u.activated_at.map(to_ms),
+            last_login: u.last_login.map(to_ms),
         }
     }
 }
@@ -43,11 +61,11 @@ impl From<&User> for UserItem {
 impl From<UserItem> for User {
     fn from(item: UserItem) -> Self {
         User {
-            id: UserId(item.id),
-            email: item.email,
-            name: item.name,
-            created_at: item.created_at,
-            updated_at: item.updated_at,
+            username: item.username,
+            address: item.address,
+            created_at: to_secs(item.created_at),
+            activated_at: item.activated_at.map(to_secs),
+            last_login: item.last_login.map(to_secs),
         }
     }
 }
@@ -69,23 +87,22 @@ impl UserRepository for DDBUserRepository {
             .client
             .get_item()
             .table_name(&self.table)
-            .key("PK", AttributeValue::S(user_pk(id)))
-            .key("SK", AttributeValue::S(USER_SK.to_string()))
+            .key("username", AttributeValue::S(id.0.clone()))
             .send()
             .await
-            .map_err(|e| RepositoryError::Database(e.to_string()))?;
+            .map_err(|e| RepositoryError::Disconnected(e.to_string()))?;
 
-        let item = out.item.ok_or_else(|| UserError::NotFound(id.clone()))?;
+        let item = out
+            .item
+            .ok_or_else(|| RepositoryError::NotFound(id.clone()))?;
         let user_item: UserItem =
-            from_item(item).map_err(|e| RepositoryError::Database(e.to_string()))?;
-
-        let user: User = user_item.into();
-        Ok(user)
+            from_item(item).map_err(|e| RepositoryError::Serialize(e.to_string()))?;
+        Ok(user_item.into())
     }
 
     async fn put(&self, user: &User) -> Result<(), UserError> {
         let av_map =
-            to_item(UserItem::from(user)).map_err(|e| RepositoryError::Database(e.to_string()))?;
+            to_item(UserItem::from(user)).map_err(|e| RepositoryError::Serialize(e.to_string()))?;
 
         self.client
             .put_item()
@@ -93,7 +110,7 @@ impl UserRepository for DDBUserRepository {
             .set_item(Some(av_map))
             .send()
             .await
-            .map_err(|e| RepositoryError::Database(e.to_string()))?;
+            .map_err(|e| RepositoryError::Disconnected(e.to_string()))?;
 
         Ok(())
     }
@@ -102,12 +119,75 @@ impl UserRepository for DDBUserRepository {
         self.client
             .delete_item()
             .table_name(&self.table)
-            .key("PK", AttributeValue::S(user_pk(id)))
-            .key("SK", AttributeValue::S(USER_SK.to_string()))
+            .key("username", AttributeValue::S(id.0.clone()))
             .send()
             .await
-            .map_err(|e| RepositoryError::Database(e.to_string()))?;
+            .map_err(|e| RepositoryError::Disconnected(e.to_string()))?;
 
         Ok(())
+    }
+
+    async fn find(&self, address: &AddressETH) -> Result<User, UserError> {
+        let item = self
+            .client
+            .query()
+            .table_name(&self.table)
+            .index_name(ADDRESS_INDEX)
+            .key_condition_expression("address = :address")
+            .expression_attribute_values(":address", AttributeValue::S(address.0.clone()))
+            .limit(1)
+            .send()
+            .await
+            .map_err(|e| RepositoryError::Disconnected(e.to_string()))?
+            .items
+            .unwrap_or_default()
+            .into_iter()
+            .next()
+            .ok_or_else(|| RepositoryError::NotFound(UserId(address.0.clone())))?;
+
+        let user_item: UserItem =
+            from_item(item).map_err(|e| RepositoryError::Serialize(e.to_string()))?;
+        Ok(user_item.into())
+    }
+
+    async fn login(&self, address: &AddressETH, iat: Timestamp) -> Result<User, UserError> {
+        let user = self.find(address).await?;
+        if user.activated_at.is_none() {
+            return Err(RepositoryError::Conflict(format!(
+                "user {} is not activated",
+                user.username
+            )));
+        }
+
+        let iat_ms = to_ms(iat).0;
+        let out = self
+            .client
+            .update_item()
+            .table_name(&self.table)
+            .key("username", AttributeValue::S(user.username.clone()))
+            // monotonic last_login: reject a stale or replayed `iat`. Enforced here rather
+            // than read-then-write so two concurrent logins can't both pass.
+            .condition_expression("attribute_not_exists(lastLogin) OR lastLogin < :iat")
+            .update_expression("SET lastLogin = :iat")
+            .expression_attribute_values(":iat", AttributeValue::N(iat_ms.to_string()))
+            .return_values(ReturnValue::AllNew)
+            .send()
+            .await
+            .map_err(|e| match e.as_service_error() {
+                Some(se) if se.is_conditional_check_failed_exception() => {
+                    RepositoryError::Conflict(format!(
+                        "login timestamp {} is not newer than the last login",
+                        iat.0
+                    ))
+                }
+                _ => RepositoryError::Disconnected(e.to_string()),
+            })?;
+
+        let item = out
+            .attributes
+            .ok_or_else(|| RepositoryError::Serialize("update returned no attributes".into()))?;
+        let user_item: UserItem =
+            from_item(item).map_err(|e| RepositoryError::Serialize(e.to_string()))?;
+        Ok(user_item.into())
     }
 }
