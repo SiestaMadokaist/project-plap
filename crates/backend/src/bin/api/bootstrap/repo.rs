@@ -2,10 +2,11 @@ use std::rc::Rc;
 
 use aws_sdk_dynamodb::Client;
 use backend::{
-    application::ports::repository::container::{HasAgentCommand, HasHotReload},
+    application::ports::repository::container::{HasAgentCommand, HasHotReload, HasUser},
     constant::ddb::DDBTable,
     infras::repos::dynamo::{
         agent_command::DDBAgentCommandRepository, hotreload::DDBHotReloadRepository,
+        user::DDBUserRepository,
     },
 };
 use pkg::enums::stage::Stage;
@@ -13,6 +14,7 @@ use pkg::enums::stage::Stage;
 pub struct ApiRepos {
     agent_command: DDBAgentCommandRepository,
     hotreload: DDBHotReloadRepository,
+    user: DDBUserRepository,
 }
 
 impl ApiRepos {
@@ -30,6 +32,7 @@ impl ApiRepos {
                 client.clone(),
                 DDBTable::AgentCommands.table_name(stage),
             ),
+            user: DDBUserRepository::new(client.clone(), DDBTable::Users.table_name(stage)),
         }
     }
 }
@@ -45,5 +48,12 @@ impl HasHotReload for ApiRepos {
     type HotReload = DDBHotReloadRepository;
     fn hotreload(&self) -> &Self::HotReload {
         &self.hotreload
+    }
+}
+
+impl HasUser for ApiRepos {
+    type User = DDBUserRepository;
+    fn user(&self) -> &Self::User {
+        &self.user
     }
 }

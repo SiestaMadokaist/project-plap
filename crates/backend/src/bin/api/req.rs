@@ -1,15 +1,11 @@
 use std::collections::HashMap;
 
+use base64::{engine::general_purpose::STANDARD, Engine as _};
+use domain::errors::DomainError;
 use lambda_runtime::LambdaEvent;
 use pkg::{auth::claims::JWT, displayable};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
-pub enum HttpMethod {
-    GET,
-    POST,
-    // QUERY,
-}
 #[derive(Debug, Serialize, Deserialize)]
 pub enum AuthorizedRoute {
     #[serde(rename = "/models/list")]
@@ -23,41 +19,63 @@ displayable!(AuthorizedRoute);
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum PublicRoute {
+    #[serde(rename = "/users/challenge")]
+    GetChallenge,
     #[serde(rename = "/users/login")]
-    UserLogin,
+    SubmitAnswer,
 }
+displayable!(PublicRoute);
 
+/// API Gateway HTTP API proxy event, payload format **2.0** only. A v1/REST event
+/// (which carries `path` instead of `rawPath`) fails to deserialize here by design.
 #[derive(Deserialize)]
-pub struct ApiEvent<Auth> {
-    path: String,
-    #[serde(rename = "httpMethod")]
-    #[allow(dead_code)]
-    http_method: HttpMethod,
-    #[allow(dead_code)]
+pub struct ApiEvent {
+    #[serde(rename = "rawPath")]
+    raw_path: String,
+    #[serde(default)]
+    headers: HashMap<String, String>,
     body: Option<String>,
-    auth: Option<Auth>,
+    #[serde(rename = "isBase64Encoded", default)]
+    is_base64_encoded: bool,
 }
 
-pub struct HttpEvent<A>(pub LambdaEvent<ApiEvent<A>>);
+pub struct HttpEvent(pub LambdaEvent<ApiEvent>);
 
-impl HttpEvent<JWT> {
-    pub fn authorization(&self) -> JWT {
-        // self.0.payload.
-        todo!();
+impl HttpEvent {
+    /// Bearer token from the `Authorization` header (case-insensitive key, optional
+    /// `Bearer ` prefix). Only the authorized-route path calls this.
+    pub fn authorization(&self) -> Result<JWT, DomainError> {
+        let raw = self
+            .0
+            .payload
+            .headers
+            .iter()
+            .find(|(k, _)| k.eq_ignore_ascii_case("authorization"))
+            .map(|(_, v)| v.as_str())
+            .ok_or_else(|| DomainError::NotAllowed("missing authorization header".into()))?;
+        let token = raw.strip_prefix("Bearer ").unwrap_or(raw).trim();
+        Ok(JWT(token.to_string()))
     }
 
-    pub fn body(&self) -> Result<serde_json::Value, serde_json::Error> {
-        let body = &self.0.payload.body;
-        match body {
-            None => Ok(serde_json::from_str("{}").expect("{} is always a valid json")),
-            Some(x) => {
-                let result = serde_json::from_str::<serde_json::Value>(x)?;
-                Ok(result)
-            }
-        }
+    /// Parsed request body. An absent or empty body is treated as `{}`. Honours
+    /// `isBase64Encoded`, which API Gateway sets for non-text content types.
+    pub fn body(&self) -> Result<serde_json::Value, DomainError> {
+        let payload = &self.0.payload;
+        let raw = match payload.body.as_deref() {
+            None | Some("") => return Ok(serde_json::json!({})),
+            Some(b) => b,
+        };
+        let bytes = if payload.is_base64_encoded {
+            STANDARD
+                .decode(raw)
+                .map_err(|e| DomainError::Serialize(e.to_string()))?
+        } else {
+            raw.as_bytes().to_vec()
+        };
+        serde_json::from_slice(&bytes).map_err(|e| DomainError::Serialize(e.to_string()))
     }
 
     pub fn path(&self) -> &str {
-        &self.0.payload.path
+        &self.0.payload.raw_path
     }
 }

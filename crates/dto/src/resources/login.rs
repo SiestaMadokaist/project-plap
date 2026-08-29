@@ -1,5 +1,9 @@
 use pkg::{
-    auth::ecdsa::{AddressETH, Challenge, HexSign, PrivKey, PubKey},
+    auth::{
+        claims::JWT,
+        ecdsa::{AddressETH, Challenge, HexSign, PrivKey, PubKey},
+    },
+    json_type,
     types::time::{Second, Timestamp},
 };
 use serde::{Deserialize, Serialize};
@@ -15,6 +19,7 @@ pub struct ReqChallenge {
     exp: Timestamp,
 }
 impl DTO for ReqChallenge {}
+json_type!(ReqChallenge);
 
 impl ReqChallenge {
     pub fn new(address: AddressETH, iat: Timestamp, ttl: Second) -> Self {
@@ -129,6 +134,15 @@ pub struct ClientAnswer {
     pub client_sign: HexSign,
 }
 impl DTO for ClientAnswer {}
+json_type!(ClientAnswer);
+
+/// The session token handed back on a successful login.
+#[derive(Serialize, Deserialize, Clone)]
+pub struct LoginResponse {
+    pub token: JWT,
+}
+impl DTO for LoginResponse {}
+json_type!(LoginResponse);
 
 #[cfg(test)]
 mod tests {

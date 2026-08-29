@@ -10,6 +10,8 @@ pub enum DDBTable {
     HotReloads,
     #[serde(rename = "translations")]
     Translations,
+    #[serde(rename = "users")]
+    Users,
 }
 displayable!(DDBTable);
 
