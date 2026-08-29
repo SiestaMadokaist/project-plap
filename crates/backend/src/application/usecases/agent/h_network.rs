@@ -1,12 +1,12 @@
 #[cfg(feature = "datatransfer")]
 use std::rc::Rc;
 
-#[cfg(feature = "datatransfer")]
-use domain::commands::command::Progression;
 use crate::application::ports::clients::{
     container::{HasInferenceModelProvider, HasModelStorage},
     storage::StorageClient,
 };
+#[cfg(feature = "datatransfer")]
+use domain::commands::command::Progression;
 use domain::{
     commands::network::{ModelDst, ModelSrc, NetworkArgs},
     errors::DomainError,
@@ -158,9 +158,11 @@ mod tests {
     }
 
     fn civitai() -> MockInferenceModelProvider {
-        let buffer =
-            std::fs::read("./samples/inputs/jsons/infras/civitai/resp.version.checkpoint.json")
-                .expect("cannot find resp.version.checkpoint.json");
+        let buffer = std::fs::read(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../samples/inputs/jsons/infras/civitai/resp.version.checkpoint.json"
+        ))
+        .expect("cannot find resp.version.checkpoint.json");
         let mv: ModelVersionDTO =
             serde_json::from_slice(&buffer).expect("cannot deserialize fixture");
 
@@ -203,8 +205,11 @@ mod tests {
     }
 
     fn args() -> NetworkArgs {
-        let buffer = std::fs::read("./samples/inputs/jsons/domain/commands/network2.json")
-            .expect("cannot find network2.json");
+        let buffer = std::fs::read(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../samples/inputs/jsons/domain/commands/network2.json"
+        ))
+        .expect("cannot find network2.json");
         serde_json::from_slice(&buffer)
             .expect("cannot deserialize buffer to InferenceConfig<String>")
     }

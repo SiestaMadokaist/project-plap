@@ -108,8 +108,11 @@ mod tests {
     }
 
     fn cfg() -> InferenceConfig<String> {
-        let buffer = std::fs::read("./samples/inputs/jsons/domain/commands/inference.json")
-            .expect("cannot find network2.json");
+        let buffer = std::fs::read(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../samples/inputs/jsons/domain/commands/inference.json"
+        ))
+        .expect("cannot find inference.json");
         let config: InferenceConfig<String> = serde_json::from_slice(&buffer)
             .expect("cannot deserialize buffer to InferenceConfig<String>");
         config
