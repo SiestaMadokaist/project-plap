@@ -75,8 +75,11 @@ mod tests {
 
     #[test]
     fn shape_test() -> () {
-        let buffer = std::fs::read("./samples/inputs/jsons/domain/commands/inference.json")
-            .expect("cannot find inference.json");
+        let buffer = std::fs::read(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../samples/inputs/jsons/domain/commands/inference.json"
+        ))
+        .expect("cannot find inference.json");
         let cfg: InferenceConfig<String> = serde_json::from_slice(&buffer)
             .expect("cannot deserialize buffer to InferenceConfig<String>");
         assert_eq!(cfg.height.0, 1000);

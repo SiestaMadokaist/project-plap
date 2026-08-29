@@ -68,9 +68,11 @@ mod tests {
 
     #[test]
     fn shape_test_checkpoint() -> Result<(), E> {
-        let buffer =
-            std::fs::read("./samples/inputs/jsons/infras/civitai/resp.version.checkpoint.json")
-                .map_err(|x| E::Openfile(x.to_string()))?;
+        let buffer = std::fs::read(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../samples/inputs/jsons/infras/civitai/resp.version.checkpoint.json"
+        ))
+        .map_err(|x| E::Openfile(x.to_string()))?;
         let resp: ModelVersionDTO =
             serde_json::from_slice(&buffer).map_err(|x| E::Serialize(x.to_string()))?;
         assert_eq!(resp.id.0, 3211163);
@@ -80,8 +82,11 @@ mod tests {
 
     #[test]
     fn shape_test_lora() -> Result<(), E> {
-        let buffer = std::fs::read("./samples/inputs/jsons/infras/civitai/resp.version.lora.json")
-            .map_err(|x| E::Openfile(x.to_string()))?;
+        let buffer = std::fs::read(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../samples/inputs/jsons/infras/civitai/resp.version.lora.json"
+        ))
+        .map_err(|x| E::Openfile(x.to_string()))?;
         let resp: ModelVersionDTO =
             serde_json::from_slice(&buffer).map_err(|x| E::Serialize(x.to_string()))?;
         assert_eq!(resp.id.0, 2116314);

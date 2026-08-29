@@ -29,7 +29,10 @@ mod tests {
 
     #[test]
     fn shape_test() -> Result<(), E> {
-        let buffer = std::fs::read("./samples/inputs/jsons/infras/civitai/resp.model.json")
+        let buffer = std::fs::read(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../samples/inputs/jsons/infras/civitai/resp.model.json"
+        ))
             .map_err(|x| E::Openfile(x.to_string()))?;
         let resp: ModelDetailDTO =
             serde_json::from_slice(&buffer).map_err(|x| E::Serialize(x.to_string()))?;

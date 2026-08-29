@@ -67,6 +67,16 @@ mod tests {
     }
     displayable!(E);
 
+    /// workspace-rooted path to a `samples/.../commands/<name>` fixture, so the tests
+    /// pass regardless of the process working directory.
+    fn fixture(name: &str) -> String {
+        format!(
+            "{}/../../samples/inputs/jsons/domain/commands/{}",
+            env!("CARGO_MANIFEST_DIR"),
+            name
+        )
+    }
+
     fn is_s32local(path: &str) -> Result<(), E> {
         // s3 to localhost
         let buffer = std::fs::read(path).map_err(|e| E::Openfile(e.to_string()))?;
@@ -107,18 +117,18 @@ mod tests {
 
     #[test]
     fn test_s32local() -> Result<(), E> {
-        let ok = is_s32local("./samples/inputs/jsons/domain/commands/network1.json");
+        let ok = is_s32local(&fixture("network1.json"));
         assert!(matches!(ok, Ok(_)));
-        let not_ok = is_s32local("./samples/inputs/jsons/domain/commands/network2.json");
+        let not_ok = is_s32local(&fixture("network2.json"));
         assert!(matches!(not_ok, Err(_)));
         Ok(())
     }
 
     #[test]
     fn test_civit2local() -> Result<(), E> {
-        let not_ok = is_civit2local("./samples/inputs/jsons/domain/commands/network1.json");
+        let not_ok = is_civit2local(&fixture("network1.json"));
         assert!(matches!(not_ok, Err(_)));
-        let ok = is_civit2local("./samples/inputs/jsons/domain/commands/network2.json");
+        let ok = is_civit2local(&fixture("network2.json"));
         assert!(matches!(ok, Ok(_)));
         Ok(())
     }

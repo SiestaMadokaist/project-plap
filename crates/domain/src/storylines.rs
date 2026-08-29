@@ -61,7 +61,10 @@ mod tests {
     #[test]
     fn shape_test() -> Result<(), testhelper::Error> {
         let story =
-            testhelper::read_json::<Storyline>("./samples/inputs/jsons/domain/storyline.json")?;
+            testhelper::read_json::<Storyline>(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../samples/inputs/jsons/domain/storyline.json"
+            ))?;
         let mc = story.variables.get("mc:male").unwrap();
         let expected1: String = "mizuki from arknights".into();
         let mc2 = story.variables.get("mc:female").unwrap();

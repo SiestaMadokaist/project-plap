@@ -57,7 +57,10 @@ mod tests {
 
     #[test]
     fn shape_test() -> anyhow::Result<()> {
-        let buffer = std::fs::read("./samples/inputs/jsons/domain/commands/compute.json")?;
+        let buffer = std::fs::read(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../samples/inputs/jsons/domain/commands/compute.json"
+        ))?;
         let command: ComputeArgs = serde_json::from_slice(&buffer)?;
         assert_eq!(command.command, ComputeCommand::Terminate);
         assert_eq!(command.region, ComputeRegion::AWSUsEast1);
