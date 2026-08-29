@@ -1,6 +1,3 @@
-use std::collections::HashMap;
-
-use domain::errors::DomainError;
 use lambda_runtime::LambdaEvent;
 use pkg::displayable;
 use serde::{Deserialize, Serialize};

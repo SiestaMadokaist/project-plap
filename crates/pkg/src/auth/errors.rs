@@ -10,5 +10,9 @@ pub enum AuthError {
     InvalidSignature,
     VerificationFailed,
     TokenIssue(String),
+    /// token is well-formed and untampered, but past its `exp`.
+    Expired,
+    /// token was issued before the server's `min_iat` cutoff - forced re-login.
+    Revoked,
 }
 displayable!(AuthError);

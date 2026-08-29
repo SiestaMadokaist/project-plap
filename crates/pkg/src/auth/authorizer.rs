@@ -1,31 +1,39 @@
-use k256::ecdsa::{signature::hazmat::PrehashVerifier, Signature, VerifyingKey};
+use k256::ecdsa::{
+    signature::hazmat::{PrehashSigner, PrehashVerifier},
+    Signature, SigningKey, VerifyingKey,
+};
 use sha3::{Digest, Keccak256};
 
 use crate::{
     auth::{
         authreq::{AuthReq, AuthSecret},
-        claims::Claims,
+        claims::{Claims, JWT},
         errors::AuthError,
     },
-    types::strings::JWT,
+    types::{
+        strings::Hex,
+        time::{Second, Timestamp},
+    },
 };
 
 /// how long an issued session token stays valid for.
-const SESSION_TTL_SECS: i64 = 60 * 60 * 24;
+const SESSION_TTL_SECS: Second = Second(60 * 60 * 24);
 
-pub struct Authorizer<D> {
+pub struct Authorizer {
     secret: AuthSecret,
-    _p: std::marker::PhantomData<D>,
+    /** force all authorization to re-login if its iat < min_iat, even if its not expired */
+    min_iat: Timestamp,
+    privkey: SigningKey,
+    _p: std::marker::PhantomData<Claims>,
 }
 
-impl<D> Authorizer<D> {
+impl Authorizer {
     pub fn authenticate(&self, req: AuthReq) -> Result<JWT, AuthError> {
         let pubkey_bytes = req.pubkey.to_bytes().map_err(|_| AuthError::Deserialize)?;
         // raw SEC1-encoded point (0x02/0x03 compressed or 0x04 uncompressed), not a DER/PKCS8
         // wrapper - that's the format a wallet's pubkey comes in, not an X.509 key.
         let verifying_key =
             VerifyingKey::from_sec1_bytes(&pubkey_bytes).map_err(|_| AuthError::InvalidPubkey)?;
-
         let sig_bytes = req
             .signature
             .to_bytes()
@@ -54,13 +62,33 @@ impl<D> Authorizer<D> {
             .map_err(|_| AuthError::VerificationFailed)?;
 
         let address = eth_address(&verifying_key);
-        let now = chrono::Utc::now().timestamp();
+        let now = Timestamp::now();
+        let exp = now.add(SESSION_TTL_SECS);
+
+        // 32 bytes of OS randomness: a unique id for this token so two sessions issued
+        // to the same address in the same second still differ, and a future hook for
+        // revoking one specific session.
+        let mut challenge_bytes = [0u8; 32];
+        getrandom::fill(&mut challenge_bytes).map_err(|e| AuthError::TokenIssue(e.to_string()))?;
+        let challenge = Hex(hex::encode(challenge_bytes));
+
+        // The HS256 MAC below already protects the claims from tampering. `server_sign`
+        // is the asymmetric counterpart: anyone holding only the *public* key can check
+        // this token came from us. It must sign the claim binding, not the bare
+        // challenge - see `challenge_digest`.
+        let sig: Signature = self
+            .privkey
+            .sign_prehash(&challenge_digest(&address, now, exp, &challenge))
+            .map_err(|e| AuthError::TokenIssue(e.to_string()))?;
+        let server_sign = Hex(hex::encode(sig.to_bytes()));
+
         let claims = Claims {
             sub: address,
             iat: now,
-            exp: now + SESSION_TTL_SECS,
+            challenge,
+            server_sign,
+            exp,
         };
-
         let encoded = jsonwebtoken::encode(
             &jsonwebtoken::Header::default(),
             &claims,
@@ -70,9 +98,62 @@ impl<D> Authorizer<D> {
         Ok(JWT(encoded))
     }
 
-    pub fn authorize(&self, _jwt: &str) -> Result<D, AuthError> {
-        Err(AuthError::TODO)
+    pub fn authorize(&self, jwt: JWT) -> Result<Claims, AuthError> {
+        // 1. HS256 MAC + `exp`: rejects tampered and expired tokens.
+        let mut validation = jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::HS256);
+        validation.validate_aud = false;
+        let claims = jsonwebtoken::decode::<Claims>(
+            &jwt.0,
+            &jsonwebtoken::DecodingKey::from_secret(self.secret.as_bytes()),
+            &validation,
+        )
+        .map_err(|e| match e.kind() {
+            jsonwebtoken::errors::ErrorKind::ExpiredSignature => AuthError::Expired,
+            _ => AuthError::VerificationFailed,
+        })?
+        .claims;
+
+        // 2. Global cutoff: anything issued before `min_iat` must re-login, even if its
+        //    own `exp` is still in the future.
+        if claims.iat.0 < self.min_iat.0 {
+            return Err(AuthError::Revoked);
+        }
+
+        // 3. The server's own signature over the claim binding, checked against the
+        //    static public key.
+        let sig_bytes = claims
+            .server_sign
+            .to_bytes()
+            .map_err(|_| AuthError::InvalidSignature)?;
+        let signature =
+            Signature::from_slice(&sig_bytes).map_err(|_| AuthError::InvalidSignature)?;
+        self.privkey
+            .verifying_key()
+            .verify_prehash(
+                &challenge_digest(&claims.sub, claims.iat, claims.exp, &claims.challenge),
+                &signature,
+            )
+            .map_err(|_| AuthError::VerificationFailed)?;
+
+        Ok(claims)
     }
+}
+
+/// keccak256 over the claim fields `server_sign` attests to. `authenticate` (producing
+/// the signature) and `authorize` (checking it) must hash the exact same bytes: a
+/// signature over only the random `challenge` would prove nothing about `sub`/`exp`,
+/// so a `(challenge, server_sign)` pair lifted from any valid token could be pasted
+/// into a forged one.
+fn challenge_digest(sub: &str, iat: Timestamp, exp: Timestamp, challenge: &Hex) -> [u8; 32] {
+    let mut hasher = Keccak256::new();
+    hasher.update(sub.as_bytes());
+    hasher.update(iat.0.to_le_bytes());
+    hasher.update(exp.0.to_le_bytes());
+    hasher.update(challenge.0.as_bytes());
+    let out = hasher.finalize();
+    let mut digest = [0u8; 32];
+    digest.copy_from_slice(&out);
+    digest
 }
 
 /// standard Ethereum address derivation: keccak256 of the uncompressed pubkey's X||Y
@@ -92,9 +173,16 @@ mod tests {
     use super::*;
     use crate::types::{strings::Hex, time::Timestamp};
 
-    fn authorizer() -> Authorizer<()> {
+    /// the server's static signing key - distinct from any client wallet key below.
+    fn server_key() -> SigningKey {
+        SigningKey::from_slice(&[0xcd; 32]).expect("valid scalar")
+    }
+
+    fn authorizer() -> Authorizer {
         Authorizer {
             secret: AuthSecret::new("test-secret"),
+            min_iat: Timestamp(0),
+            privkey: server_key(),
             _p: PhantomData,
         }
     }
@@ -203,5 +291,52 @@ mod tests {
         .claims;
 
         assert_eq!(claims.sub, HARDHAT_ACCOUNT_0_ADDRESS);
+    }
+
+    #[test]
+    fn authorize_accepts_a_token_it_just_issued() {
+        let key = SigningKey::from_slice(&[0x11u8; 32]).expect("valid scalar");
+        let jwt = authorizer()
+            .authenticate(req(&key, &key, 1, 1_700_000_000))
+            .expect("valid signature should authenticate");
+
+        let claims = authorizer().authorize(jwt).expect("freshly issued token authorizes");
+
+        assert_eq!(claims.sub, eth_address(key.verifying_key()));
+    }
+
+    #[test]
+    fn authorize_rejects_a_token_issued_before_min_iat() {
+        let key = SigningKey::from_slice(&[0x11u8; 32]).expect("valid scalar");
+        let jwt = authorizer()
+            .authenticate(req(&key, &key, 1, 1_700_000_000))
+            .expect("valid signature should authenticate");
+
+        let strict = Authorizer {
+            secret: AuthSecret::new("test-secret"),
+            min_iat: Timestamp(Timestamp::now().0 + 60),
+            privkey: server_key(),
+            _p: PhantomData,
+        };
+
+        assert!(matches!(strict.authorize(jwt), Err(AuthError::Revoked)));
+    }
+
+    #[test]
+    fn authorize_rejects_a_tampered_claim() {
+        let key = SigningKey::from_slice(&[0x11u8; 32]).expect("valid scalar");
+        let jwt = authorizer()
+            .authenticate(req(&key, &key, 1, 1_700_000_000))
+            .expect("valid signature should authenticate");
+
+        // flip the last char of the JWT signature segment
+        let mut s = jwt.0.clone();
+        let last = s.pop().unwrap();
+        s.push(if last == 'a' { 'b' } else { 'a' });
+
+        assert!(matches!(
+            authorizer().authorize(JWT(s)),
+            Err(AuthError::VerificationFailed)
+        ));
     }
 }

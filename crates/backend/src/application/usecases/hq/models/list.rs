@@ -6,29 +6,31 @@ use crate::application::ports::{
 };
 use domain::errors::DomainError;
 use dto::resources::models as resource;
-use pkg::macros::trait_clients;
-use serde_json;
+use pkg::{auth::claims::JWT, macros::trait_clients};
 
 trait_clients!(IClients, HasModelStorage);
 pub struct GetList<C: IClients> {
     clients: Rc<C>,
     payload: resource::GetListPayload,
+    // auth: JWT,
 }
 
 impl<C: IClients> GetList<C> {
     pub fn new(clients: Rc<C>, payload: resource::GetListPayload) -> Self {
-        Self { clients, payload }
+        Self {
+            clients,
+            // auth,
+            payload,
+        }
     }
 
     async fn run(&self) -> Result<resource::GetListResponse, DomainError> {
+        // let valid = self.auth
         let storage = self.clients.model_storage();
         let paths = storage.ls(&self.payload.prefix).await;
         let resp = resource::GetListResponse { paths };
         Ok(resp)
     }
-
-    // pub async fn exec(&self) -> Result<serde_json::Value, DomainError> {
-    // }
 }
 
 impl<C: IClients> UsecaseAPI<resource::GetListResponse> for GetList<C> {

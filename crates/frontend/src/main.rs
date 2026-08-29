@@ -3,7 +3,7 @@ use std::rc::Rc;
 use domain::storage::{StoragePath, StoragePrefix};
 use frontend::api::plap::PlapApi;
 use leptos::prelude::*;
-use pkg::types::strings::{JWT, URL};
+use pkg::{auth::claims::JWT, types::strings::URL};
 
 // TODO: point at your deployed/local API (e.g. via `cargo lambda watch`)
 const API_BASE: &str = "http://127.0.0.1:9001";

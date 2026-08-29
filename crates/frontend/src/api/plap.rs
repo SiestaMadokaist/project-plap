@@ -1,7 +1,7 @@
 use domain::{errors::DomainError, storage::StoragePrefix};
 use dto::response::Response;
 use gloo_net::http::Request;
-use pkg::types::strings::{JWT, URL};
+use pkg::{auth::claims::JWT, types::strings::URL};
 
 pub struct PlapApi {
     auth: JWT,
