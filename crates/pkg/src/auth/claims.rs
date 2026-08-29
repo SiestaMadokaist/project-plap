@@ -1,4 +1,3 @@
-use k256::ecdsa::SigningKey;
 use serde::{Deserialize, Serialize};
 
 use crate::{
