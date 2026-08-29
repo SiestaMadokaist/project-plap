@@ -12,7 +12,8 @@ FRONTEND_DISTRIBUTION_ID = $(shell cd terraform && terraform output -raw fronten
 
 .PHONY: all verify check lint fmt test typos build package plan deploy run \
         invoke-api invoke-ws invoke-cron tf-init clean deploy-bin \
-        build-api package-api deploy-api frontend-serve frontend-build frontend-deploy
+        build-api package-api deploy-api frontend-serve frontend-build frontend-deploy \
+        coverage coverage-summary coverage-lcov
 
 all: verify build
 
@@ -39,8 +40,18 @@ test:
 typos:
 	typos
 
+# frontend is wasm-only (won't build for the host target). --ignore-run-fail still
+# emits the report while the pkg/domain fixture tests are red.
+COV := --workspace --exclude frontend --features datatransfer --ignore-run-fail
+
 coverage:
-	cargo llvm-cov -p backend --features datatransfer --html && open target/llvm-cov/html/index.html
+	cargo llvm-cov $(COV) --html
+
+coverage-summary:
+	cargo llvm-cov $(COV)
+
+coverage-lcov:
+	cargo llvm-cov $(COV) --lcov --output-path lcov.info
 
 # --- build & package ---
 # Requires: cargo-lambda (cargo install cargo-lambda)
