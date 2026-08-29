@@ -1,5 +1,7 @@
+use std::collections::HashMap;
+
 use lambda_runtime::LambdaEvent;
-use pkg::displayable;
+use pkg::{auth::claims::JWT, displayable};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -9,29 +11,41 @@ pub enum HttpMethod {
     // QUERY,
 }
 #[derive(Debug, Serialize, Deserialize)]
-pub enum RouteId {
+pub enum AuthorizedRoute {
     #[serde(rename = "/models/list")]
     ListModels,
-    #[serde(rename = "/agent/command/fetch")]
+    #[serde(rename = "/agents/command/fetch")]
     AgentCommandFetchModel,
     #[serde(rename = "/test")]
     TestEndpoint,
 }
-displayable!(RouteId);
+displayable!(AuthorizedRoute);
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum PublicRoute {
+    #[serde(rename = "/users/login")]
+    UserLogin,
+}
 
 #[derive(Deserialize)]
-pub struct ApiEvent {
+pub struct ApiEvent<Auth> {
     path: String,
     #[serde(rename = "httpMethod")]
     #[allow(dead_code)]
     http_method: HttpMethod,
     #[allow(dead_code)]
     body: Option<String>,
+    auth: Option<Auth>,
 }
 
-pub struct HttpEvent(pub LambdaEvent<ApiEvent>);
+pub struct HttpEvent<A>(pub LambdaEvent<ApiEvent<A>>);
 
-impl HttpEvent {
+impl HttpEvent<JWT> {
+    pub fn authorization(&self) -> JWT {
+        // self.0.payload.
+        todo!();
+    }
+
     pub fn body(&self) -> Result<serde_json::Value, serde_json::Error> {
         let body = &self.0.payload.body;
         match body {

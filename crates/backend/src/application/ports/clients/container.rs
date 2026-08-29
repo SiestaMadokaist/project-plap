@@ -1,7 +1,8 @@
 use crate::application::ports::clients::{
-    compute::ComputeEngines, compute_agent::ComputeAgent, diffusions::DiffusionClient,
-    inference_model_provider::InferenceModelProvider, notification::NotificationClient,
-    raws::RawsClient, storage::StorageClient, translator::TranslatorClient,
+    authorizer::Authorizer, compute::ComputeEngines, compute_agent::ComputeAgent,
+    diffusions::DiffusionClient, inference_model_provider::InferenceModelProvider,
+    notification::NotificationClient, raws::RawsClient, storage::StorageClient,
+    translator::TranslatorClient,
 };
 
 pub trait HasTranslator {
@@ -45,4 +46,9 @@ pub trait HasComputeAgent {
 
 pub trait HasInferenceModelProvider {
     fn inference_model_provider(&self) -> &dyn InferenceModelProvider;
+}
+
+pub trait HasAuthValidator {
+    type Auth: Authorizer;
+    fn authorizer(&self) -> &Self::Auth;
 }

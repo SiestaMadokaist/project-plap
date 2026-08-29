@@ -11,48 +11,62 @@ use matchit::Router;
 
 mod bootstrap;
 mod env;
+mod req;
 mod resp;
-mod routes;
 
 use bootstrap::{client::ApiClients, repo::ApiRepos};
 use env::ApiEnv;
+use pkg::auth::claims::JWT;
 
 use crate::{
+    req::{ApiEvent, AuthorizedRoute, HttpEvent, PublicRoute},
     resp::{no, yes, ServerResponse},
-    routes::{ApiEvent, HttpEvent, RouteId},
 };
 
-fn routes() -> Router<RouteId> {
+fn routes() -> Router<AuthorizedRoute> {
     let mut router = Router::new();
     let expectation = "must be valid route";
     router
-        .insert(RouteId::ListModels.to_string(), RouteId::ListModels)
+        .insert(
+            AuthorizedRoute::ListModels.to_string(),
+            AuthorizedRoute::ListModels,
+        )
         .expect(expectation);
     router
         .insert(
-            RouteId::AgentCommandFetchModel,
-            RouteId::AgentCommandFetchModel,
+            AuthorizedRoute::AgentCommandFetchModel,
+            AuthorizedRoute::AgentCommandFetchModel,
         )
         .expect(expectation);
     router
 }
 
-async fn handler(
+async fn handle_public(
     repos: Rc<ApiRepos>,
     clients: Rc<ApiClients>,
-    router: Rc<Router<RouteId>>,
-    event: HttpEvent,
+    router: Rc<Router<PublicRoute>>,
+    event: HttpEvent<()>,
+) -> Result<ServerResponse, DomainError> {
+    Err(DomainError::EmptyResponse)
+}
+
+async fn handle_authorized(
+    repos: Rc<ApiRepos>,
+    clients: Rc<ApiClients>,
+    router: Rc<Router<AuthorizedRoute>>,
+    event: HttpEvent<JWT>,
 ) -> Result<ServerResponse, DomainError> {
     let path = event.path();
+    let auth = event.authorization();
     let route = router.at(path);
     let resp: Result<dto::response::Response<serde_json::Value>, DomainError> = match route {
         Err(x) => Err(DomainError::Prerequisite(x.to_string())),
         Ok(matched) => match matched.value {
-            RouteId::ListModels => GetList::new(clients.clone(), event.body()?.try_into()?)
+            AuthorizedRoute::ListModels => GetList::new(clients.clone(), event.body()?.try_into()?)
                 .exec()
                 .await
                 .to_result(),
-            RouteId::AgentCommandFetchModel => {
+            AuthorizedRoute::AgentCommandFetchModel => {
                 CPModel::new(repos.clone(), event.body()?.try_into()?)
                     .exec()
                     .await
@@ -80,13 +94,15 @@ async fn main() -> Result<(), Error> {
     let client = ApiClients::rc(&env, &config);
     let router = Rc::new(routes());
 
-    run(service_fn(move |event: LambdaEvent<ApiEvent>| {
+    // todo: ApiEvent<JWT??? here
+    run(service_fn(move |event: LambdaEvent<ApiEvent<JWT>>| {
         let r = repo.clone();
         let c = client.clone();
         let rt = router.clone();
         let http_event = HttpEvent(event);
         async move {
-            let handled: Result<ServerResponse, DomainError> = handler(r, c, rt, http_event).await;
+            let handled: Result<ServerResponse, DomainError> =
+                handle_authorized(r, c, rt, http_event).await;
             let converted: ServerResponse = match handled {
                 Ok(x) => x,
                 Err(e) => {

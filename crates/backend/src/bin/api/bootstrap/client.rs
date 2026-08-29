@@ -3,10 +3,11 @@ use std::rc::Rc;
 use aws_config::SdkConfig;
 use backend::{
     application::ports::clients::container::{
-        HasEngines, HasModelStorage, HasNotification, HasOutputStorage,
+        HasAuthValidator, HasEngines, HasModelStorage, HasNotification, HasOutputStorage,
     },
     infras::{
-        compute::ec2::EC2MultiRegion, notifications::discord::Discord, storage::s3::S3Storage,
+        authorizer::client::EthAuth, compute::ec2::EC2MultiRegion, notifications::discord::Discord,
+        storage::s3::S3Storage,
     },
 };
 use domain::commands::compute::ComputeRegion;
@@ -19,6 +20,7 @@ pub struct ApiClients {
     engines: EC2MultiRegion,
     output_storage: S3Storage,
     model_storage: S3Storage,
+    authorizer: EthAuth,
 }
 
 const MAX_SIZE: i64 = 100 * 1024 * 1024;
@@ -62,6 +64,15 @@ impl ApiClients {
                 MAX_SIZE,
                 None,
             ),
+            authorizer: EthAuth::new(
+                env.auth_secret.clone(),
+                env.auth_privkey.clone(),
+                env.auth_challenge_ttl.clone(),
+                env.auth_session_ttl.clone(),
+                env.auth_clock_skew.clone(),
+                env.auth_min_iat,
+            )
+            .expect("AUTH_PRIVKEY must be a valid secp256k1 scalar"),
         }
     }
 }
@@ -91,5 +102,12 @@ impl HasModelStorage for ApiClients {
     type ModelStorage = S3Storage;
     fn model_storage(&self) -> &Self::ModelStorage {
         &self.model_storage
+    }
+}
+
+impl HasAuthValidator for ApiClients {
+    type Auth = EthAuth;
+    fn authorizer(&self) -> &Self::Auth {
+        &self.authorizer
     }
 }

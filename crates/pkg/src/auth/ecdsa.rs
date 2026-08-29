@@ -36,7 +36,9 @@ impl AddressETH {
     }
 }
 
+#[derive(Clone)]
 pub struct PubKey(VerifyingKey);
+#[derive(Clone)]
 pub struct PrivKey(SigningKey);
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -44,6 +46,13 @@ pub struct Challenge(String);
 impl Challenge {
     pub fn new(s: String) -> Self {
         Self(s)
+    }
+
+    /// 32 bytes of OS randomness, hex-encoded - a fresh nonce for a server challenge.
+    pub fn random() -> Self {
+        let mut bytes = [0u8; 32];
+        getrandom::fill(&mut bytes).expect("OS RNG must be available");
+        Self(hex::encode(bytes))
     }
 
     /// hex-encoding of the challenge string's bytes. Used to fold the challenge into the
@@ -100,6 +109,11 @@ impl PrivKey {
 
     pub fn hex(&self) -> Hex {
         Hex(format!("0x{}", hex::encode(self.0.to_bytes())))
+    }
+
+    /// The matching public key.
+    pub fn pubkey(&self) -> PubKey {
+        PubKey(*self.0.verifying_key())
     }
 
     /// Sign the keccak256 prehash of `msg`, yielding a 65-byte `r || s || v` signature

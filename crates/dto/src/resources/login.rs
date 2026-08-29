@@ -1,5 +1,5 @@
 use pkg::{
-    auth::ecdsa::{AddressETH, Challenge, HexSign},
+    auth::ecdsa::{AddressETH, Challenge, HexSign, PrivKey, PubKey},
     types::time::{Second, Timestamp},
 };
 use serde::{Deserialize, Serialize};
@@ -27,6 +27,14 @@ impl ReqChallenge {
 
     pub fn address(&self) -> &AddressETH {
         &self.address
+    }
+
+    pub fn iat(&self) -> Timestamp {
+        self.iat
+    }
+
+    pub fn exp(&self) -> Timestamp {
+        self.exp
     }
 
     pub fn is_valid(
@@ -58,14 +66,51 @@ pub struct ServerChallenge {
 impl DTO for ServerChallenge {}
 
 impl ServerChallenge {
+    /// Mint a challenge for `address` and sign the canonical blob with the server key,
+    /// so `login` can later confirm - without any stored state - that this server issued
+    /// it and none of the fields were altered in transit.
+    pub fn new(
+        address: AddressETH,
+        iat: Timestamp,
+        exp: Timestamp,
+        code: Challenge,
+        signer: &PrivKey,
+    ) -> Self {
+        let server_sign = signer.sign(Challenge::new(Self::sign_blob(&address, iat, exp, &code)));
+        Self {
+            address,
+            iat,
+            exp,
+            code,
+            server_sign,
+        }
+    }
+
+    pub fn address(&self) -> &AddressETH {
+        &self.address
+    }
+
+    pub fn iat(&self) -> Timestamp {
+        self.iat
+    }
+
+    pub fn exp(&self) -> Timestamp {
+        self.exp
+    }
+
+    /// True iff `server_sign` is this server's signature over the current field values.
+    pub fn verify_issued_by(&self, server_pub: &PubKey) -> bool {
+        server_pub
+            .verify(Challenge::new(self.to_sign()), self.server_sign.clone())
+            .unwrap_or(false)
+    }
+
+    fn sign_blob(address: &AddressETH, iat: Timestamp, exp: Timestamp, code: &Challenge) -> String {
+        format!("{}-{}-{}-{}", address.hex(), iat.0, exp.0, code.hex())
+    }
+
     fn to_sign(&self) -> String {
-        format!(
-            "{}-{}-{}-{}",
-            self.address.hex(),
-            &self.iat.0,
-            &self.exp.0,
-            &self.code.hex(),
-        )
+        Self::sign_blob(&self.address, self.iat, self.exp, &self.code)
     }
 
     /// EIP-191 personal-sign framing: what a wallet's personal_sign/eth_sign actually hashes
@@ -78,10 +123,12 @@ impl ServerChallenge {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone)]
 pub struct ClientAnswer {
     pub challenge: ServerChallenge,
     pub client_sign: HexSign,
 }
+impl DTO for ClientAnswer {}
 
 #[cfg(test)]
 mod tests {
