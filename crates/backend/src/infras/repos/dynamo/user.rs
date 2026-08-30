@@ -9,9 +9,9 @@ use crate::application::ports::repository::{
     error::RepositoryError,
     user::{UserError, UserRepository},
 };
-use domain::user::{User, UserId};
+use domain::user::User;
 use pkg::{
-    auth::ecdsa::AddressETH,
+    auth::{claims::Username, ecdsa::AddressETH},
     types::time::{Timestamp, TimestampMS},
 };
 
@@ -29,7 +29,7 @@ fn to_secs(ms: TimestampMS) -> Timestamp {
 #[derive(Debug, Serialize, Deserialize)]
 struct UserItem {
     // partition key
-    username: String,
+    username: Username,
     // GSI `address` partition key
     address: AddressETH,
     #[serde(rename = "createdAt")]
@@ -82,7 +82,7 @@ impl DDBUserRepository {
 }
 
 impl UserRepository for DDBUserRepository {
-    async fn get(&self, id: &UserId) -> Result<User, UserError> {
+    async fn get(&self, id: &Username) -> Result<User, UserError> {
         let out = self
             .client
             .get_item()
@@ -115,7 +115,7 @@ impl UserRepository for DDBUserRepository {
         Ok(())
     }
 
-    async fn delete(&self, id: &UserId) -> Result<(), UserError> {
+    async fn delete(&self, id: &Username) -> Result<(), UserError> {
         self.client
             .delete_item()
             .table_name(&self.table)
@@ -143,7 +143,7 @@ impl UserRepository for DDBUserRepository {
             .unwrap_or_default()
             .into_iter()
             .next()
-            .ok_or_else(|| RepositoryError::NotFound(UserId(address.0.clone())))?;
+            .ok_or_else(|| RepositoryError::Conflict(address.0.clone()))?;
 
         let user_item: UserItem =
             from_item(item).map_err(|e| RepositoryError::Serialize(e.to_string()))?;
@@ -164,7 +164,7 @@ impl UserRepository for DDBUserRepository {
             .client
             .update_item()
             .table_name(&self.table)
-            .key("username", AttributeValue::S(user.username.clone()))
+            .key("username", AttributeValue::S(user.username.0.clone()))
             // monotonic last_login: reject a stale or replayed `iat`. Enforced here rather
             // than read-then-write so two concurrent logins can't both pass.
             .condition_expression("attribute_not_exists(lastLogin) OR lastLogin < :iat")

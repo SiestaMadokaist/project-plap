@@ -35,10 +35,16 @@ impl<C: ISubmitAnswerClients, R: ISubmitAnswerRepos> UsecaseAPI<LoginResponse>
     for SubmitAnswer<C, R>
 {
     async fn exec(&self) -> Result<LoginResponse, DomainError> {
+        let user = self
+            .repos
+            .user()
+            .find(self.payload.challenge.address())
+            .await?;
+
         let token = self
             .clients
             .authorizer()
-            .answer(self.payload.clone())
+            .answer(user.username, self.payload.clone())
             .await?;
 
         self.repos

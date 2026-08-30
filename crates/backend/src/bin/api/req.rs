@@ -3,42 +3,23 @@ use std::collections::HashMap;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use domain::errors::DomainError;
 use lambda_runtime::LambdaEvent;
-use pkg::{auth::claims::JWT, displayable};
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Serialize, Deserialize)]
-pub enum AuthorizedRoute {
-    #[serde(rename = "/models/list")]
-    ListModels,
-    #[serde(rename = "/agents/command/fetch")]
-    AgentCommandFetchModel,
-    #[serde(rename = "/test")]
-    TestEndpoint,
-}
-displayable!(AuthorizedRoute);
-
-#[derive(Debug, Serialize, Deserialize)]
-pub enum PublicRoute {
-    #[serde(rename = "/users/challenge")]
-    GetChallenge,
-    #[serde(rename = "/users/login")]
-    SubmitAnswer,
-}
-displayable!(PublicRoute);
+use pkg::auth::claims::JWT;
+use serde::Deserialize;
 
 /// API Gateway HTTP API proxy event, payload format **2.0** only. A v1/REST event
 /// (which carries `path` instead of `rawPath`) fails to deserialize here by design.
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct ApiEvent {
     #[serde(rename = "rawPath")]
     raw_path: String,
     #[serde(default)]
-    headers: HashMap<String, String>,
+    pub headers: HashMap<String, String>,
     body: Option<String>,
     #[serde(rename = "isBase64Encoded", default)]
     is_base64_encoded: bool,
 }
 
+#[derive(Debug)]
 pub struct HttpEvent(pub LambdaEvent<ApiEvent>);
 
 impl HttpEvent {
@@ -54,7 +35,7 @@ impl HttpEvent {
             .map(|(_, v)| v.as_str())
             .ok_or_else(|| DomainError::NotAllowed("missing authorization header".into()))?;
         let token = raw.strip_prefix("Bearer ").unwrap_or(raw).trim();
-        Ok(JWT(token.to_string()))
+        Ok(JWT(token.into()))
     }
 
     /// Parsed request body. An absent or empty body is treated as `{}`. Honours

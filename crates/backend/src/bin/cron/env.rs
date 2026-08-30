@@ -1,5 +1,6 @@
 use std::env;
 
+use domain::storage::StoragePrefix;
 use pkg::{enums::stage::Stage, types::strings::URL, utils::var_or};
 pub struct CronEnv {
     stage: String,
@@ -11,7 +12,7 @@ pub struct CronEnv {
     pub proxy_password: Option<String>,
     pub tl_region: String,
     pub tl_bucket: String,
-    pub tl_prefix: String,
+    pub tl_prefix: StoragePrefix,
     pub discord_username: String,
     pub discord_webhook_url: URL,
     pub max_data_transfer: i64,
@@ -31,7 +32,9 @@ impl CronEnv {
             proxy_password: env::var("PROXY_PASSWORD").ok(),
             tl_region: env::var("TL_REGION").expect("TL_REGION must be set"),
             tl_bucket: env::var("TL_BUCKET").expect("TL_BUCKET must be set"),
-            tl_prefix: var_or("TL_PREFIX", ""),
+            tl_prefix: env::var("TL_PREFIX")
+                .map(StoragePrefix)
+                .expect("TL_PREFIX must be set"),
             discord_username: var_or("DISCORD_USERNAME", "lambda-cron"),
             discord_webhook_url: env::var("DISCORD_WEBHOOK_URL")
                 .map(URL)

@@ -29,7 +29,7 @@ impl Inferrable for String {}
 /**
  * when the prompts request already evaluated and ready to be queued
  */
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct InferenceConfig<S: Inferrable> {
     pub workflow_id: Option<StoragePath>,
     pub loras: Vec<StoragePath>,

@@ -4,9 +4,12 @@ use crate::application::ports::{
     clients::{container::HasModelStorage, storage::StorageClient},
     usecase::UsecaseAPI,
 };
-use domain::errors::DomainError;
-use dto::resources::models as resource;
-use pkg::{auth::claims::JWT, macros::trait_clients};
+use domain::{errors::DomainError, storage::StoragePath};
+use dto::resources::{
+    list::{ListMeta, ListResponse},
+    models as resource,
+};
+use pkg::macros::trait_clients;
 
 trait_clients!(IClients, HasModelStorage);
 pub struct GetList<C: IClients> {
@@ -24,17 +27,18 @@ impl<C: IClients> GetList<C> {
         }
     }
 
-    async fn run(&self) -> Result<resource::GetListResponse, DomainError> {
+    async fn run(&self) -> Result<ListResponse<StoragePath>, DomainError> {
         // let valid = self.auth
         let storage = self.clients.model_storage();
-        let paths = storage.ls(&self.payload.prefix).await;
-        let resp = resource::GetListResponse { paths };
+        let paths = storage.ls(&self.payload.prefix).await?;
+        // let resp = resource::GetListResponse { paths };
+        let resp = ListResponse::simple(paths);
         Ok(resp)
     }
 }
 
-impl<C: IClients> UsecaseAPI<resource::GetListResponse> for GetList<C> {
-    async fn exec(&self) -> Result<resource::GetListResponse, DomainError> {
+impl<C: IClients> UsecaseAPI<ListResponse<StoragePath>> for GetList<C> {
+    async fn exec(&self) -> Result<ListResponse<StoragePath>, DomainError> {
         let result = self.run().await?;
         Ok(result)
     }

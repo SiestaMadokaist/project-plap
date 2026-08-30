@@ -1,22 +1,35 @@
 use std::rc::Rc;
 
-use crate::application::ports::repository::container::HasAgentCommand;
-use domain::commands::command::ActionId;
+use crate::application::ports::{
+    repository::{agent_command::AgentCommandRepository, container::HasAgentCommand},
+    usecase::UsecaseAPI,
+};
+use domain::{commands::command::CommandDomain, errors::DomainError};
+use dto::resources::commands::{DeletePayload, GetListResponse};
 use pkg::macros::trait_repos;
-
-pub struct Payload {
-    action_id: ActionId,
-}
 
 trait_repos!(DeleteCommandRepos, HasAgentCommand);
 
+// #[route(delete, path = "/")]
 pub struct DeleteCommand<R: DeleteCommandRepos> {
     repos: Rc<R>,
-    payload: Payload,
+    payload: DeletePayload,
 }
 
 impl<R: DeleteCommandRepos> DeleteCommand<R> {
-    pub fn new(repos: Rc<R>, payload: Payload) -> Self {
+    pub fn new(repos: Rc<R>, payload: DeletePayload) -> Self {
         Self { repos, payload }
+    }
+}
+
+impl<R: DeleteCommandRepos> UsecaseAPI<GetListResponse> for DeleteCommand<R> {
+    async fn exec(&self) -> Result<GetListResponse, domain::errors::DomainError> {
+        let repo = self.repos.agent_command();
+        let _: Result<(), DomainError> = repo
+            .delete(&self.payload.action_id)
+            .await
+            .map_err(|x| x.into());
+        let list: Rc<Vec<CommandDomain>> = Rc::new(vec![]);
+        Ok(GetListResponse { commands: list })
     }
 }

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{commands::compute::ComputeCommand, user::UserId};
-use pkg::types::time::Second;
+use crate::commands::compute::ComputeCommand;
+use pkg::{auth::claims::Username, types::time::Second};
 #[derive(Serialize, Deserialize)]
 pub struct BillOptimization {
     idle_tolerance: Second,
@@ -18,7 +18,7 @@ pub enum HotReloadService {
 #[derive(Serialize, Deserialize)]
 pub struct DiffusionConfigDomain {
     checkpoint: String,
-    username: UserId,
+    username: Username,
     svc: HotReloadService,
     region: String,
     bill_saving: BillOptimization,

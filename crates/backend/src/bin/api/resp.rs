@@ -1,9 +1,9 @@
 use domain::errors::DomainError;
-use dto::response::{Placeholder, ToResp, DTO};
-use serde::Serialize;
+use dto::response::{Placeholder, ToResp};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ServerResponse {
     #[serde(rename = "statusCode")]
     status_code: u16,
@@ -16,7 +16,6 @@ pub fn yes(
 ) -> Result<ServerResponse, DomainError> {
     let mut headers = HashMap::new();
     headers.insert("content-type".into(), "application/json".into());
-
     let response = ServerResponse {
         status_code: data.httpcode(),
         headers,

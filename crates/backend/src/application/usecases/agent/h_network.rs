@@ -1,22 +1,24 @@
 #[cfg(feature = "datatransfer")]
-use std::rc::Rc;
-
 use crate::application::ports::clients::{
     container::{HasInferenceModelProvider, HasModelStorage},
     storage::StorageClient,
 };
 #[cfg(feature = "datatransfer")]
-use domain::commands::command::Progression;
 use domain::{
+    commands::command::Progression,
     commands::network::{ModelDst, ModelSrc, NetworkArgs},
     errors::DomainError,
     storage::StoragePath,
 };
+#[cfg(feature = "datatransfer")]
 use pkg::{
     civitai::{self, dto::model_version::ModelVersionDTO},
     macros::trait_clients,
 };
+#[cfg(feature = "datatransfer")]
+use std::rc::Rc;
 
+#[cfg(feature = "datatransfer")]
 trait_clients!(
     HandleNetworkClients,
     HasModelStorage,

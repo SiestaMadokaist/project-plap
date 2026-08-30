@@ -5,13 +5,21 @@ use backend::application::{
         clients::{authorizer::Authorizer, container::HasAuthValidator},
         usecase::UsecaseAPI,
     },
-    usecases::hq::{
-        commands::cp_model::CPModel,
-        models::list::GetList,
-        users::{challenge::GetChallenge, submit_answer::SubmitAnswer},
+    routes::{
+        authorized::AuthorizedRoute::{self, TemplateList},
+        public::PublicRoute::{self},
+    },
+    usecases::{
+        hq::{
+            commands::cp_model::CPModel,
+            health::Healthcheck,
+            models::list::GetList,
+            users::{challenge::GetChallenge, submit_answer::SubmitAnswer},
+        },
+        template::list::TemplateListSvc,
     },
 };
-use domain::errors::DomainError;
+use domain::{ctx, errors::DomainError};
 use dto::response::{Placeholder, ToResp};
 use lambda_runtime::{run, service_fn, Error, LambdaEvent};
 use matchit::Router;
@@ -23,9 +31,11 @@ mod resp;
 
 use bootstrap::{client::ApiClients, repo::ApiRepos};
 use env::ApiEnv;
+use pkg::{auth::claims::JWT, id::TraceId};
+use tracing_subscriber::layer::Context;
 
 use crate::{
-    req::{ApiEvent, AuthorizedRoute, HttpEvent, PublicRoute},
+    req::{ApiEvent, HttpEvent},
     resp::{no, yes, ServerResponse},
 };
 
@@ -40,8 +50,14 @@ fn authorized_routes() -> Router<AuthorizedRoute> {
         .expect(expectation);
     router
         .insert(
-            AuthorizedRoute::AgentCommandFetchModel.to_string(),
-            AuthorizedRoute::AgentCommandFetchModel,
+            AuthorizedRoute::AgentModelCP.to_string(),
+            AuthorizedRoute::AgentModelCP,
+        )
+        .expect(expectation);
+    router
+        .insert(
+            AuthorizedRoute::TemplateList.to_string(),
+            AuthorizedRoute::TemplateList,
         )
         .expect(expectation);
     router
@@ -61,6 +77,9 @@ fn public_routes() -> Router<PublicRoute> {
             PublicRoute::SubmitAnswer.to_string(),
             PublicRoute::SubmitAnswer,
         )
+        .expect(expectation);
+    router
+        .insert(PublicRoute::Health.to_string(), PublicRoute::Health)
         .expect(expectation);
     router
 }
@@ -89,8 +108,15 @@ async fn handle_public(
                 .await
                 .to_result()
         }
+        PublicRoute::Health => Healthcheck::default().exec().await.to_result(),
     };
     resp.and_then(yes)
+}
+
+async fn init_ctx(clients: &ApiClients, token: JWT) -> Result<ctx::Context, DomainError> {
+    let claims = clients.authorizer().validate(token).await?;
+    let ctx = ctx::Context::new(claims, None);
+    Ok(ctx)
 }
 
 async fn handle_authorized(
@@ -99,12 +125,8 @@ async fn handle_authorized(
     router: Rc<Router<AuthorizedRoute>>,
     event: HttpEvent,
 ) -> Result<ServerResponse, DomainError> {
-    // gate: a well-formed, unexpired, untampered token is all a route needs - the
-    // usecases don't inspect the claims themselves.
-    let token = event.authorization()?;
-    let _claims = clients.authorizer().validate(token).await?;
-
     let path = event.path().to_string();
+    let ctx = init_ctx(&clients, event.authorization()?).await?;
     let route = router.at(&path);
     let resp: Result<dto::response::Response<serde_json::Value>, DomainError> = match route {
         Err(x) => Err(DomainError::Prerequisite(x.to_string())),
@@ -113,12 +135,14 @@ async fn handle_authorized(
                 .exec()
                 .await
                 .to_result(),
-            AuthorizedRoute::AgentCommandFetchModel => {
-                CPModel::new(repos.clone(), event.body()?.try_into()?)
-                    .exec()
-                    .await
-                    .to_result()
-            }
+            // AuthorizedRoute::AgentModelCP => CPModel::new(repos.clone(), event.body()?.try_into()?)
+            //     .exec()
+            //     .await
+            //     .to_result(),
+            // AuthorizedRoute::TemplateList => {
+            //     let svc = TemplateListSvc::new(repos.clone(), ctx);
+            //     let result = svc.exec();
+            // }
             _ => Err::<Placeholder, DomainError>(DomainError::NotFound).to_result(),
         },
     };
@@ -150,6 +174,7 @@ async fn main() -> Result<(), Error> {
         let http_event = HttpEvent(event);
         async move {
             let path = http_event.path().to_string();
+            // check public first because authorized might throw error if unauthorized
             let handled: Result<ServerResponse, DomainError> = if public_rt.at(&path).is_ok() {
                 handle_public(r, c, public_rt, http_event).await
             } else {
@@ -162,7 +187,6 @@ async fn main() -> Result<(), Error> {
                     no(e)
                 }
             };
-            tracing::debug!("final resp = {}", serde_json::to_value(&converted)?);
             Ok::<ServerResponse, Error>(converted)
         }
     }))

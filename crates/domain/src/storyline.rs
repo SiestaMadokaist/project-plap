@@ -1,12 +1,18 @@
-use std::collections::{HashMap, HashSet};
-
+use pkg::id_type;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     commands::inference::{InferenceConfig, Inferrable},
     storage::StoragePath,
 };
-use pkg::macros::id_type;
+
+id_type!(StoryId);
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct RawTemplate(String);
+impl Inferrable for RawTemplate {}
+
+use std::collections::{HashMap, HashSet};
 
 /**
  * the original unevaluated string
@@ -23,20 +29,15 @@ use pkg::macros::id_type;
  * happy, smile, winking.
  * """
  */
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Template(String);
-impl Inferrable for Template {}
-
-id_type!(StorylineId);
 
 /**
  * data structure stored in S3 as file.
  * directly targeted by filename.
  */
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Storyline {
-    name: StorylineId,
-    inferences: Vec<InferenceConfig<Template>>,
+    id: StoryId,
+    inferences: Vec<InferenceConfig<RawTemplate>>,
     variables: HashMap<String, String>,
 }
 
@@ -55,16 +56,16 @@ impl Storyline {
 
 #[cfg(test)]
 mod tests {
-    use crate::storylines::Storyline;
     use pkg::utils::testhelper::{self};
+
+    use crate::storyline::Storyline;
 
     #[test]
     fn shape_test() -> Result<(), testhelper::Error> {
-        let story =
-            testhelper::read_json::<Storyline>(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/../../samples/inputs/jsons/domain/storyline.json"
-            ))?;
+        let story = testhelper::read_json::<Storyline>(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../samples/inputs/jsons/domain/storyline.json"
+        ))?;
         let mc = story.variables.get("mc:male").unwrap();
         let expected1: String = "mizuki from arknights".into();
         let mc2 = story.variables.get("mc:female").unwrap();

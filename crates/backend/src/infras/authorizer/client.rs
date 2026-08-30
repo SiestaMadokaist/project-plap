@@ -3,7 +3,7 @@ use domain::errors::DomainError;
 use dto::resources::login::{ClientAnswer, ReqChallenge, ServerChallenge};
 use pkg::{
     auth::{
-        claims::{Claims, JWT},
+        claims::{AuthClaims, Username, JWT},
         ecdsa::{recover, Challenge, PrivKey, PubKey},
         errors::AuthError,
     },
@@ -85,7 +85,7 @@ impl Authorizer for EthAuth {
         ))
     }
 
-    async fn answer(&self, ans: ClientAnswer) -> Result<JWT, DomainError> {
+    async fn answer(&self, username: Username, ans: ClientAnswer) -> Result<JWT, DomainError> {
         let sc = &ans.challenge;
 
         // 1. this is a challenge we minted, with its fields intact
@@ -104,7 +104,8 @@ impl Authorizer for EthAuth {
         }
 
         // 4. issue the session token
-        let claims = Claims {
+        let claims = AuthClaims {
+            username,
             sub: sc.address().hex().0,
             iat: now,
             exp: now.add(self.session_ttl.clone()),
@@ -112,7 +113,7 @@ impl Authorizer for EthAuth {
         JWT::sign(&claims, self.secret.as_bytes()).map_err(deny)
     }
 
-    async fn validate(&self, jwt: JWT) -> Result<Claims, DomainError> {
+    async fn validate(&self, jwt: JWT) -> Result<AuthClaims, DomainError> {
         let claims = jwt.decode(self.secret.as_bytes()).map_err(deny)?;
         if claims.iat.0 < self.min_iat.0 {
             return Err(deny("token predates the revocation cutoff"));
@@ -131,6 +132,10 @@ mod tests {
     const CLIENT_PRIVKEY: &str = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
     const CLIENT_ADDRESS: &str = "f39fd6e51aad88f6f4ce6ab8827279cfffb92266";
     const SERVER_PRIVKEY: &str = "59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
+
+    fn username() -> Username {
+        Username("username".into())
+    }
 
     fn eth(challenge_ttl: i64, min_iat: i64) -> EthAuth {
         EthAuth::new(
@@ -168,9 +173,8 @@ mod tests {
     async fn full_handshake_issues_a_token_for_the_signing_wallet() {
         let auth = eth(300, 0);
         let sc = auth.challenge(req()).await.expect("challenge minted");
-
         let jwt = auth
-            .answer(answer_with(&client(), sc))
+            .answer(username(), answer_with(&client(), sc))
             .await
             .expect("answer accepted");
         let claims = auth.validate(jwt).await.expect("token validates");
@@ -185,7 +189,7 @@ mod tests {
         let sc = auth.challenge(req()).await.unwrap();
 
         let intruder = PrivKey::new(Hex(SERVER_PRIVKEY.into())).unwrap();
-        let out = auth.answer(answer_with(&intruder, sc)).await;
+        let out = auth.answer(username(), answer_with(&intruder, sc)).await;
 
         assert!(matches!(out, Err(DomainError::NotAllowed(_))));
     }
@@ -204,7 +208,9 @@ mod tests {
         .unwrap();
 
         let foreign = theirs.challenge(req()).await.unwrap();
-        let out = ours.answer(answer_with(&client(), foreign)).await;
+        let out = ours
+            .answer(username(), answer_with(&client(), foreign))
+            .await;
 
         assert!(matches!(out, Err(DomainError::NotAllowed(_))));
     }
@@ -214,7 +220,7 @@ mod tests {
         let auth = eth(0, 0); // challenge is stale the instant it's minted
         let sc = auth.challenge(req()).await.unwrap();
 
-        let out = auth.answer(answer_with(&client(), sc)).await;
+        let out = auth.answer(username(), answer_with(&client(), sc)).await;
         assert!(matches!(out, Err(DomainError::NotAllowed(_))));
     }
 
@@ -222,7 +228,10 @@ mod tests {
     async fn validate_rejects_a_token_issued_before_min_iat() {
         let issuer = eth(300, 0);
         let sc = issuer.challenge(req()).await.unwrap();
-        let jwt = issuer.answer(answer_with(&client(), sc)).await.unwrap();
+        let jwt = issuer
+            .answer(username(), answer_with(&client(), sc))
+            .await
+            .unwrap();
 
         // same secret, but a cutoff in the future
         let strict = eth(300, Timestamp::now().0 + 3_600);
@@ -236,7 +245,10 @@ mod tests {
     async fn validate_rejects_a_tampered_token() {
         let auth = eth(300, 0);
         let sc = auth.challenge(req()).await.unwrap();
-        let JWT(mut raw) = auth.answer(answer_with(&client(), sc)).await.unwrap();
+        let JWT(mut raw) = auth
+            .answer(username(), answer_with(&client(), sc))
+            .await
+            .unwrap();
         raw.pop();
         raw.push(if raw.ends_with('a') { 'b' } else { 'a' });
 

@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use serde::{Deserialize, Serialize};
 
 use crate::application::ports::repository::{
@@ -27,12 +25,12 @@ pub struct Payload {
 json_type!(Payload);
 trait_repos!(CPModelRepos, HasAgentCommand);
 pub struct CPModel<R: CPModelRepos> {
-    repos: Rc<R>,
+    repos: R,
     payload: Payload,
 }
 
 impl<R: CPModelRepos> CPModel<R> {
-    pub fn new(repos: Rc<R>, payload: Payload) -> Self {
+    pub fn new(repos: R, payload: Payload) -> Self {
         Self { repos, payload }
     }
 

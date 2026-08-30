@@ -1,8 +1,9 @@
 pub mod commands;
+pub mod ctx;
 pub mod errors;
 pub mod hot_reload;
 pub mod prompts;
 pub mod storage;
-pub mod storylines;
+pub mod storyline;
 pub mod translation;
 pub mod user;

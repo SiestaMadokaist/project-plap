@@ -4,6 +4,12 @@ id_type!(StorageBucket);
 id_type!(StoragePath);
 id_type!(StoragePrefix);
 
+impl From<&str> for StoragePrefix {
+    fn from(value: &str) -> Self {
+        StoragePrefix(value.into())
+    }
+}
+
 impl StoragePrefix {
     pub fn at(&self, other: StoragePrefix) -> StoragePrefix {
         if other.0.starts_with("/") {

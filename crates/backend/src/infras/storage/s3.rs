@@ -39,8 +39,8 @@ pub struct S3Storage {
      * this make ugly remote_path
      * "/" + <remote_path> => "s3://<bucket>//remote_path/to/target/file" <- double "//" after <bucket>
      */
-    remote_prefix: String,
-    local_workdir: String,
+    remote_prefix: StoragePrefix,
+    local_workdir: StoragePrefix,
     max_size: i64, // in bytes (e.g: 50 GB) => (50 * 1024 * 1024 * 1024);
 }
 
@@ -49,8 +49,8 @@ impl S3Storage {
         config: SdkConfig,
         region: ComputeRegion,
         bucket: String,
-        remote_prefix: String,
-        local_workdir: String,
+        remote_prefix: StoragePrefix,
+        local_workdir: StoragePrefix,
         max_size: i64,
         acl: Option<ObjectCannedAcl>,
     ) -> Self {
@@ -322,16 +322,17 @@ impl StorageClient for S3Storage {
         )
     }
 
-    async fn ls(&self, prefix: &StoragePrefix) -> Vec<StoragePath> {
+    async fn ls(&self, prefix: &StoragePrefix) -> Result<Vec<StoragePath>, DomainError> {
+        let fullprefix = self.remote_prefix.at(prefix.clone());
         let result = self
             .client
             .list_objects()
             .bucket(&self.bucket)
-            .prefix(prefix.0.clone())
+            .prefix(fullprefix)
             .send()
             .await;
         let vs = match result {
-            Err(_) => vec![],
+            Err(x) => Err(DomainError::HttpConnectionFailed(x.to_string())),
             Ok(items) => {
                 let vecs = items.contents.unwrap_or(vec![]);
                 let vocs = vecs
@@ -339,10 +340,10 @@ impl StorageClient for S3Storage {
                     .map(|o| o.clone().key.unwrap_or(String::from("")))
                     .filter(|x| !x.is_empty());
                 let vcs: Vec<StoragePath> = vocs.map(StoragePath).collect();
-                vcs
+                Ok(vcs)
             }
-        };
-        vs
+        }?;
+        Ok(vs)
     }
 
     #[cfg(feature = "future")]

@@ -18,4 +18,6 @@ pub trait AgentCommandRepository {
         id: &ActionId,
         progress: &Progression,
     ) -> Result<CommandDomain, AgentCommandError>;
+
+    async fn delete(&self, id: &ActionId) -> Result<(), AgentCommandError>;
 }

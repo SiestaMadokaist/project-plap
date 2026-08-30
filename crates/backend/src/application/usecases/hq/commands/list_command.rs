@@ -22,12 +22,12 @@ impl<R: ListCommandRepos> ListCommand<R> {
     pub async fn run(&self) -> Result<resource::GetListResponse, DomainError> {
         let command_repo = self.repos.agent_command();
         let payload = &self.payload;
-        let in_progress = command_repo
+        let in_stage = command_repo
             .by_stage(payload.stage, payload.limit)
             .await
             .map_err(|x| DomainError::Disconnected(x.to_string()))?;
         let response = resource::GetListResponse {
-            commands: in_progress,
+            commands: Rc::new(in_stage),
         };
         Ok(response)
     }

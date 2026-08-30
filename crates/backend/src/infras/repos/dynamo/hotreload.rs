@@ -1,7 +1,8 @@
 use aws_sdk_dynamodb::Client;
+use pkg::auth::claims::Username;
 
 use crate::application::ports::repository::hot_reload::{HotReloadError, HotReloadRepository};
-use domain::{hot_reload::DiffusionConfigDomain, user::UserId};
+use domain::hot_reload::DiffusionConfigDomain;
 pub struct DDBHotReloadRepository {
     client: Client,
     table: String,
@@ -16,7 +17,7 @@ impl DDBHotReloadRepository {
 impl HotReloadRepository for DDBHotReloadRepository {
     async fn diffusion_config(
         &self,
-        _id: &UserId,
+        _id: &Username,
     ) -> Result<DiffusionConfigDomain, HotReloadError> {
         todo!()
     }

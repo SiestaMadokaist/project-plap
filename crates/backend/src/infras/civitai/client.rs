@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use crate::application::ports::clients::inference_model_provider::InferenceModelProvider;
+use domain::storage::StoragePrefix;
 use pkg::{
     civitai::{self, dto::model_version::ModelVersionDTO, typing},
     id::InferenceModelId,
@@ -11,11 +12,11 @@ pub struct CivitaiAPI {
     host: URL,
     api_key: String,
     client: reqwest::Client,
-    workdir: String,
+    workdir: StoragePrefix,
 }
 
 impl CivitaiAPI {
-    pub fn new(host: URL, api_key: String, workdir: String) -> Self {
+    pub fn new(host: URL, api_key: String, workdir: StoragePrefix) -> Self {
         let client = reqwest::Client::new();
         Self {
             host,

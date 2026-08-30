@@ -1,16 +1,19 @@
 use crate::application::ports::repository::error::RepositoryError;
-use domain::user::{User, UserId};
-use pkg::{auth::ecdsa::AddressETH, types::time::Timestamp};
+use domain::user::User;
+use pkg::{
+    auth::{claims::Username, ecdsa::AddressETH},
+    types::time::Timestamp,
+};
 
-pub type UserError = RepositoryError<UserId>;
+pub type UserError = RepositoryError<Username>;
 
 #[cfg_attr(test, mockall::automock)]
 #[allow(async_fn_in_trait)]
 pub trait UserRepository {
     /// Look up by `username` (the table's partition key).
-    async fn get(&self, id: &UserId) -> Result<User, UserError>;
+    async fn get(&self, id: &Username) -> Result<User, UserError>;
     async fn put(&self, user: &User) -> Result<(), UserError>;
-    async fn delete(&self, id: &UserId) -> Result<(), UserError>;
+    async fn delete(&self, id: &Username) -> Result<(), UserError>;
 
     /// Look up by wallet address via the `address` GSI.
     async fn find(&self, address: &AddressETH) -> Result<User, UserError>;

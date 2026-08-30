@@ -1,4 +1,4 @@
-use std::{env, path::Display};
+use std::env;
 
 use crate::types::time::Second;
 

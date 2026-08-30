@@ -1,3 +1,4 @@
+use domain::storage::StoragePrefix;
 use pkg::{
     enums::stage::Stage,
     types::{strings::URL, time::Second},
@@ -18,15 +19,15 @@ pub struct DiffusionEnv {
     pub discord_webhook_url: URL,
 
     pub civitai_apikey: String,
-    pub workdir: String,
+    pub workdir: StoragePrefix,
 
     pub output_region: String,
     pub output_bucket: String,
-    pub output_prefix: String,
+    pub output_prefix: StoragePrefix,
 
     pub model_region: String,
     pub model_bucket: String,
-    pub model_prefix: String,
+    pub model_prefix: StoragePrefix,
 
     pub watch_interval: Second,
     pub queue_interval: Second,
@@ -43,7 +44,9 @@ impl DiffusionEnv {
 
             civitai_apikey: env::var("CIVITAI_APIKEY").expect("CIVITAI_APIKEY must be set"),
             civitai_host: env::var("CIVITAI_HOST").expect("CIVITAI_HOST must be set"),
-            workdir: env::var("WORKDIR").expect("WORKDIR must be set"),
+            workdir: env::var("WORKDIR")
+                .map(StoragePrefix)
+                .expect("WORKDIR must be set"),
 
             watch_dir: env::var("WATCH_DIR").expect("WATCH_DIR must be set"),
             max_data_transfer: env::var("MAX_DATA_TRANSFER")
@@ -58,11 +61,15 @@ impl DiffusionEnv {
 
             model_region: env::var("MODEL_REGION").expect("MODEL REGION must not be empty"),
             model_bucket: env::var("MODEL_BUCKET").expect("MODEL BUCKET must not be empty"),
-            model_prefix: var_or("MODEL_PREFIX", ""),
+            model_prefix: env::var("MODEL_PREFIX")
+                .map(StoragePrefix)
+                .expect("MODEL PREFIX must be set"),
 
             output_region: var_or("OUTPUT_REGION", "ap-southeast-1"),
             output_bucket: env::var("OUTPUT_BUCKET").expect("OUTPUT_BUCKET must be set"),
-            output_prefix: var_or("OUTPUT_PREFIX", ""),
+            output_prefix: env::var("OUTPUT_PREFIX")
+                .map(StoragePrefix)
+                .expect("OUTPUT PREFIX must be set"),
 
             watch_interval: var_second("WATCH_INTERVAL"),
             queue_interval: var_second("QUEUE_INTERVAL"),

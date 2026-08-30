@@ -1,3 +1,4 @@
+use domain::storage::StoragePrefix;
 use pkg::{
     enums::stage::Stage,
     types::{
@@ -24,11 +25,11 @@ pub struct ApiEnv {
 
     pub output_region: String,
     pub output_bucket: String,
-    pub output_prefix: String,
+    pub output_prefix: StoragePrefix,
 
     pub model_region: String,
     pub model_bucket: String,
-    pub model_prefix: String,
+    pub model_prefix: StoragePrefix,
 }
 
 impl ApiEnv {
@@ -56,11 +57,15 @@ impl ApiEnv {
 
             output_region: var_or("OUTPUT_REGION", "ap-southeast-1"),
             output_bucket: env::var("OUTPUT_BUCKET").expect("OUTPUT_BUCKET must be set"),
-            output_prefix: var_or("OUTPUT_PREFIX", ""),
+            output_prefix: env::var("OUTPUT_PREFIX")
+                .map(StoragePrefix)
+                .expect("OUTPUT PREFIX must be set"),
 
             model_region: env::var("MODEL_REGION").expect("MODEL_REGION must be set"),
             model_bucket: env::var("MODEL_BUCKET").expect("MODEL_BUCKET must be set"),
-            model_prefix: var_or("MODEL_PREFIX", ""),
+            model_prefix: env::var("MODEL_PREFIX")
+                .map(StoragePrefix)
+                .expect("MODEL PREFIX must be set"),
         }
     }
 

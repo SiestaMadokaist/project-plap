@@ -9,10 +9,7 @@ use crate::application::{
 };
 use domain::{
     commands::{
-        command::{
-            Action::{Inference, Network},
-            CommandDomain, CommandStage, Progression,
-        },
+        command::{Action, CommandDomain, CommandStage, Progression},
         inference::InferenceArgs,
         network::NetworkArgs,
     },
@@ -91,9 +88,9 @@ impl<R: CommandHandlerRepos, C: CommandHandlerClients> CommandHandler<R, C> {
     pub async fn exec(&mut self) -> Result<CommandStage, DomainError> {
         let action = &self.params.action;
         match action {
-            Inference(arg) => self.handle_inference(arg).await,
+            Action::Inference(arg) => self.handle_inference(arg).await,
             #[cfg(feature = "datatransfer")]
-            Network(arg) => self.handle_network(arg).await,
+            Action::Network(arg) => self.handle_network(arg).await,
             _ => Ok(CommandStage::Failed),
         }
     }

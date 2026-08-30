@@ -48,6 +48,19 @@ impl DDBAgentCommandRepository {
 }
 
 impl AgentCommandRepository for DDBAgentCommandRepository {
+    async fn delete(&self, id: &ActionId) -> Result<(), AgentCommandError> {
+        let deleted = self
+            .client
+            .delete_item()
+            .table_name(&self.table)
+            .send()
+            .await
+            .map_err(|x| AgentCommandError::Disconnected(x.to_string()))?;
+
+        tracing::debug!("deleted: {}", id);
+        Ok(())
+    }
+
     async fn insert(&self, command: CommandDomain) -> Result<ActionId, AgentCommandError> {
         let action_id = command.action_id.clone();
         let item = AgentCommandDDB(command);
