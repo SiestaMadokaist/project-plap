@@ -11,18 +11,18 @@ use pkg::macros::trait_repos;
 trait_repos!(DeleteCommandRepos, HasAgentCommand);
 
 // #[route(delete, path = "/")]
-pub struct DeleteCommand<R: DeleteCommandRepos> {
-    repos: Rc<R>,
+pub struct DeleteCommand<'a, R: DeleteCommandRepos> {
+    repos: &'a R,
     payload: DeletePayload,
 }
 
-impl<R: DeleteCommandRepos> DeleteCommand<R> {
-    pub fn new(repos: Rc<R>, payload: DeletePayload) -> Self {
+impl<'a, R: DeleteCommandRepos> DeleteCommand<'a, R> {
+    pub fn new(repos: &'a R, payload: DeletePayload) -> Self {
         Self { repos, payload }
     }
 }
 
-impl<R: DeleteCommandRepos> UsecaseAPI<GetListResponse> for DeleteCommand<R> {
+impl<R: DeleteCommandRepos> UsecaseAPI<GetListResponse> for DeleteCommand<'_, R> {
     async fn exec(&self) -> Result<GetListResponse, domain::errors::DomainError> {
         let repo = self.repos.agent_command();
         let _: Result<(), DomainError> = repo

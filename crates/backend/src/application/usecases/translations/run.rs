@@ -1,6 +1,5 @@
 use dto::response::Placeholder;
 use serde::Deserialize;
-use std::rc::Rc;
 use tokio::sync::OnceCell;
 
 use crate::application::{
@@ -32,17 +31,17 @@ impl Memo {
     }
 }
 
-pub struct Run<R: TLRepos, C: TLClients> {
-    repo: Rc<R>,
-    client: Rc<C>,
+pub struct Run<'a, R: TLRepos, C: TLClients> {
+    repo: &'a R,
+    client: &'a C,
     params: dto::resources::translations::RunPayload,
     memo: Memo,
 }
 
-impl<R: TLRepos, C: TLClients> Run<R, C> {
+impl<'a, R: TLRepos, C: TLClients> Run<'a, R, C> {
     pub fn new(
-        repo: Rc<R>,
-        client: Rc<C>,
+        repo: &'a R,
+        client: &'a C,
         params: dto::resources::translations::RunPayload,
     ) -> Self {
         Run {
@@ -123,7 +122,7 @@ impl<R: TLRepos, C: TLClients> Run<R, C> {
     }
 }
 
-impl<R: TLRepos, C: TLClients> UsecaseAPI<Placeholder> for Run<R, C> {
+impl<R: TLRepos, C: TLClients> UsecaseAPI<Placeholder> for Run<'_, R, C> {
     async fn exec(&self) -> Result<Placeholder, DomainError> {
         let latest = self.latest_translation().await?;
         match latest {

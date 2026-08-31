@@ -16,9 +16,6 @@ use pkg::{
     macros::trait_clients,
 };
 #[cfg(feature = "datatransfer")]
-use std::rc::Rc;
-
-#[cfg(feature = "datatransfer")]
 trait_clients!(
     HandleNetworkClients,
     HasModelStorage,
@@ -27,7 +24,7 @@ trait_clients!(
 
 #[cfg(feature = "datatransfer")]
 pub struct HandleNetwork<'a, C: HandleNetworkClients> {
-    clients: Rc<C>,
+    clients: &'a C,
     args: &'a NetworkArgs,
     // c: StorageClient
     // network command always complete in 1 execution?
@@ -36,7 +33,7 @@ pub struct HandleNetwork<'a, C: HandleNetworkClients> {
 
 #[cfg(feature = "datatransfer")]
 impl<'a, C: HandleNetworkClients> HandleNetwork<'a, C> {
-    pub fn new(clients: Rc<C>, args: &'a NetworkArgs, progress: Progression) -> Self {
+    pub fn new(clients: &'a C, args: &'a NetworkArgs, progress: Progression) -> Self {
         Self {
             clients,
             args,
@@ -224,7 +221,11 @@ mod tests {
         storage.expect_write().returning(|_, _| Ok(()));
         let clients = MockContainer::new(storage, civitai);
         let args = tests::args();
-        let handler = HandleNetwork::new(clients, &args, Progression::new(Index0(1), INDEX_ZERO));
+        let handler = HandleNetwork::new(
+            clients.as_ref(),
+            &args,
+            Progression::new(Index0(1), INDEX_ZERO),
+        );
         let result = handler.exec().await;
         assert!(result.is_done());
         Ok(())
@@ -240,7 +241,11 @@ mod tests {
             .expect_write()
             .returning(|_path, _data| Err(DomainError::Disconnected("service error".into())));
         let clients = MockContainer::new(storage, civitai);
-        let handler = HandleNetwork::new(clients, &args, Progression::new(Index0(1), INDEX_ZERO));
+        let handler = HandleNetwork::new(
+            clients.as_ref(),
+            &args,
+            Progression::new(Index0(1), INDEX_ZERO),
+        );
         let result = handler.exec().await;
         assert!(result.is_failed());
         Ok(())

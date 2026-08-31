@@ -7,7 +7,7 @@ use pkg::types::{
     peek::Peek,
     time::{Second, Timestamp},
 };
-use std::{cell::OnceCell, rc::Rc};
+use std::cell::OnceCell;
 pub struct Memo {
     action: OnceCell<ComputeCommand>,
 }
@@ -16,19 +16,19 @@ pub struct Memo {
  * auto terminator that check if last_ok timestamp has passed its threshold
  * it'll automatically request to shutdown the compute instance
  */
-pub struct IdleTerminator<C: AgentClients, R: AgentRepos> {
-    clients: Rc<C>,
-    repos: Rc<R>,
+pub struct IdleTerminator<'a, C: AgentClients, R: AgentRepos> {
+    clients: &'a C,
+    repos: &'a R,
     last_active: Peek<Timestamp>,
     tolerance: Second,
     interval: Second,
     memo: Memo,
 }
 
-impl<C: AgentClients, R: AgentRepos> IdleTerminator<C, R> {
+impl<'a, C: AgentClients, R: AgentRepos> IdleTerminator<'a, C, R> {
     pub fn new(
-        clients: Rc<C>,
-        repos: Rc<R>,
+        clients: &'a C,
+        repos: &'a R,
         start_at: Peek<Timestamp>,
         tolerance: Second,
         interval: Second,
@@ -90,7 +90,7 @@ impl<C: AgentClients, R: AgentRepos> IdleTerminator<C, R> {
             tolerance.0
         );
         let args = self.compute_args().await?;
-        let manage = ManageCompute::new(self.clients.clone(), args);
+        let manage = ManageCompute::new(self.clients, args);
         // let termination = manage.exec().await;
         if let Err(x) = manage.exec().await {
             tracing::error!("termination failed with error: {}", x);

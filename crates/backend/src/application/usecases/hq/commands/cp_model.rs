@@ -24,13 +24,13 @@ pub struct Payload {
 }
 json_type!(Payload);
 trait_repos!(CPModelRepos, HasAgentCommand);
-pub struct CPModel<R: CPModelRepos> {
-    repos: R,
+pub struct CPModel<'a, R: CPModelRepos> {
+    repos: &'a R,
     payload: Payload,
 }
 
-impl<R: CPModelRepos> CPModel<R> {
-    pub fn new(repos: R, payload: Payload) -> Self {
+impl<'a, R: CPModelRepos> CPModel<'a, R> {
+    pub fn new(repos: &'a R, payload: Payload) -> Self {
         Self { repos, payload }
     }
 

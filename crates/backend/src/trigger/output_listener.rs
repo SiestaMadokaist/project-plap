@@ -16,18 +16,18 @@ use crate::application::usecases::agent::{
 };
 use pkg::types::time::Timestamp;
 
-pub struct NewOutputListener<C: AgentClients, R: AgentRepos> {
-    clients: Rc<C>,
-    repos: Rc<R>,
+pub struct NewOutputListener<'a, C: AgentClients, R: AgentRepos> {
+    clients: &'a C,
+    repos: &'a R,
     dir: String,
     last_active: Rc<Cell<Timestamp>>,
     watcher: OnceCell<INotifyWatcher>,
 }
 
-impl<C: AgentClients, R: AgentRepos> NewOutputListener<C, R> {
+impl<'a, C: AgentClients, R: AgentRepos> NewOutputListener<'a, C, R> {
     pub fn new(
-        clients: Rc<C>,
-        repos: Rc<R>,
+        clients: &'a C,
+        repos: &'a R,
         dir: String,
         last_active: Rc<Cell<Timestamp>>,
     ) -> Self {
@@ -62,11 +62,9 @@ impl<C: AgentClients, R: AgentRepos> NewOutputListener<C, R> {
         for output_path in files {
             tracing::info!("detected change for: {}", output_path.display());
             output_count += 1;
-            let clients = self.clients.clone();
-            let repos = self.repos.clone();
             let path = output_path.clone();
             let now = Timestamp::now();
-            let saveoutput = SaveOutput::new(clients, repos, self.watchdir(), path, now);
+            let saveoutput = SaveOutput::new(self.clients, self.repos, self.watchdir(), path, now);
             saveoutput.exec().await?;
         }
         if output_count == 0 {

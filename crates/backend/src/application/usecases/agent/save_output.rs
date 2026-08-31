@@ -8,10 +8,7 @@ use pkg::{
     macros::{trait_clients, trait_repos},
     types::time::Timestamp,
 };
-use std::{
-    path::{Path, PathBuf},
-    rc::Rc,
-};
+use std::path::{Path, PathBuf};
 use tokio::sync::OnceCell;
 
 struct Memo {
@@ -36,19 +33,19 @@ trait_repos!(
     repository::container::HasHotReload,
     repository::container::HasPromptHistory
 );
-pub struct SaveOutput<C: SaveOutputClient, R: SaveOutputRepos> {
-    clients: Rc<C>,
-    repos: Rc<R>,
+pub struct SaveOutput<'a, C: SaveOutputClient, R: SaveOutputRepos> {
+    clients: &'a C,
+    repos: &'a R,
     workdir: PathBuf,
     path: PathBuf,
     now: Timestamp,
     memo: Memo,
 }
 
-impl<C: SaveOutputClient, R: SaveOutputRepos> SaveOutput<C, R> {
+impl<'a, C: SaveOutputClient, R: SaveOutputRepos> SaveOutput<'a, C, R> {
     pub fn new(
-        clients: Rc<C>,
-        repos: Rc<R>,
+        clients: &'a C,
+        repos: &'a R,
         workdir: PathBuf,
         path: PathBuf,
         now: Timestamp,
@@ -105,7 +102,7 @@ impl<C: SaveOutputClient, R: SaveOutputRepos> SaveOutput<C, R> {
     }
 
     async fn save_output(&self) -> anyhow::Result<()> {
-        let c = self.clients.clone();
+        let c = self.clients;
         let storage = c.output_storage();
         let data = self.ioread().await?;
         let remote_path = self.store_path();

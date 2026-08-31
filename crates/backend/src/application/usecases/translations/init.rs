@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use dto::{resources::translations::InitPayload, response::Placeholder};
 use tokio::sync::OnceCell;
 
@@ -27,15 +25,15 @@ impl Memo {
     }
 }
 
-pub struct Init<R: TLRepos, C: TLClients> {
-    repo: Rc<R>,
-    client: Rc<C>,
+pub struct Init<'a, R: TLRepos, C: TLClients> {
+    repo: &'a R,
+    client: &'a C,
     params: InitPayload,
     memo: Memo,
 }
 
-impl<R: TLRepos, C: TLClients> Init<R, C> {
-    pub fn new(repo: Rc<R>, client: Rc<C>, params: InitPayload) -> Self {
+impl<'a, R: TLRepos, C: TLClients> Init<'a, R, C> {
+    pub fn new(repo: &'a R, client: &'a C, params: InitPayload) -> Self {
         Init {
             repo,
             client,
@@ -66,7 +64,7 @@ impl<R: TLRepos, C: TLClients> Init<R, C> {
     }
 }
 
-impl<R: TLRepos, C: TLClients> UsecaseAPI<Placeholder> for Init<R, C> {
+impl<R: TLRepos, C: TLClients> UsecaseAPI<Placeholder> for Init<'_, R, C> {
     async fn exec(&self) -> Result<Placeholder, DomainError> {
         let starting_chapter = self.starting_chapter().await?;
         let repo = self.repo.translation();

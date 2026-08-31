@@ -32,16 +32,16 @@ async fn main() -> anyhow::Result<()> {
     let start_at = Timestamp::now();
     let rc_start_at = Rc::new(Cell::new(start_at));
     let rc_start_peek = Peek::new(rc_start_at.clone());
-    let queue_handler = CommandQ::new(clients.clone(), repos.clone(), queue_interval);
+    let queue_handler = CommandQ::new(clients.as_ref(), repos.as_ref(), queue_interval);
     let output_listener = NewOutputListener::new(
-        clients.clone(),
-        repos.clone(),
+        clients.as_ref(),
+        repos.as_ref(),
         watch_dir,
         rc_start_at.clone(),
     );
     let idle_terminator = IdleTerminator::new(
-        clients.clone(),
-        repos.clone(),
+        clients.as_ref(),
+        repos.as_ref(),
         rc_start_peek,
         idle_tolerance,
         track_interval,

@@ -36,13 +36,13 @@ async fn handler(
         "cron/translate" => {
             let params: dto::resources::translations::RunPayload =
                 serde_json::from_value(path_params.data.clone())?;
-            let action = run::Run::new(repo.clone(), client.clone(), params);
+            let action = run::Run::new(repo.as_ref(), client.as_ref(), params);
             action.exec().await?;
         }
         "cron/init" => {
             let params: dto::resources::translations::InitPayload =
                 serde_json::from_value(path_params.data.clone())?;
-            let action = init::Init::new(repo.clone(), client.clone(), params);
+            let action = init::Init::new(repo.as_ref(), client.as_ref(), params);
             action.exec().await?;
         }
         _ => tracing::warn!(proxy = proxy.as_str(), "unknown cron route"),

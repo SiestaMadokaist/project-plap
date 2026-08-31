@@ -9,13 +9,13 @@ use pkg::macros::trait_repos;
 
 trait_repos!(ListCommandRepos, HasAgentCommand);
 
-pub struct ListCommand<R: ListCommandRepos> {
-    repos: Rc<R>,
+pub struct ListCommand<'a, R: ListCommandRepos> {
+    repos: &'a R,
     payload: resource::GetListPayload,
 }
 
-impl<R: ListCommandRepos> ListCommand<R> {
-    pub fn new(repos: Rc<R>, payload: resource::GetListPayload) -> Self {
+impl<'a, R: ListCommandRepos> ListCommand<'a, R> {
+    pub fn new(repos: &'a R, payload: resource::GetListPayload) -> Self {
         Self { repos, payload }
     }
 
@@ -81,7 +81,7 @@ mod tests {
             .expect_by_stage()
             .returning(|_, _| Err(RepositoryError::Database("something went wrong".into())));
         let repos = MockRepos::rc(agent);
-        let usecase = ListCommand::new(repos, payload);
+        let usecase = ListCommand::new(repos.as_ref(), payload);
         let result = usecase.run().await;
         assert!(matches!(result, Err(DomainError::Disconnected(_))));
         Ok(())

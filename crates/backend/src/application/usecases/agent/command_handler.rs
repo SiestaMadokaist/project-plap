@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use crate::application::{
     ports::{
         clients::{self},
@@ -26,14 +24,14 @@ trait_clients!(
 );
 trait_repos!(CommandHandlerRepos, repository::container::HasAgentCommand);
 
-pub struct CommandHandler<R: CommandHandlerRepos, C: CommandHandlerClients> {
-    repo: Rc<R>,
-    clients: Rc<C>,
+pub struct CommandHandler<'a, R: CommandHandlerRepos, C: CommandHandlerClients> {
+    repo: &'a R,
+    clients: &'a C,
     params: CommandDomain,
 }
 
-impl<R: CommandHandlerRepos, C: CommandHandlerClients> CommandHandler<R, C> {
-    pub fn new(repo: Rc<R>, clients: Rc<C>, params: CommandDomain) -> Self {
+impl<'a, R: CommandHandlerRepos, C: CommandHandlerClients> CommandHandler<'a, R, C> {
+    pub fn new(repo: &'a R, clients: &'a C, params: CommandDomain) -> Self {
         CommandHandler {
             repo,
             clients,
@@ -63,7 +61,7 @@ impl<R: CommandHandlerRepos, C: CommandHandlerClients> CommandHandler<R, C> {
             usecases::agent::h_network::HandleNetwork,
         };
         let progress = self.params.progress.clone();
-        let handler = HandleNetwork::new(self.clients.clone(), args, progress);
+        let handler = HandleNetwork::new(self.clients, args, progress);
         let updated = handler.exec().await;
         let updated_json = serde_json::to_string_pretty(&updated)?;
         tracing::info!("recording updated progress: ```\n{}\n```", &updated_json);
@@ -78,8 +76,7 @@ impl<R: CommandHandlerRepos, C: CommandHandlerClients> CommandHandler<R, C> {
     async fn handle_inference(&self, arg: &InferenceArgs) -> Result<CommandStage, DomainError> {
         let progress = self.params.progress.clone();
         let config = &arg.config;
-        let client = self.clients.clone();
-        let mut handler = HandleInference::new(client, progress, config);
+        let mut handler = HandleInference::new(self.clients, progress, config);
         let updated_progress = handler.exec().await;
         let command_stage = self.record_progress(&updated_progress).await?;
         Ok(command_stage)

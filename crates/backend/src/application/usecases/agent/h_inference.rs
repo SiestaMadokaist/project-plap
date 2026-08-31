@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use crate::application::ports::clients::{
     container::{HasDiffusion, HasModelStorage},
     storage::StorageClient,
@@ -13,13 +11,13 @@ use pkg::{exif::comfyui::nodes::ComfyWorkflow, macros::trait_clients};
 trait_clients!(HandleInferenceClient, HasDiffusion, HasModelStorage);
 
 pub struct HandleInference<'a, C: HandleInferenceClient> {
-    clients: Rc<C>,
+    clients: &'a C,
     progress: Progression,
     config: &'a InferenceConfig<String>,
 }
 
 impl<'a, C: HandleInferenceClient> HandleInference<'a, C> {
-    pub fn new(clients: Rc<C>, progress: Progression, config: &'a InferenceConfig<String>) -> Self {
+    pub fn new(clients: &'a C, progress: Progression, config: &'a InferenceConfig<String>) -> Self {
         Self {
             clients,
             progress,
@@ -65,6 +63,8 @@ impl<'a, C: HandleInferenceClient> HandleInference<'a, C> {
 
 #[cfg(test)]
 mod tests {
+
+    use std::rc::Rc;
 
     use super::*;
     use crate::application::ports::clients::{
@@ -125,7 +125,7 @@ mod tests {
         let container = MockContainer::new(diffuser);
         let progress = Progression::new(Index0(2), INDEX_ZERO);
         let config = cfg();
-        let mut inference = HandleInference::new(container, progress, &config);
+        let mut inference = HandleInference::new(container.as_ref(), progress, &config);
         let result = inference.exec().await;
         assert!(result.is_started());
         assert!(result.is_failed() == false);
@@ -139,7 +139,7 @@ mod tests {
         let container = MockContainer::new(diffuser);
         let progress = Progression::new(Index0(1), INDEX_ZERO);
         let config = cfg();
-        let mut inference = HandleInference::new(container, progress, &config);
+        let mut inference = HandleInference::new(container.as_ref(), progress, &config);
         let result = inference.exec().await;
         assert!(result.is_started());
         assert!(result.is_failed() == false);
@@ -153,7 +153,7 @@ mod tests {
         let container = MockContainer::new(diffuser);
         let progress = Progression::new(Index0(2), Index0(1));
         let config = cfg();
-        let mut inference = HandleInference::new(container, progress, &config);
+        let mut inference = HandleInference::new(container.as_ref(), progress, &config);
         let result = inference.exec().await;
         assert!(result.is_started());
         assert!(result.is_failed() == false);
@@ -169,7 +169,7 @@ mod tests {
         let container = MockContainer::new(diffuser);
         let progress = Progression::new(Index0(2), Index0(1));
         let config = cfg();
-        let mut inference = HandleInference::new(container, progress, &config);
+        let mut inference = HandleInference::new(container.as_ref(), progress, &config);
         let result = inference.exec().await;
         assert!(result.is_started());
         assert!(result.is_failed());

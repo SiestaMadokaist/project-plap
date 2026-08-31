@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use crate::application::ports::clients::{
     self,
     compute::{ComputeEngine, ComputeEngines},
@@ -16,13 +14,13 @@ trait_clients!(
     clients::container::HasNotification
 );
 
-pub struct ManageCompute<C: ManageComputeClients> {
-    clients: Rc<C>,
+pub struct ManageCompute<'a, C: ManageComputeClients> {
+    clients: &'a C,
     args: ComputeArgs,
 }
 
-impl<C: ManageComputeClients> ManageCompute<C> {
-    pub fn new(clients: Rc<C>, args: ComputeArgs) -> Self {
+impl<'a, C: ManageComputeClients> ManageCompute<'a, C> {
+    pub fn new(clients: &'a C, args: ComputeArgs) -> Self {
         Self { clients, args }
     }
 

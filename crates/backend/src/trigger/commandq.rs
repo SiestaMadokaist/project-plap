@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use crate::application::{
     ports::repository::agent_command::AgentCommandRepository,
     usecases::agent::command_handler::{CommandHandler, CommandHandlerClients, CommandHandlerRepos},
@@ -7,14 +5,14 @@ use crate::application::{
 use domain::commands::command::CommandStage;
 use pkg::types::time::Second;
 
-pub struct CommandQ<R: CommandHandlerRepos, C: CommandHandlerClients> {
-    clients: Rc<C>,
-    repos: Rc<R>,
+pub struct CommandQ<'a, R: CommandHandlerRepos, C: CommandHandlerClients> {
+    clients: &'a C,
+    repos: &'a R,
     interval: Second,
 }
 
-impl<R: CommandHandlerRepos, C: CommandHandlerClients> CommandQ<R, C> {
-    pub fn new(clients: Rc<C>, repos: Rc<R>, interval: Second) -> Self {
+impl<'a, R: CommandHandlerRepos, C: CommandHandlerClients> CommandQ<'a, R, C> {
+    pub fn new(clients: &'a C, repos: &'a R, interval: Second) -> Self {
         Self {
             clients,
             repos,
@@ -34,8 +32,7 @@ impl<R: CommandHandlerRepos, C: CommandHandlerClients> CommandQ<R, C> {
         // lowest mean earliest being put...
         // or, just some command with higher urgency.
         for command in in_progress.into_iter() {
-            let mut handler =
-                CommandHandler::new(self.repos.clone(), self.clients.clone(), command);
+            let mut handler = CommandHandler::new(self.repos, self.clients, command);
             handler.exec().await?;
         }
         Ok(())

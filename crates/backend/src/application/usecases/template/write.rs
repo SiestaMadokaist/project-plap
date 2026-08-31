@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use domain::storyline::{RawTemplate, Storyline};
 use dto::{resources::templates::WriteTemplatePayload, response::Placeholder};
 use pkg::trait_repos;
@@ -12,7 +10,7 @@ use crate::application::ports::{
 // trait_clients!(TemplateWriteC)
 trait_repos!(TemplateWriteRepo, HasStoryTemplate);
 pub struct TemplateWrite<'a, R: TemplateWriteRepo> {
-    repos: Rc<R>,
+    repos: &'a R,
     payload: &'a WriteTemplatePayload,
 }
 

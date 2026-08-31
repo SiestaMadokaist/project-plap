@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use crate::application::ports::{
     clients::{authorizer::Authorizer, container::HasAuthValidator},
     repository::{container::HasUser, user::UserRepository},
@@ -15,14 +13,14 @@ trait_repos!(ISubmitAnswerRepos, HasUser);
 /// Step 2 of login: exchange a signed `ClientAnswer` for a session token. Challenge
 /// authenticity, wallet recovery and expiry are checked in `Authorizer::answer`; the
 /// repo `login` then stamps `last_login` (and enforces activation + a monotonic `iat`).
-pub struct SubmitAnswer<C: ISubmitAnswerClients, R: ISubmitAnswerRepos> {
-    clients: Rc<C>,
-    repos: Rc<R>,
+pub struct SubmitAnswer<'a, C: ISubmitAnswerClients, R: ISubmitAnswerRepos> {
+    clients: &'a C,
+    repos: &'a R,
     payload: ClientAnswer,
 }
 
-impl<C: ISubmitAnswerClients, R: ISubmitAnswerRepos> SubmitAnswer<C, R> {
-    pub fn new(clients: Rc<C>, repos: Rc<R>, payload: ClientAnswer) -> Self {
+impl<'a, C: ISubmitAnswerClients, R: ISubmitAnswerRepos> SubmitAnswer<'a, C, R> {
+    pub fn new(clients: &'a C, repos: &'a R, payload: ClientAnswer) -> Self {
         Self {
             clients,
             repos,
@@ -32,7 +30,7 @@ impl<C: ISubmitAnswerClients, R: ISubmitAnswerRepos> SubmitAnswer<C, R> {
 }
 
 impl<C: ISubmitAnswerClients, R: ISubmitAnswerRepos> UsecaseAPI<LoginResponse>
-    for SubmitAnswer<C, R>
+    for SubmitAnswer<'_, C, R>
 {
     async fn exec(&self) -> Result<LoginResponse, DomainError> {
         let user = self

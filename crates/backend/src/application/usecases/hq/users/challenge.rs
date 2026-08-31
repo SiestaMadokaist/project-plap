@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use crate::application::ports::{
     clients::{authorizer::Authorizer, container::HasAuthValidator},
     repository::{container::HasUser, user::UserRepository},
@@ -15,14 +13,14 @@ trait_repos!(IChallengeRepos, HasUser);
 /// Step 1 of login: mint a signed `ServerChallenge` for the wallet named in the request.
 /// The address must already belong to a known user; timing checks and the server
 /// signature live in `Authorizer::challenge`.
-pub struct GetChallenge<C: IChallengeClients, R: IChallengeRepos> {
-    clients: Rc<C>,
-    repos: Rc<R>,
+pub struct GetChallenge<'a, C: IChallengeClients, R: IChallengeRepos> {
+    clients: &'a C,
+    repos: &'a R,
     payload: ReqChallenge,
 }
 
-impl<C: IChallengeClients, R: IChallengeRepos> GetChallenge<C, R> {
-    pub fn new(clients: Rc<C>, repos: Rc<R>, payload: ReqChallenge) -> Self {
+impl<'a, C: IChallengeClients, R: IChallengeRepos> GetChallenge<'a, C, R> {
+    pub fn new(clients: &'a C, repos: &'a R, payload: ReqChallenge) -> Self {
         Self {
             clients,
             repos,
@@ -31,7 +29,7 @@ impl<C: IChallengeClients, R: IChallengeRepos> GetChallenge<C, R> {
     }
 }
 
-impl<C: IChallengeClients, R: IChallengeRepos> UsecaseAPI<ServerChallenge> for GetChallenge<C, R> {
+impl<C: IChallengeClients, R: IChallengeRepos> UsecaseAPI<ServerChallenge> for GetChallenge<'_, C, R> {
     async fn exec(&self) -> Result<ServerChallenge, DomainError> {
         self.repos
             .user()

@@ -97,13 +97,13 @@ async fn handle_public(
     let resp: Result<dto::response::Response<serde_json::Value>, DomainError> = match matched.value
     {
         PublicRoute::GetChallenge => {
-            GetChallenge::new(clients.clone(), repos.clone(), event.body()?.try_into()?)
+            GetChallenge::new(clients.as_ref(), repos.as_ref(), event.body()?.try_into()?)
                 .exec()
                 .await
                 .to_result()
         }
         PublicRoute::SubmitAnswer => {
-            SubmitAnswer::new(clients.clone(), repos.clone(), event.body()?.try_into()?)
+            SubmitAnswer::new(clients.as_ref(), repos.as_ref(), event.body()?.try_into()?)
                 .exec()
                 .await
                 .to_result()
@@ -131,14 +131,18 @@ async fn handle_authorized(
     let resp: Result<dto::response::Response<serde_json::Value>, DomainError> = match route {
         Err(x) => Err(DomainError::Prerequisite(x.to_string())),
         Ok(matched) => match matched.value {
-            AuthorizedRoute::ListModels => GetList::new(clients.clone(), event.body()?.try_into()?)
-                .exec()
-                .await
-                .to_result(),
-            // AuthorizedRoute::AgentModelCP => CPModel::new(repos.clone(), event.body()?.try_into()?)
-            //     .exec()
-            //     .await
-            //     .to_result(),
+            AuthorizedRoute::ListModels => {
+                GetList::new(clients.as_ref(), event.body()?.try_into()?)
+                    .exec()
+                    .await
+                    .to_result()
+            }
+            AuthorizedRoute::AgentModelCP => {
+                CPModel::new(repos.as_ref(), event.body()?.try_into()?)
+                    .exec()
+                    .await
+                    .to_result()
+            }
             // AuthorizedRoute::TemplateList => {
             //     let svc = TemplateListSvc::new(repos.clone(), ctx);
             //     let result = svc.exec();

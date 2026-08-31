@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use crate::application::ports::{
     clients::{container::HasModelStorage, storage::StorageClient},
     usecase::UsecaseAPI,
@@ -12,14 +10,14 @@ use dto::resources::{
 use pkg::macros::trait_clients;
 
 trait_clients!(IClients, HasModelStorage);
-pub struct GetList<C: IClients> {
-    clients: Rc<C>,
+pub struct GetList<'a, C: IClients> {
+    clients: &'a C,
     payload: resource::GetListPayload,
     // auth: JWT,
 }
 
-impl<C: IClients> GetList<C> {
-    pub fn new(clients: Rc<C>, payload: resource::GetListPayload) -> Self {
+impl<'a, C: IClients> GetList<'a, C> {
+    pub fn new(clients: &'a C, payload: resource::GetListPayload) -> Self {
         Self {
             clients,
             // auth,
@@ -37,7 +35,7 @@ impl<C: IClients> GetList<C> {
     }
 }
 
-impl<C: IClients> UsecaseAPI<ListResponse<StoragePath>> for GetList<C> {
+impl<C: IClients> UsecaseAPI<ListResponse<StoragePath>> for GetList<'_, C> {
     async fn exec(&self) -> Result<ListResponse<StoragePath>, DomainError> {
         let result = self.run().await?;
         Ok(result)
