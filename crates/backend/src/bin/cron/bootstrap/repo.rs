@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use aws_sdk_dynamodb::Client;
+use aws_config::SdkConfig;
 
 use backend::{
     application::ports::repository::container::{HasHotReload, HasTranslation},
@@ -17,11 +17,12 @@ pub struct CronRepos {
 }
 
 impl CronRepos {
-    pub fn rc(client: &Client, stage: Stage) -> Rc<Self> {
-        Rc::new(Self::new(client, stage))
+    pub fn rc(config: &SdkConfig, stage: Stage) -> Rc<Self> {
+        Rc::new(Self::new(config, stage))
     }
 
-    pub fn new(client: &Client, stage: Stage) -> Self {
+    pub fn new(config: &SdkConfig, stage: Stage) -> Self {
+        let client = aws_sdk_dynamodb::Client::new(config);
         Self {
             translation: DDBTranslationRepository::new(
                 client.clone(),

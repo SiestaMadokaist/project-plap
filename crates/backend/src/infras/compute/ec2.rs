@@ -8,7 +8,7 @@ use domain::{
 
 pub struct EC2 {
     region: ComputeRegion,
-    client: Client,
+    _client: Client,
 }
 
 pub struct EC2MultiRegion {
@@ -33,7 +33,10 @@ impl ComputeEngines for EC2MultiRegion {
 
 impl EC2 {
     pub fn new(region: ComputeRegion, client: Client) -> Self {
-        Self { region, client }
+        Self {
+            region,
+            _client: client,
+        }
     }
 }
 

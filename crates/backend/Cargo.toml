@@ -61,3 +61,11 @@ base64 = "0.22"
 rstest = "0.23"
 pretty_assertions = "1"
 mockall = "0.13"
+
+[lints.rust]
+# every rustc/clippy warning is a hard error, everywhere (cargo check/build/clippy,
+# rust-analyzer, CI). priority = -1 so the specific clippy allows below still win.
+warnings = { level = "deny", priority = -1 }
+
+[lints.clippy]
+let_and_return = "allow"

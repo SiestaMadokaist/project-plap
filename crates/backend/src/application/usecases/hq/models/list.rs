@@ -3,10 +3,7 @@ use crate::application::ports::{
     usecase::UsecaseAPI,
 };
 use domain::{errors::DomainError, storage::StoragePath};
-use dto::resources::{
-    list::{ListMeta, ListResponse},
-    models as resource,
-};
+use dto::resources::{list::ListResponse, models as resource};
 use pkg::macros::trait_clients;
 
 trait_clients!(IClients, HasModelStorage);

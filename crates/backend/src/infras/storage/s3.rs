@@ -323,7 +323,7 @@ impl StorageClient for S3Storage {
     }
 
     async fn ls(&self, prefix: &StoragePrefix) -> Result<Vec<StoragePath>, DomainError> {
-        let fullprefix = self.remote_prefix.at(prefix.clone());
+        let fullprefix = self.remote_prefix.at(prefix);
         let result = self
             .client
             .list_objects()

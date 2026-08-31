@@ -25,8 +25,7 @@ check:
 	cargo check -p backend
 
 lint:
-	cargo clippy -p backend --features datatransfer -- -D warnings -A dead_code \
-		-A clippy::let_and_return -A clippy::bool_comparison -A clippy::upper_case_acronyms
+	cargo clippy -p backend --features datatransfer
 
 fix:
 	cargo fix -p backend --allow-dirty --allow-staged --features datatransfer

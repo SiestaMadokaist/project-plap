@@ -18,7 +18,7 @@ pub struct Memo {
  */
 pub struct IdleTerminator<'a, C: AgentClients, R: AgentRepos> {
     clients: &'a C,
-    repos: &'a R,
+    _repos: &'a R,
     last_active: Peek<Timestamp>,
     tolerance: Second,
     interval: Second,
@@ -35,7 +35,7 @@ impl<'a, C: AgentClients, R: AgentRepos> IdleTerminator<'a, C, R> {
     ) -> Self {
         Self {
             clients,
-            repos,
+            _repos: repos,
             last_active: start_at,
             tolerance,
             interval,

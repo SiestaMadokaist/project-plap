@@ -28,9 +28,6 @@ use std::collections::{HashMap, HashSet};
  * # Expression
  * happy, smile, winking.
  * """
- */
-
-/**
  * data structure stored in S3 as file.
  * directly targeted by filename.
  */

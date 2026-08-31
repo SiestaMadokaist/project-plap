@@ -1,5 +1,5 @@
 use domain::{ctx::Context, storyline::StoryId};
-use dto::resources::list::{ListMeta, ListResponse};
+use dto::resources::list::ListResponse;
 use pkg::trait_repos;
 
 use crate::application::ports::{
@@ -7,25 +7,23 @@ use crate::application::ports::{
     usecase::UsecaseAPI,
 };
 
-// trait_clients!(TemplateWriteC)
 trait_repos!(TemplateListRepo, HasStoryTemplate);
-pub struct TemplateListSvc<R: TemplateListRepo> {
-    repos: R,
-    ctx: Context,
+pub struct TemplateListSvc<'a, R: TemplateListRepo> {
+    repos: &'a R,
+    ctx: &'a Context,
 }
 
-impl<R: TemplateListRepo> TemplateListSvc<R> {
-    pub fn new(repos: R, ctx: Context) -> Self {
+impl<'a, R: TemplateListRepo> TemplateListSvc<'a, R> {
+    pub fn new(repos: &'a R, ctx: &'a Context) -> Self {
         Self { repos, ctx }
     }
 }
 
-impl<R: TemplateListRepo> UsecaseAPI<ListResponse<StoryId>> for TemplateListSvc<R> {
+impl<'a, R: TemplateListRepo> UsecaseAPI<ListResponse<StoryId>> for TemplateListSvc<'a, R> {
     async fn exec(&self) -> Result<ListResponse<StoryId>, domain::errors::DomainError> {
         let repo = self.repos.story_template();
         let auth = self.ctx.auth();
         let stories = repo.list(&auth.username).await?;
-        let meta = ListMeta::default();
-        Ok(ListResponse::new(stories, meta))
+        Ok(ListResponse::simple(stories))
     }
 }

@@ -60,7 +60,7 @@ impl Progression {
     }
 
     pub fn is_failed(&self) -> bool {
-        self.failed_at.is_none() == false
+        !self.failed_at.is_none()
     }
 
     pub fn is_done(&self) -> bool {
@@ -153,7 +153,7 @@ mod tests {
     fn test_increment() -> std::io::Result<()> {
         let progress = &mut Progression::new(unit::Index0(10), unit::Index0(0));
         progress.increment();
-        assert_eq!(progress.is_done(), false);
+        assert!(!progress.is_done());
         Ok(())
     }
 
@@ -161,7 +161,7 @@ mod tests {
     fn test_done() -> std::io::Result<()> {
         let progress = &mut Progression::new(unit::Index0(1), unit::Index0(0));
         progress.increment();
-        assert_eq!(progress.is_done(), true);
+        assert!(progress.is_done());
         Ok(())
     }
 }

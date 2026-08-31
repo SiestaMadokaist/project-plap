@@ -1,10 +1,10 @@
 use crate::application::ports::repository::translation::TranslationRepository;
+use aws_sdk_dynamodb::{types::AttributeValue, Client};
 use domain::{
     errors::DomainError,
     translation::{ChapterId, NovelId, RawSource, Status, TranslationDomain, TranslationGetter},
 };
 use pkg::types::time::Timestamp;
-use aws_sdk_dynamodb::{types::AttributeValue, Client};
 use serde::{Deserialize, Serialize};
 use serde_dynamo::{from_item, to_item};
 

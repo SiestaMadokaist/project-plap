@@ -35,7 +35,7 @@ trait_repos!(
 );
 pub struct SaveOutput<'a, C: SaveOutputClient, R: SaveOutputRepos> {
     clients: &'a C,
-    repos: &'a R,
+    _repos: &'a R,
     workdir: PathBuf,
     path: PathBuf,
     now: Timestamp,
@@ -52,7 +52,7 @@ impl<'a, C: SaveOutputClient, R: SaveOutputRepos> SaveOutput<'a, C, R> {
     ) -> Self {
         Self {
             clients,
-            repos,
+            _repos: repos,
             workdir,
             path,
             now,

@@ -128,8 +128,8 @@ mod tests {
         let mut inference = HandleInference::new(container.as_ref(), progress, &config);
         let result = inference.exec().await;
         assert!(result.is_started());
-        assert!(result.is_failed() == false);
-        assert!(result.is_done() == false);
+        assert!(!result.is_failed());
+        assert!(!result.is_done());
     }
 
     #[tokio::test]
@@ -142,7 +142,7 @@ mod tests {
         let mut inference = HandleInference::new(container.as_ref(), progress, &config);
         let result = inference.exec().await;
         assert!(result.is_started());
-        assert!(result.is_failed() == false);
+        assert!(!result.is_failed());
         assert!(result.is_done());
     }
 
@@ -156,7 +156,7 @@ mod tests {
         let mut inference = HandleInference::new(container.as_ref(), progress, &config);
         let result = inference.exec().await;
         assert!(result.is_started());
-        assert!(result.is_failed() == false);
+        assert!(!result.is_failed());
         assert!(result.is_done());
     }
 
@@ -173,6 +173,6 @@ mod tests {
         let result = inference.exec().await;
         assert!(result.is_started());
         assert!(result.is_failed());
-        assert!(result.is_done() == false);
+        assert!(!result.is_done());
     }
 }

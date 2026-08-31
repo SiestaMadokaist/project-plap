@@ -38,7 +38,7 @@ pub trait ToResp {
 
 // DTO is guaranteed to be deserializable so unwrap should be safe (?);
 fn to_resp<D: DTO>(d: &D) -> Response<serde_json::Value> {
-    let serialized = serde_json::to_value(&d).map_err(|x| DomainError::Serialize(x.to_string()));
+    let serialized = serde_json::to_value(d).map_err(|x| DomainError::Serialize(x.to_string()));
     let resp: Response<serde_json::Value> = match serialized {
         Ok(v) => Response::Yes(v),
         Err(e) => Response::No(Failure::new(e)),

@@ -57,9 +57,8 @@ async fn main() -> Result<(), Error> {
 
     let env = CronEnv::from_env();
     let config = aws_config::from_env().load().await;
-    let dynamo = aws_sdk_dynamodb::Client::new(&config);
 
-    let repo = CronRepos::rc(&dynamo, env.stage());
+    let repo = CronRepos::rc(&config, env.stage());
     let client = CronClients::rc(env, config);
 
     run(service_fn(move |event| {

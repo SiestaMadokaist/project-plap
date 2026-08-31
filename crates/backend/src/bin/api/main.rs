@@ -6,7 +6,7 @@ use backend::application::{
         usecase::UsecaseAPI,
     },
     routes::{
-        authorized::AuthorizedRoute::{self, TemplateList},
+        authorized::AuthorizedRoute::{self},
         public::PublicRoute::{self},
     },
     usecases::{
@@ -20,7 +20,7 @@ use backend::application::{
     },
 };
 use domain::{ctx, errors::DomainError};
-use dto::response::{Placeholder, ToResp};
+use dto::response::ToResp;
 use lambda_runtime::{run, service_fn, Error, LambdaEvent};
 use matchit::Router;
 
@@ -31,8 +31,7 @@ mod resp;
 
 use bootstrap::{client::ApiClients, repo::ApiRepos};
 use env::ApiEnv;
-use pkg::{auth::claims::JWT, id::TraceId};
-use tracing_subscriber::layer::Context;
+use pkg::auth::claims::JWT;
 
 use crate::{
     req::{ApiEvent, HttpEvent},
@@ -143,11 +142,10 @@ async fn handle_authorized(
                     .await
                     .to_result()
             }
-            // AuthorizedRoute::TemplateList => {
-            //     let svc = TemplateListSvc::new(repos.clone(), ctx);
-            //     let result = svc.exec();
-            // }
-            _ => Err::<Placeholder, DomainError>(DomainError::NotFound).to_result(),
+            AuthorizedRoute::TemplateList => {
+                let svc = TemplateListSvc::new(repos.as_ref(), &ctx);
+                svc.exec().await.to_result()
+            } // _ => Err::<Placeholder, DomainError>(DomainError::NotFound).to_result(),
         },
     };
     resp.and_then(yes)
@@ -163,9 +161,7 @@ async fn main() -> Result<(), Error> {
         return Ok(());
     }
     let config = aws_config::from_env().load().await;
-    let dynamo = aws_sdk_dynamodb::Client::new(&config);
-
-    let repo = ApiRepos::rc(&dynamo, env.stage());
+    let repo = ApiRepos::rc(&env, &config);
     let client = ApiClients::rc(&env, &config);
     let authorized_router = Rc::new(authorized_routes());
     let public_router = Rc::new(public_routes());

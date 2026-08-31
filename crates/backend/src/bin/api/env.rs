@@ -1,4 +1,4 @@
-use domain::storage::StoragePrefix;
+use domain::{commands::compute::ComputeRegion, storage::StoragePrefix};
 use pkg::{
     enums::stage::Stage,
     types::{
@@ -30,6 +30,10 @@ pub struct ApiEnv {
     pub model_region: String,
     pub model_bucket: String,
     pub model_prefix: StoragePrefix,
+
+    pub template_region: ComputeRegion,
+    pub template_bucket: String,
+    pub template_prefix: StoragePrefix,
 }
 
 impl ApiEnv {
@@ -54,6 +58,13 @@ impl ApiEnv {
                     .parse()
                     .expect("AUTH_MIN_IAT must be an integer"),
             ),
+            template_region: env::var("TEMPLATE_REGION")
+                .and_then(ComputeRegion::from_env)
+                .expect("TEMPLATE_REGION must be set"),
+            template_bucket: env::var("TEMPLATE_BUCKET").expect("OUTPUT_BUCKET must be set"),
+            template_prefix: env::var("TEMPLATE_PREFIX")
+                .map(StoragePrefix)
+                .expect("OUTPUT PREFIX must be set"),
 
             output_region: var_or("OUTPUT_REGION", "ap-southeast-1"),
             output_bucket: env::var("OUTPUT_BUCKET").expect("OUTPUT_BUCKET must be set"),

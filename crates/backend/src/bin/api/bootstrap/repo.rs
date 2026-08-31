@@ -1,28 +1,49 @@
 use std::rc::Rc;
 
-use aws_sdk_dynamodb::Client;
+use aws_config::SdkConfig;
 use backend::{
-    application::ports::repository::container::{HasAgentCommand, HasHotReload, HasUser},
+    application::ports::repository::container::{
+        HasAgentCommand, HasHotReload, HasStoryTemplate, HasUser,
+    },
     constant::ddb::DDBTable,
-    infras::repos::dynamo::{
-        agent_command::DDBAgentCommandRepository, hotreload::DDBHotReloadRepository,
-        user::DDBUserRepository,
+    infras::{
+        repos::{
+            dynamo::{
+                agent_command::DDBAgentCommandRepository, hotreload::DDBHotReloadRepository,
+                user::DDBUserRepository,
+            },
+            multi::story::S3StoryRepository,
+        },
+        storage::s3::S3Storage,
     },
 };
-use pkg::enums::stage::Stage;
+
+use crate::env::ApiEnv;
 
 pub struct ApiRepos {
     agent_command: DDBAgentCommandRepository,
     hotreload: DDBHotReloadRepository,
     user: DDBUserRepository,
+    story: S3StoryRepository,
 }
 
 impl ApiRepos {
-    pub fn rc(client: &Client, stage: Stage) -> Rc<Self> {
-        Rc::new(Self::new(client, stage))
+    pub fn rc(env: &ApiEnv, config: &SdkConfig) -> Rc<Self> {
+        Rc::new(Self::new(env, config))
     }
 
-    pub fn new(client: &Client, stage: Stage) -> Self {
+    pub fn new(env: &ApiEnv, config: &SdkConfig) -> Self {
+        let stage = env.stage();
+        let client = aws_sdk_dynamodb::Client::new(config);
+        let storage = S3Storage::new(
+            config.clone(),
+            env.template_region,
+            env.template_bucket.clone(),
+            env.template_prefix.clone(),
+            "tmp/".into(),
+            10 * 1024 * 1024,
+            None,
+        );
         Self {
             agent_command: DDBAgentCommandRepository::new(
                 client.clone(),
@@ -33,6 +54,7 @@ impl ApiRepos {
                 DDBTable::AgentCommands.table_name(stage),
             ),
             user: DDBUserRepository::new(client.clone(), DDBTable::Users.table_name(stage)),
+            story: S3StoryRepository::new(storage),
         }
     }
 }
@@ -55,5 +77,12 @@ impl HasUser for ApiRepos {
     type User = DDBUserRepository;
     fn user(&self) -> &Self::User {
         &self.user
+    }
+}
+
+impl HasStoryTemplate for ApiRepos {
+    type StoryTemplate = S3StoryRepository;
+    fn story_template(&self) -> &Self::StoryTemplate {
+        &self.story
     }
 }

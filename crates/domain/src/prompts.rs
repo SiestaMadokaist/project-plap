@@ -33,5 +33,6 @@ pub struct PromptHistory {
 
 pub struct FuzzySearch {
     // comma separated string,
+    #[allow(dead_code)]
     tags: String,
 }

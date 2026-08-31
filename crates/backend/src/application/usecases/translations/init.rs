@@ -68,7 +68,7 @@ impl<R: TLRepos, C: TLClients> UsecaseAPI<Placeholder> for Init<'_, R, C> {
     async fn exec(&self) -> Result<Placeholder, DomainError> {
         let starting_chapter = self.starting_chapter().await?;
         let repo = self.repo.translation();
-        let init = repo
+        let _init = repo
             .init(
                 &self.params.novel_id,
                 starting_chapter,

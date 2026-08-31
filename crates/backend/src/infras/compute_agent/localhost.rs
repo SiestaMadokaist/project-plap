@@ -2,13 +2,13 @@ use crate::application::ports::clients::compute_agent::ComputeAgent;
 use domain::commands::compute::{ComputeInstanceID, ComputeRegion};
 
 pub struct LocalhostAgent {
-    name: String,
+    _name: String,
 }
 
 impl LocalhostAgent {
     pub fn new() -> Self {
         Self {
-            name: "localhost".into(),
+            _name: "localhost".into(),
         }
     }
 }

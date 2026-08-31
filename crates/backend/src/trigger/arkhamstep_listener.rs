@@ -4,7 +4,7 @@ use crate::application::usecases::agent::traits::AgentRepos;
 use pkg::types::time::{Second, Timestamp};
 
 pub struct ArkhamStepListener<R: AgentRepos> {
-    repos: Rc<R>,
+    _repos: Rc<R>,
     last_active: Rc<Cell<Timestamp>>,
     interval: Second,
 }
@@ -12,7 +12,7 @@ pub struct ArkhamStepListener<R: AgentRepos> {
 impl<R: AgentRepos> ArkhamStepListener<R> {
     pub fn new(repos: Rc<R>, last_active: Rc<Cell<Timestamp>>, interval: Second) -> Self {
         Self {
-            repos,
+            _repos: repos,
             last_active,
             interval,
         }

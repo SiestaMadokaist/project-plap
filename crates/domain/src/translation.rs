@@ -14,8 +14,7 @@ impl ChapterId {
     pub fn until(&self, target: &ChapterId) -> impl Iterator<Item = ChapterId> {
         let start = self.0 + 1;
         let end = target.0;
-        let iter = (start..=end).map(ChapterId);
-        iter
+        (start..=end).map(ChapterId)
     }
 }
 

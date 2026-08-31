@@ -24,6 +24,7 @@ impl DDBAgentCommandRepository {
     }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Clone, Copy)]
 enum GSI {
     StagePriority,
@@ -49,14 +50,13 @@ impl DDBAgentCommandRepository {
 
 impl AgentCommandRepository for DDBAgentCommandRepository {
     async fn delete(&self, id: &ActionId) -> Result<(), AgentCommandError> {
-        let deleted = self
+        let _deleted = self
             .client
             .delete_item()
             .table_name(&self.table)
             .send()
             .await
             .map_err(|x| AgentCommandError::Disconnected(x.to_string()))?;
-
         tracing::debug!("deleted: {}", id);
         Ok(())
     }

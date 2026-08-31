@@ -11,9 +11,21 @@ impl From<&str> for StoragePrefix {
 }
 
 impl StoragePrefix {
-    pub fn at(&self, other: StoragePrefix) -> StoragePrefix {
+    pub fn add(&self, other: &StoragePath) -> StoragePath {
         if other.0.starts_with("/") {
-            other
+            other.clone()
+        } else if other.0.starts_with("./") {
+            let s = format!("{}/{}", self.0, other.0.replacen("./", "", 1));
+            StoragePath(s)
+        } else {
+            let s = format!("{}/{}", self.0, other.0);
+            StoragePath(s)
+        }
+    }
+
+    pub fn at(&self, other: &StoragePrefix) -> StoragePrefix {
+        if other.0.starts_with("/") {
+            other.clone()
         } else if other.0.starts_with("./") {
             let s = format!("{}/{}", self.0, other.0.replacen("./", "", 1));
             StoragePrefix(s)

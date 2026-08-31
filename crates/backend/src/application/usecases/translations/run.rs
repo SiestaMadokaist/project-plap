@@ -1,5 +1,4 @@
 use dto::response::Placeholder;
-use serde::Deserialize;
 use tokio::sync::OnceCell;
 
 use crate::application::{

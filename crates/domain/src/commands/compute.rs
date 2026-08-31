@@ -1,3 +1,5 @@
+use std::env::VarError;
+
 use serde::{Deserialize, Serialize};
 
 use pkg::macros::{displayable, id_type};
@@ -14,6 +16,13 @@ pub enum ComputeRegion {
     AWSUsEast1,
 }
 displayable!(ComputeRegion);
+
+impl ComputeRegion {
+    pub fn from_env(s: String) -> Result<ComputeRegion, VarError> {
+        let invalid_msg = format!("invalid region: {}", s);
+        ComputeRegion::try_from(s.as_str()).map_err(|_| VarError::NotUnicode(invalid_msg.into()))
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, thiserror::Error)]
 pub enum ComputeError {

@@ -31,7 +31,7 @@ pub struct Hex(pub String);
 displayable!(Hex);
 
 impl Hex {
-    pub fn from_bytes(bytes: &[u8]) -> Self {
+    pub fn from_bytes(_bytes: &[u8]) -> Self {
         todo!()
     }
 
