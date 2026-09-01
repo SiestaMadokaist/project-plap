@@ -17,5 +17,9 @@ pub enum AuthorizedRoute {
     TemplateList,
     #[serde(rename = "/story/templates/create")]
     TemplateWrite,
+    #[serde(rename = "/story/templates/delete")]
+    TemplateDelete,
+    #[serde(rename = "/story/templates/read")]
+    TemplateRead,
 }
 displayable!(AuthorizedRoute);

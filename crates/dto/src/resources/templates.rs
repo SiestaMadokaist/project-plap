@@ -13,8 +13,15 @@ json_type!(WriteTemplatePayload);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeleteTemplatePayload(pub StoryId);
+json_type!(DeleteTemplatePayload);
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReadTemplatePayload(pub StoryId);
+json_type!(ReadTemplatePayload);
 
 impl DTO for WriteTemplatePayload {}
 impl DTO for DeleteTemplatePayload {}
+impl DTO for ReadTemplatePayload {}
 impl DTO for StoryId {}
 impl DTO for StoragePath {}
+impl DTO for Storyline {}

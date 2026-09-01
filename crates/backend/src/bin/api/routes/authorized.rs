@@ -5,7 +5,10 @@ use backend::application::{
     routes::authorized::AuthorizedRoute,
     usecases::{
         hq::{commands::cp_model::CPModelSvc, models::list::GetListSvc},
-        template::{list::TemplateListSvc, write::TemplateWriteSvc},
+        template::{
+            delete::TemplateDeleteSvc, list::TemplateListSvc, read::TemplateReadSvc,
+            write::TemplateWriteSvc,
+        },
     },
 };
 use domain::{ctx, errors::DomainError};
@@ -48,6 +51,18 @@ pub fn authorized_routes() -> Router<AuthorizedRoute> {
         )
         .expect(expectation);
     router
+        .insert(
+            AuthorizedRoute::TemplateDelete.to_string(),
+            AuthorizedRoute::TemplateDelete,
+        )
+        .expect(expectation);
+    router
+        .insert(
+            AuthorizedRoute::TemplateRead.to_string(),
+            AuthorizedRoute::TemplateRead,
+        )
+        .expect(expectation);
+    router
 }
 
 pub async fn handle_authorized(
@@ -75,8 +90,16 @@ pub async fn handle_authorized(
                 let svc = TemplateWriteSvc::new(repos.as_ref(), ctx, payload.try_into()?);
                 svc.exec().await.to_result()
             }
+            AuthorizedRoute::TemplateDelete => {
+                let svc = TemplateDeleteSvc::new(repos.as_ref(), ctx, payload.try_into()?);
+                svc.exec().await.to_result()
+            }
             AuthorizedRoute::TemplateList => {
                 let svc = TemplateListSvc::new(repos.as_ref(), ctx);
+                svc.exec().await.to_result()
+            }
+            AuthorizedRoute::TemplateRead => {
+                let svc = TemplateReadSvc::new(repos.as_ref(), ctx, payload.try_into()?);
                 svc.exec().await.to_result()
             }
         },

@@ -39,6 +39,10 @@ pub struct Storyline {
 }
 
 impl Storyline {
+    pub fn id(&self) -> &StoryId {
+        &self.id
+    }
+
     pub fn loras(&self) -> HashSet<StoragePath> {
         let mut hash = HashSet::<StoragePath>::new();
         let inferences = &self.inferences;

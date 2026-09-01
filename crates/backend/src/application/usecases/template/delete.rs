@@ -9,13 +9,13 @@ use crate::application::ports::{
 
 trait_repos!(TemplateListRepo, HasStoryTemplate);
 pub struct TemplateDeleteSvc<'a, R: TemplateListRepo> {
-    repos: R,
+    repos: &'a R,
     ctx: &'a Context,
     payload: DeleteTemplatePayload,
 }
 
 impl<'a, R: TemplateListRepo> TemplateDeleteSvc<'a, R> {
-    pub fn new(repos: R, ctx: &'a Context, payload: DeleteTemplatePayload) -> Self {
+    pub fn new(repos: &'a R, ctx: &'a Context, payload: DeleteTemplatePayload) -> Self {
         Self {
             repos,
             ctx,

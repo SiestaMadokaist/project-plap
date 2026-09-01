@@ -351,6 +351,18 @@ impl StorageClient for S3Storage {
         todo!();
     }
 
+    async fn delete(&self, path: &StoragePath) -> Result<(), DomainError> {
+        self.client
+            .delete_object()
+            .bucket(&self.bucket)
+            .key(self.key(path))
+            .send()
+            .await
+            .map_err(|e| DomainError::Disconnected(e.to_string()))?;
+        tracing::debug!("file deleted at {path}");
+        Ok(())
+    }
+
     async fn write(&self, path: &StoragePath, data: &[u8]) -> Result<(), DomainError> {
         let bytes = ByteStream::from(data.to_vec());
         let mut builder = self

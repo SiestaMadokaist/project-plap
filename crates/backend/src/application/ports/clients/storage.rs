@@ -13,6 +13,7 @@ pub trait StorageClient {
     fn bucket(&self) -> StorageBucket;
     async fn read(&self, path: &StoragePath) -> Result<String, DomainError>;
     async fn write(&self, path: &StoragePath, data: &[u8]) -> Result<(), DomainError>;
+    async fn delete(&self, path: &StoragePath) -> Result<(), DomainError>;
     fn public_url(&self, path: &StoragePath) -> String;
     async fn ls(&self, prefix: &StoragePrefix) -> Result<Vec<StoragePath>, DomainError>;
 
