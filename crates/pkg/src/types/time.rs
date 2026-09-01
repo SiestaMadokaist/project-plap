@@ -1,4 +1,6 @@
-use chrono::{DateTime, Utc};
+use std::time::Duration;
+
+use chrono::{DateTime, TimeDelta, Utc};
 use serde::{Deserialize, Serialize};
 
 /*
@@ -11,82 +13,85 @@ impl TimestampMS {
     pub fn now() -> Self {
         Self(Utc::now().timestamp_millis())
     }
-}
-
-impl TryFrom<TimestampMS> for DateTime<Utc> {
-    type Error = ();
-    fn try_from(value: TimestampMS) -> Result<Self, Self::Error> {
-        DateTime::from_timestamp_millis(value.0).ok_or(())
+    pub fn utc(&self) -> Option<chrono::DateTime<Utc>> {
+        let p = self.0;
+        let sec = p / 1000;
+        let nsec: u32 = (p % 1_000_000) as u32;
+        DateTime::from_timestamp(sec, nsec)
     }
 }
 
 impl From<DateTime<Utc>> for TimestampMS {
-    fn from(ts: DateTime<Utc>) -> Self {
-        Self(ts.timestamp_millis())
+    fn from(value: DateTime<Utc>) -> Self {
+        let ms = value.timestamp_millis();
+        TimestampMS(ms)
     }
 }
 
 /*
- * seconds since epoch
+ * use Timestamp or TimestampMS for data store type
+ * eg: database field, json response, etc.
+ *
+ * use chrono::DateTime<Utc> for data manipulation type
+ * add/compare/abs/diff etc
+ *
+ * Timestamp represent seconds since epoch
+ * TimestampMS represent milliseconds since epoch
  */
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Copy)]
 pub struct Timestamp(pub i64);
 
 impl Timestamp {
     pub fn now() -> Self {
-        Self(Utc::now().timestamp())
+        Self(chrono::Utc::now().timestamp())
     }
 
-    pub fn add(&self, dt: Second) -> Timestamp {
-        Timestamp(self.0 + dt.0)
-    }
-
-    pub fn sub(&self, other: &Timestamp) -> Second {
-        let dt = self.0 - other.0;
-        Second(dt)
+    pub fn utc(&self) -> Option<chrono::DateTime<Utc>> {
+        DateTime::from_timestamp(self.0, 0)
     }
 
     pub fn to_datestring(&self) -> Option<String> {
-        let dt: Result<DateTime<Utc>, _> = (*self).try_into();
-        let ds = dt.ok().map(|t| t.format("%Y-%m-%d").to_string());
-        ds
-    }
-}
-
-impl TryFrom<Timestamp> for DateTime<Utc> {
-    type Error = ();
-    fn try_from(value: Timestamp) -> Result<Self, Self::Error> {
-        DateTime::from_timestamp(value.0, 0).ok_or(())
+        let dt = self.utc()?;
+        let formatted = dt.format("%Y-%m-%d");
+        Some(formatted.to_string())
     }
 }
 
 impl From<DateTime<Utc>> for Timestamp {
-    fn from(ts: DateTime<Utc>) -> Self {
-        Self(ts.timestamp())
+    fn from(value: DateTime<Utc>) -> Self {
+        Timestamp(value.timestamp())
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Second(pub i64);
-
 impl Second {
-    pub fn abs(&self) -> Self {
-        if self.0 < 0 {
-            Self(-self.0)
-        } else {
-            self.clone()
-        }
+    pub fn to_delta(&self) -> TimeDelta {
+        TimeDelta::seconds(self.0)
+    }
+
+    pub fn to_duration(&self) -> Duration {
+        Duration::from_secs(self.0 as u64)
     }
 }
 
-impl From<i64> for Second {
-    fn from(value: i64) -> Self {
-        Second(value)
+pub struct MilliSecond(pub i64);
+impl MilliSecond {
+    pub fn to_delta(&self) -> TimeDelta {
+        TimeDelta::milliseconds(self.0)
     }
 }
 
-impl From<&Second> for core::time::Duration {
-    fn from(value: &Second) -> Self {
-        std::time::Duration::from_secs(value.0 as u64)
+impl From<chrono::TimeDelta> for Second {
+    fn from(value: chrono::TimeDelta) -> Self {
+        let i = value.num_seconds();
+        Self(i)
+    }
+}
+
+impl From<chrono::TimeDelta> for MilliSecond {
+    fn from(value: chrono::TimeDelta) -> Self {
+        let i = value.num_milliseconds();
+        Self(i)
     }
 }

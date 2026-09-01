@@ -15,5 +15,7 @@ pub enum AuthorizedRoute {
     // HQInstanceControl,
     #[serde(rename = "/story/templates")]
     TemplateList,
+    #[serde(rename = "/story/templates/create")]
+    TemplateWrite,
 }
 displayable!(AuthorizedRoute);

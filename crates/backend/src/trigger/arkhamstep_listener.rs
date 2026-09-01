@@ -31,7 +31,7 @@ impl<R: AgentRepos> ArkhamStepListener<R> {
     pub async fn run(&self) -> anyhow::Result<()> {
         loop {
             let interval = &self.interval;
-            tokio::time::sleep(interval.into()).await;
+            tokio::time::sleep(interval.to_duration()).await;
             self.on_interval().await?;
         }
     }

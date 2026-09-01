@@ -9,14 +9,14 @@ use crate::application::ports::{
 
 // trait_clients!(TemplateWriteC)
 trait_repos!(TemplateWriteRepo, HasStoryTemplate);
-pub struct TemplateWrite<'a, R: TemplateWriteRepo> {
+pub struct TemplateWriteSvc<'a, R: TemplateWriteRepo> {
     repos: &'a R,
     ctx: &'a Context,
-    payload: &'a WriteTemplatePayload,
+    payload: WriteTemplatePayload,
 }
 
-impl<'a, R: TemplateWriteRepo> TemplateWrite<'a, R> {
-    pub fn new(repos: &'a R, ctx: &'a Context, payload: &'a WriteTemplatePayload) -> Self {
+impl<'a, R: TemplateWriteRepo> TemplateWriteSvc<'a, R> {
+    pub fn new(repos: &'a R, ctx: &'a Context, payload: WriteTemplatePayload) -> Self {
         Self {
             repos,
             ctx,
@@ -25,7 +25,7 @@ impl<'a, R: TemplateWriteRepo> TemplateWrite<'a, R> {
     }
 }
 
-impl<'a, R: TemplateWriteRepo> UsecaseAPI<Placeholder> for TemplateWrite<'a, R> {
+impl<'a, R: TemplateWriteRepo> UsecaseAPI<Placeholder> for TemplateWriteSvc<'a, R> {
     async fn exec(&self) -> Result<Placeholder, domain::errors::DomainError> {
         let repo = self.repos.story_template();
         let auth = self.ctx.auth();

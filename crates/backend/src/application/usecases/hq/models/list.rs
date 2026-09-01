@@ -7,13 +7,13 @@ use dto::resources::{list::ListResponse, models as resource};
 use pkg::macros::trait_clients;
 
 trait_clients!(IClients, HasModelStorage);
-pub struct GetList<'a, C: IClients> {
+pub struct GetListSvc<'a, C: IClients> {
     clients: &'a C,
     payload: resource::GetListPayload,
     // auth: JWT,
 }
 
-impl<'a, C: IClients> GetList<'a, C> {
+impl<'a, C: IClients> GetListSvc<'a, C> {
     pub fn new(clients: &'a C, payload: resource::GetListPayload) -> Self {
         Self {
             clients,
@@ -32,7 +32,7 @@ impl<'a, C: IClients> GetList<'a, C> {
     }
 }
 
-impl<C: IClients> UsecaseAPI<ListResponse<StoragePath>> for GetList<'_, C> {
+impl<C: IClients> UsecaseAPI<ListResponse<StoragePath>> for GetListSvc<'_, C> {
     async fn exec(&self) -> Result<ListResponse<StoragePath>, DomainError> {
         let result = self.run().await?;
         Ok(result)

@@ -1,3 +1,6 @@
+use std::ops::{Add, Sub};
+
+use chrono::Utc;
 use pkg::{
     auth::{
         claims::JWT,
@@ -23,10 +26,21 @@ json_type!(ReqChallenge);
 
 impl ReqChallenge {
     pub fn new(address: AddressETH, iat: Timestamp, ttl: Second) -> Self {
-        Self {
-            address,
-            iat,
-            exp: iat.add(ttl),
+        match iat.utc() {
+            // if iat is invalid, i guess we just return invalid challenge
+            None => Self {
+                address,
+                iat: Timestamp(1),
+                exp: Timestamp(0),
+            },
+            Some(x) => {
+                let exp = x.add(ttl.to_delta());
+                Self {
+                    address,
+                    iat,
+                    exp: exp.into(),
+                }
+            }
         }
     }
 
@@ -44,15 +58,27 @@ impl ReqChallenge {
 
     pub fn is_valid(
         &self,
-        server_time: &Timestamp,
+        server_time: &chrono::DateTime<Utc>,
         tolerance: &Second,
         max_session_ttl: &Second,
     ) -> bool {
+        let iat = self.iat.utc();
         // client time's drift must be within tolerance from server time
-        let v0 = self.iat.sub(server_time).abs().lt(tolerance);
-        // max exp = iat + MAX_SESSION_TTL
-        let v1 = self.exp.sub(&self.iat).lt(max_session_ttl);
-        v0 && v1
+        let validation1 = match &iat {
+            None => false,
+            Some(x) => x.sub(server_time).abs().lt(&tolerance.to_delta()),
+        };
+        let exp = self.exp.utc();
+        let validation2 = match &exp {
+            None => false,
+            Some(x) => x.gt(server_time),
+        };
+        let validation3 = match (&exp, &iat) {
+            (None, _) => false,
+            (_, None) => false,
+            (Some(e), Some(i)) => e.sub(i).lt(&max_session_ttl.to_delta()),
+        };
+        validation1 && validation2 && validation3
     }
 }
 
@@ -219,6 +245,11 @@ mod tests {
         }
     }
 
+    /// `is_valid` takes wall-clock server time, not a `Timestamp`.
+    fn server_time(secs: i64) -> chrono::DateTime<chrono::Utc> {
+        Timestamp(secs).utc().expect("in-range unix seconds")
+    }
+
     fn req(iat: i64, ttl: i64) -> ReqChallenge {
         ReqChallenge::new(
             AddressETH(IanColeman::account0().address_norm()),
@@ -230,22 +261,22 @@ mod tests {
     #[test]
     fn req_challenge_valid_when_drift_and_ttl_are_in_bounds() {
         let r = req(1_000, 100);
-        assert!(r.is_valid(&Timestamp(1_000), &Second(10), &Second(200)));
-        assert!(r.is_valid(&Timestamp(1_005), &Second(10), &Second(200)));
+        assert!(r.is_valid(&server_time(1_000), &Second(10), &Second(200)));
+        assert!(r.is_valid(&server_time(1_005), &Second(10), &Second(200)));
     }
 
     #[test]
     fn req_challenge_rejects_drift_at_or_past_tolerance() {
         let r = req(1_000, 100);
         // `lt` is strict: drift == tolerance is already out
-        assert!(!r.is_valid(&Timestamp(1_010), &Second(10), &Second(200)));
-        assert!(!r.is_valid(&Timestamp(980), &Second(10), &Second(200)));
+        assert!(!r.is_valid(&server_time(1_010), &Second(10), &Second(200)));
+        assert!(!r.is_valid(&server_time(980), &Second(10), &Second(200)));
     }
 
     #[test]
     fn req_challenge_rejects_session_ttl_at_or_over_max() {
-        assert!(!req(1_000, 200).is_valid(&Timestamp(1_000), &Second(10), &Second(200)));
-        assert!(req(1_000, 199).is_valid(&Timestamp(1_000), &Second(10), &Second(200)));
+        assert!(!req(1_000, 200).is_valid(&server_time(1_000), &Second(10), &Second(200)));
+        assert!(req(1_000, 199).is_valid(&server_time(1_000), &Second(10), &Second(200)));
     }
 
     #[test]

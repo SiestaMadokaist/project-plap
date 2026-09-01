@@ -1,6 +1,8 @@
 use crate::application::{
     ports::repository::agent_command::AgentCommandRepository,
-    usecases::agent::command_handler::{CommandHandler, CommandHandlerClients, CommandHandlerRepos},
+    usecases::agent::command_handler::{
+        CommandHandler, CommandHandlerClients, CommandHandlerRepos,
+    },
 };
 use domain::commands::command::CommandStage;
 use pkg::types::time::Second;
@@ -41,7 +43,7 @@ impl<'a, R: CommandHandlerRepos, C: CommandHandlerClients> CommandQ<'a, R, C> {
     pub async fn run(&self) -> anyhow::Result<()> {
         loop {
             let interval = &self.interval;
-            tokio::time::sleep(interval.into()).await;
+            tokio::time::sleep(interval.to_duration()).await;
             self.on_interval().await?;
         }
     }

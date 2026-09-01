@@ -7,7 +7,7 @@ use pkg::types::{
     peek::Peek,
     time::{Second, Timestamp},
 };
-use std::cell::OnceCell;
+use std::{cell::OnceCell, ops::Sub};
 pub struct Memo {
     action: OnceCell<ComputeCommand>,
 }
@@ -79,14 +79,16 @@ impl<'a, C: AgentClients, R: AgentRepos> IdleTerminator<'a, C, R> {
         let tolerance = &self.tolerance;
         let now = Timestamp::now();
         let last_ok = &self.last_active.get();
-        let delta = now.sub(last_ok);
-        if delta.lt(tolerance) {
-            tracing::trace!("inactive for {} second tolerable", delta.0);
+        let now_utc = now.utc().expect("should be a valid utc");
+        let last_ok_utc = last_ok.utc().expect("should be a valid utc");
+        let delta = now_utc.sub(last_ok_utc);
+        if delta.lt(&tolerance.to_delta()) {
+            tracing::trace!("inactive for {} second tolerable", delta);
             return Ok(());
         }
         tracing::info!(
             "inactive for {} second, beyond tolerance of {} second, terminating",
-            delta.0,
+            delta,
             tolerance.0
         );
         let args = self.compute_args().await?;
@@ -101,7 +103,7 @@ impl<'a, C: AgentClients, R: AgentRepos> IdleTerminator<'a, C, R> {
     pub async fn run(&self) -> anyhow::Result<()> {
         loop {
             let interval = &self.interval;
-            tokio::time::sleep(interval.into()).await;
+            tokio::time::sleep(interval.to_duration()).await;
             self.on_interval().await?;
         }
     }

@@ -118,18 +118,18 @@ mod tests {
     #[test]
     fn test_s32local() -> Result<(), E> {
         let ok = is_s32local(&fixture("network1.json"));
-        assert!(matches!(ok, Ok(_)));
+        assert!(ok.is_ok());
         let not_ok = is_s32local(&fixture("network2.json"));
-        assert!(matches!(not_ok, Err(_)));
+        assert!(not_ok.is_err());
         Ok(())
     }
 
     #[test]
     fn test_civit2local() -> Result<(), E> {
         let not_ok = is_civit2local(&fixture("network1.json"));
-        assert!(matches!(not_ok, Err(_)));
+        assert!(not_ok.is_err());
         let ok = is_civit2local(&fixture("network2.json"));
-        assert!(matches!(ok, Ok(_)));
+        assert!(ok.is_ok());
         Ok(())
     }
 }
