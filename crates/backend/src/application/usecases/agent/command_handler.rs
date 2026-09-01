@@ -9,10 +9,11 @@ use domain::{
     commands::{
         command::{Action, CommandDomain, CommandStage, Progression},
         inference::InferenceArgs,
-        network::NetworkArgs,
     },
     errors::DomainError,
 };
+#[cfg(feature = "datatransfer")]
+use domain::commands::network::NetworkArgs;
 use pkg::macros::{trait_clients, trait_repos};
 
 trait_clients!(

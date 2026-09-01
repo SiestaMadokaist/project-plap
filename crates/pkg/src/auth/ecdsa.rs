@@ -1,18 +1,20 @@
 use k256::ecdsa::{
     signature::hazmat::PrehashVerifier, RecoveryId, Signature, SigningKey, VerifyingKey,
 };
-use serde::{Deserialize, Serialize};
+use serde::{de::Deserializer, Deserialize, Serialize};
 use sha3::{Digest, Keccak256};
 
 use crate::{auth::errors::AuthError, types::strings::Hex};
 
-/// hex-decode, tolerating an optional `0x`/`0X` prefix (which `hex::decode` itself rejects).
+/// strip an optional `0x`/`0X` prefix (`hex::decode` itself rejects one).
+fn strip_0x(s: &str) -> &str {
+    s.strip_prefix("0x")
+        .or_else(|| s.strip_prefix("0X"))
+        .unwrap_or(s)
+}
+
 fn decode_hex(h: &Hex) -> Result<Vec<u8>, AuthError> {
-    let s =
-        h.0.strip_prefix("0x")
-            .or_else(|| h.0.strip_prefix("0X"))
-            .unwrap_or(&h.0);
-    hex::decode(s).map_err(|_| AuthError::Deserialize)
+    hex::decode(strip_0x(&h.0)).map_err(|_| AuthError::Deserialize)
 }
 
 /// keccak256 of the challenge's raw UTF-8 bytes - the prehash every `sign`/`verify`/`recover`
@@ -26,13 +28,27 @@ fn keccak(msg: &Challenge) -> [u8; 32] {
     out
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, PartialOrd, Debug)]
+#[derive(Serialize, Clone, PartialEq, PartialOrd, Debug)]
 pub struct AddressETH(pub String);
 
 impl AddressETH {
     pub fn hex(&self) -> Hex {
         let s = format!("0x{}", self.0);
         Hex(s)
+    }
+}
+
+/// Normalizes on the way in - `0x`/`0X`-prefixed or not, any case - so an in-memory
+/// `AddressETH` is always lowercase with no `0x`, no matter where it came from (a
+/// DynamoDB row, wire JSON, a test fixture). [`AddressETH::hex`] re-adds the `0x` only
+/// where a display/signing context needs it.
+impl<'de> Deserialize<'de> for AddressETH {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let raw = String::deserialize(deserializer)?;
+        Ok(AddressETH(strip_0x(&raw).to_lowercase()))
     }
 }
 
@@ -55,11 +71,17 @@ impl Challenge {
         Self(hex::encode(bytes))
     }
 
-    /// hex-encoding of the challenge string's bytes. Used to fold the challenge into the
-    /// `-`-joined blob that `ServerChallenge` signs, so newlines/dashes in the text can't
-    /// shift field boundaries.
+    /// hex-encoding of the challenge string's bytes - a byte-safe encoding for contexts
+    /// that can't tolerate arbitrary characters (e.g. newlines).
     pub fn hex(&self) -> Hex {
         Hex(hex::encode(self.0.as_bytes()))
+    }
+
+    /// The raw challenge string, unmodified. Safe to embed directly in a larger message
+    /// only where the caller controls its shape - see `ServerChallenge::sign_blob`,
+    /// which relies on `Challenge::random`'s output being a plain hex nonce.
+    pub fn as_str(&self) -> &str {
+        &self.0
     }
 }
 

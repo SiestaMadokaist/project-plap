@@ -1,51 +1,102 @@
-//! Thin bridge to an injected EIP-1193 provider (`window.ethereum`).
+//! Bridge to an injected Ethereum wallet, using **EIP-6963** multi-wallet discovery.
 //!
-//! Only two calls are needed for login: `eth_requestAccounts` to learn the wallet
-//! address, and `personal_sign` to sign the server's challenge. The wallet applies the
-//! EIP-191 frame itself, so we hand it the raw [`ServerChallenge::sign_message`] string
-//! (hex-encoded so it is treated as bytes, not re-interpreted as text).
+//! Reading `window.ethereum` directly breaks when several wallet extensions are
+//! installed - they race to own that property and the losers throw
+//! (`evmAsk.js … selectExtension`). Instead we dispatch `eip6963:requestProvider`,
+//! collect every `eip6963:announceProvider` the extensions answer with, and call
+//! `.request()` on a specific provider (MetaMask if present, otherwise the first
+//! announced, otherwise legacy `window.ethereum`).
+//!
+//! Only two RPCs are needed for login: `eth_requestAccounts` and `personal_sign`.
 
 use js_sys::{Array, Reflect};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(inline_js = r#"
-export function wallet_available() {
-  return typeof window !== 'undefined' && typeof window.ethereum !== 'undefined';
+// { info: {uuid,name,rdns,icon}, provider } for each announced wallet
+let _providers = [];
+// the provider chosen at connect(), reused for later requests
+let _active = null;
+let _armed = false;
+
+function arm() {
+  if (_armed || typeof window === 'undefined') return;
+  _armed = true;
+  window.addEventListener('eip6963:announceProvider', (e) => {
+    const d = e.detail;
+    if (!d || !d.info || !d.provider) return;
+    if (!_providers.some((p) => p.info.uuid === d.info.uuid)) {
+      _providers.push({ info: d.info, provider: d.provider });
+    }
+  });
+  // ask now so the list is usually ready by the time the user clicks
+  window.dispatchEvent(new Event('eip6963:requestProvider'));
 }
-export async function wallet_request(method, params) {
-  if (typeof window === 'undefined' || !window.ethereum) {
-    throw new Error('No injected Ethereum wallet found');
+arm();
+
+function pick(preferred) {
+  if (preferred) {
+    const hit = _providers.find((p) => p.info.rdns === preferred);
+    if (hit) return hit.provider;
   }
-  return await window.ethereum.request({ method, params: params ?? [] });
+  const mm = _providers.find((p) => p.info.rdns === 'io.metamask');
+  if (mm) return mm.provider;
+  if (_providers.length) return _providers[0].provider;
+  if (typeof window !== 'undefined' && window.ethereum) return window.ethereum;
+  return null;
+}
+
+export function wallet_any_available() {
+  arm();
+  return _providers.length > 0 || (typeof window !== 'undefined' && !!window.ethereum);
+}
+
+export async function wallet_connect(preferred) {
+  arm();
+  // re-ask and give late/just-enabled extensions a moment to answer
+  window.dispatchEvent(new Event('eip6963:requestProvider'));
+  await new Promise((r) => setTimeout(r, 300));
+
+  _active = pick(preferred || null);
+  if (!_active) throw new Error('No Ethereum wallet extension detected');
+  return await _active.request({ method: 'eth_requestAccounts', params: [] });
+}
+
+export async function wallet_request(method, params) {
+  if (!_active) throw new Error('wallet is not connected');
+  return await _active.request({ method, params: params ?? [] });
 }
 "#)]
 extern "C" {
-    fn wallet_available() -> bool;
+    fn wallet_any_available() -> bool;
+
+    #[wasm_bindgen(catch)]
+    async fn wallet_connect(preferred: Option<String>) -> Result<JsValue, JsValue>;
 
     #[wasm_bindgen(catch)]
     async fn wallet_request(method: &str, params: JsValue) -> Result<JsValue, JsValue>;
 }
 
-/// Is there an injected `window.ethereum` provider in this page?
+/// Is at least one injected wallet reachable (announced via EIP-6963, or a legacy
+/// `window.ethereum`)?
 pub fn available() -> bool {
-    wallet_available()
+    wallet_any_available()
 }
 
-/// Prompt the wallet to connect and return its primary account, `0x`-prefixed exactly
-/// as the wallet reports it (mixed-case EIP-55 checksum).
+/// Discover wallets, pick one (MetaMask preferred), prompt it to connect, and return
+/// its primary account `0x`-prefixed exactly as the wallet reports it. The chosen
+/// provider is remembered for [`personal_sign`].
 pub async fn connect() -> Result<String, String> {
-    let raw = wallet_request("eth_requestAccounts", JsValue::NULL)
-        .await
-        .map_err(describe)?;
-    Array::from(&raw)
+    let accounts = wallet_connect(None).await.map_err(describe)?;
+    Array::from(&accounts)
         .get(0)
         .as_string()
         .filter(|s| !s.is_empty())
         .ok_or_else(|| "wallet returned no account".to_string())
 }
 
-/// `personal_sign` `message` with `address`. Returns the 65-byte `r || s || v`
-/// signature as `0x…` hex.
+/// `personal_sign` `message` with `address` on the provider chosen by [`connect`].
+/// Returns the 65-byte `r || s || v` signature as `0x…` hex.
 pub async fn personal_sign(message: &str, address: &str) -> Result<String, String> {
     let msg_hex = format!("0x{}", hex::encode(message.as_bytes()));
     let params = Array::of2(&JsValue::from_str(&msg_hex), &JsValue::from_str(address));

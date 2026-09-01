@@ -136,20 +136,42 @@ impl ServerChallenge {
             .unwrap_or(false)
     }
 
+    /// What the wallet is actually asked to sign. Deliberately readable (unlike a
+    /// `-`-joined blob of raw fields) so a user has something to sanity-check before
+    /// approving; still fully binding on the exact `iat`/`exp` seconds (via lossless
+    /// second-precision ISO-8601, not just a date) so tampering after the server's
+    /// `server_sign` still fails `verify_issued_by`.
     fn sign_blob(address: &AddressETH, iat: Timestamp, exp: Timestamp, code: &Challenge) -> String {
-        format!("{}-{}-{}-{}", address.hex(), iat.0, exp.0, code.hex())
+        format!(
+            "Sign in to Project-Plap\n\nAddress: {}\nNonce: {}\nIssued At: {}\nExpires At: {}",
+            address.hex(),
+            code.as_str(),
+            Self::fmt_time(iat),
+            Self::fmt_time(exp),
+        )
+    }
+
+    /// Second-precision ISO-8601 rendering of a `Timestamp`, chosen because it's
+    /// lossless against `Timestamp`'s own precision (no two distinct seconds render the
+    /// same). Falls back to the raw integer on the unreachable out-of-range case rather
+    /// than risk collapsing two different instants to one string.
+    fn fmt_time(t: Timestamp) -> String {
+        match t.utc() {
+            Some(dt) => dt.format("%Y-%m-%dT%H:%M:%SZ").to_string(),
+            None => t.0.to_string(),
+        }
     }
 
     fn to_sign(&self) -> String {
         Self::sign_blob(&self.address, self.iat, self.exp, &self.code)
     }
 
-    /// The raw, *unframed* message the client's wallet signs: the `-`-joined
-    /// `address-iat-exp-codehex` blob. A wallet's `personal_sign` applies the EIP-191
-    /// frame itself, so the frontend hands this string straight to the wallet - it must
-    /// not pre-frame it. Server-side, [`Self::metamask_msg`] is exactly the EIP-191
-    /// framing of this same string (see the `metamask_msg_is_eip191_of_sign_message`
-    /// test), which is what `recover`/`verify` operate on.
+    /// The raw, *unframed* message the client's wallet signs (see [`Self::sign_blob`]
+    /// for its shape). A wallet's `personal_sign` applies the EIP-191 frame itself, so
+    /// the frontend hands this string straight to the wallet - it must not pre-frame
+    /// it. Server-side, [`Self::metamask_msg`] is exactly the EIP-191 framing of this
+    /// same string (see the `metamask_msg_is_eip191_of_sign_message` test), which is
+    /// what `recover`/`verify` operate on.
     pub fn sign_message(&self) -> String {
         self.to_sign()
     }

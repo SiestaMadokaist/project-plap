@@ -1,5 +1,6 @@
 #[cfg(feature = "datatransfer")]
 use std::path::PathBuf;
+#[cfg(feature = "datatransfer")]
 use std::{cell::OnceCell, path::Path, process::Stdio};
 
 use aws_config::SdkConfig;
@@ -8,6 +9,7 @@ use aws_sdk_s3::{
     types::ObjectCannedAcl::{self},
     Client,
 };
+#[cfg(feature = "datatransfer")]
 use tokio::process::Command;
 
 use crate::application::ports::clients::storage::StorageClient;
@@ -21,6 +23,7 @@ pub struct S3Storage {
     client: Client,
     region: ComputeRegion,
     bucket: String,
+    #[cfg(feature = "datatransfer")]
     bucket_region: OnceCell<String>,
     // set none if bucket doesnt allow acl
     acl: Option<ObjectCannedAcl>,
@@ -40,7 +43,10 @@ pub struct S3Storage {
      * "/" + <remote_path> => "s3://<bucket>//remote_path/to/target/file" <- double "//" after <bucket>
      */
     remote_prefix: StoragePrefix,
+    // read only through the `datatransfer` cp helpers (`abs_path` / `assert_within_limit`)
+    #[cfg_attr(not(feature = "datatransfer"), allow(dead_code))]
     local_workdir: StoragePrefix,
+    #[cfg_attr(not(feature = "datatransfer"), allow(dead_code))]
     max_size: i64, // in bytes (e.g: 50 GB) => (50 * 1024 * 1024 * 1024);
 }
 
@@ -63,6 +69,7 @@ impl S3Storage {
             client,
             region,
             bucket,
+            #[cfg(feature = "datatransfer")]
             bucket_region: OnceCell::new(),
             remote_prefix,
             local_workdir,
@@ -71,6 +78,7 @@ impl S3Storage {
         }
     }
 
+    #[cfg(feature = "datatransfer")]
     async fn bucket_region(&self) -> Result<ComputeRegion, DomainError> {
         if let Some(region) = self.bucket_region.get() {
             return ComputeRegion::try_from(region.as_str())
@@ -103,6 +111,7 @@ impl S3Storage {
         Ok(computed)
     }
 
+    #[cfg(feature = "datatransfer")]
     async fn is_same_region(&self) -> Result<bool, DomainError> {
         let bucket_region = self.bucket_region().await?;
         Ok(bucket_region == self.region)
@@ -112,6 +121,7 @@ impl S3Storage {
         format!("{}{}", self.remote_prefix, path.0)
     }
 
+    #[cfg(feature = "datatransfer")]
     fn assert_within_limit(&self, size: i64) -> Result<(), DomainError> {
         if size > self.max_size {
             return Err(DomainError::TransferTooLarge {
@@ -124,6 +134,7 @@ impl S3Storage {
 
     // sums the size of every object under `key` and reports whether it's a
     // single exact-match object (plain `cp`) or a prefix (`cp --recursive`).
+    #[cfg(feature = "datatransfer")]
     async fn remote_extent(&self, key: &str) -> Result<(i64, bool), DomainError> {
         let mut total: i64 = 0;
         let mut count: u32 = 0;
@@ -171,6 +182,7 @@ impl S3Storage {
         Ok((total, !(count == 1 && exact_match)))
     }
 
+    #[cfg(feature = "datatransfer")]
     fn local_size(path: &Path) -> std::io::Result<i64> {
         let meta = std::fs::metadata(path)?;
         if meta.is_dir() {
@@ -188,6 +200,7 @@ impl S3Storage {
      * using spawn aws s3 cp because it is much more faster than buffer streaming.
      * because aws s3 cp is performing the task in multiple connection.
      */
+    #[cfg(feature = "datatransfer")]
     async fn spawn_cp(&self, args: &Vec<String>) -> Result<(), DomainError> {
         let mut cmd = Command::new("aws");
         cmd.args(args);
