@@ -9,10 +9,16 @@ dto = { path = "../dto" }
 pkg = { path = "../pkg" }
 leptos = { version = "0.7", features = ["csr"] }
 gloo-net = "0.6"
+gloo-storage = "0.3"
 wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+hex = "0.4"
 console_error_panic_hook = "0.1"
 serde = { version = "1", features = ["derive"] }
-# transitively required by pkg -> k256's rand dependency to target wasm32 in the browser
-# (two getrandom majors are in the dependency graph, each needs its own wasm feature enabled)
+# pkg -> k256 / rand pull three getrandom majors into the wasm build; each needs its
+# browser backend turned on. 0.2 uses the `js` feature; 0.3 and 0.4 use the
+# `getrandom_backend="wasm_js"` cfg set in ../../.cargo/config.toml (feature kept too).
 getrandom = { version = "0.2", features = ["js"] }
+getrandom3 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }
 getrandom4 = { package = "getrandom", version = "0.4", features = ["wasm_js"] }

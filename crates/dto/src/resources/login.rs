@@ -144,11 +144,21 @@ impl ServerChallenge {
         Self::sign_blob(&self.address, self.iat, self.exp, &self.code)
     }
 
-    /// EIP-191 personal-sign framing: what a wallet's personal_sign/eth_sign actually hashes
-    /// and signs, not the raw `msg()`. Signing/verification must both go through this, or a
-    /// correctly-produced signature will silently fail to verify.
+    /// The raw, *unframed* message the client's wallet signs: the `-`-joined
+    /// `address-iat-exp-codehex` blob. A wallet's `personal_sign` applies the EIP-191
+    /// frame itself, so the frontend hands this string straight to the wallet - it must
+    /// not pre-frame it. Server-side, [`Self::metamask_msg`] is exactly the EIP-191
+    /// framing of this same string (see the `metamask_msg_is_eip191_of_sign_message`
+    /// test), which is what `recover`/`verify` operate on.
+    pub fn sign_message(&self) -> String {
+        self.to_sign()
+    }
+
+    /// EIP-191 personal-sign framing of [`Self::sign_message`]: what a wallet's
+    /// personal_sign/eth_sign actually hashes and signs. Used server-side for recovery
+    /// and verification; the client never builds this itself (its wallet does).
     pub fn metamask_msg(&self) -> Challenge {
-        let msg = self.to_sign();
+        let msg = self.sign_message();
         let s = format!("\x19Ethereum Signed Message:\n{}{}", msg.len(), msg);
         Challenge::new(s)
     }
@@ -280,13 +290,28 @@ mod tests {
     }
 
     #[test]
+    fn metamask_msg_is_eip191_of_sign_message() {
+        let sc = server_challenge(&IanColeman::account0(), 1_000);
+
+        // the invariant the frontend relies on: `metamask_msg` is precisely the EIP-191
+        // frame around the public `sign_message`, so a wallet signing `sign_message`
+        // (which frames it once) matches what the server recovers from `metamask_msg`.
+        let framed = String::from_utf8(sc.metamask_msg().hex().to_bytes().unwrap()).unwrap();
+        let body = sc.sign_message();
+        assert_eq!(
+            framed,
+            format!("\x19Ethereum Signed Message:\n{}{}", body.len(), body)
+        );
+    }
+
+    #[test]
     fn metamask_msg_is_eip191_framed_and_field_sensitive() {
         let acc = IanColeman::account0();
         let sc = server_challenge(&acc, 1_000);
 
         // pre-image = "\x19Ethereum Signed Message:\n" + body-byte-len + body
         let framed = String::from_utf8(sc.metamask_msg().hex().to_bytes().unwrap()).unwrap();
-        let body = sc.to_sign();
+        let body = sc.sign_message();
         assert_eq!(
             framed,
             format!("\x19Ethereum Signed Message:\n{}{}", body.len(), body)
