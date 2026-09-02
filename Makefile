@@ -6,9 +6,10 @@ S3_BIN_BUCKET := s3://secure-storage-ramadoka/bin
 
 TF_VARS := -var="stage=$(STAGE)"
 
-# Pulled from terraform outputs (empty until the frontend stack is applied).
+# Pulled from terraform outputs (empty until the stack is applied).
 FRONTEND_BUCKET          = $(shell cd terraform && terraform output -raw frontend_bucket 2>/dev/null)
 FRONTEND_DISTRIBUTION_ID = $(shell cd terraform && terraform output -raw frontend_distribution_id 2>/dev/null)
+API_URL                  = $(shell cd terraform && terraform output -raw api_url 2>/dev/null)
 
 .PHONY: all verify check lint fmt test typos build package plan deploy run \
         invoke-api invoke-ws invoke-cron tf-init clean deploy-bin \
@@ -91,12 +92,16 @@ deploy-bin:
 frontend-serve:
 	cd crates/frontend && trunk serve
 
+# PLAP_API_BASE is baked into the wasm at build time (see crates/frontend/src/lib.rs).
+# Injected from terraform's api_url output when available; otherwise the bundle
+# targets the local `cargo lambda watch`.
 frontend-build:
-	cd crates/frontend && trunk build --release
+	cd crates/frontend && $(if $(strip $(API_URL)),PLAP_API_BASE="$(API_URL)" )trunk build --release
 
 # Upload dist/ to S3 and bust the CloudFront cache.
 # Hashed JS/WASM get a 1-year immutable cache; index.html is never cached.
 frontend-deploy: frontend-build
+	@test -n "$(strip $(API_URL))" || { echo "no api_url output — the bundle would target localhost; 'cd terraform && terraform apply $(TF_VARS)' first"; exit 1; }
 	@test -n "$(FRONTEND_BUCKET)" || { echo "no frontend_bucket output — run 'make tf-init && cd terraform && terraform apply $(TF_VARS)' first"; exit 1; }
 	aws s3 sync crates/frontend/dist/ s3://$(FRONTEND_BUCKET)/ --delete \
 		--exclude ".stage/*" --exclude "index.html" \

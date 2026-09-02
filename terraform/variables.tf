@@ -32,6 +32,11 @@ variable "frontend_domain" {
   default     = "plap.ramadoka.com"
 }
 
+variable "api_domain" {
+  description = "Custom domain for the HTTP API"
+  default     = "plap-api.ramadoka.com"
+}
+
 variable "frontend_bucket_name" {
   description = "S3 bucket for frontend assets (no dots — CloudFront OAC dislikes dotted bucket names)"
   default     = "plap-frontend-production"
