@@ -44,7 +44,7 @@ impl TryFrom<&str> for ComputeRegion {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ComputeArgs {
     pub instance_id: ComputeInstanceID,
     pub command: ComputeCommand,

@@ -47,9 +47,19 @@ pub enum ModelDst {
 pub struct NetworkArgs {
     pub src: ModelSrc,
     pub dst: ModelDst,
-    // prevent from being constructible aside from json deserialize
+    // keep construction funnelled through `new` / deserialize
     #[serde(skip)]
     _marker: std::marker::PhantomData<()>,
+}
+
+impl NetworkArgs {
+    pub fn new(src: ModelSrc, dst: ModelDst) -> Self {
+        Self {
+            src,
+            dst,
+            _marker: std::marker::PhantomData,
+        }
+    }
 }
 
 #[cfg(test)]

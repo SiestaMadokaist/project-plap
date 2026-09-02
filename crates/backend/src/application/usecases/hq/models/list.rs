@@ -26,7 +26,10 @@ impl<'a, C: IClients> GetListSvc<'a, C> {
         let payload = &self.payload;
         let storage = self.clients.model_storage();
         let tree = storage.ls(&payload.prefix, payload.recursive).await?;
-        Ok(resource::GetListResponse(tree))
+        Ok(resource::GetListResponse {
+            bucket: storage.bucket(),
+            tree,
+        })
     }
 }
 
