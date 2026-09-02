@@ -91,7 +91,7 @@ where
     Ok(expire.unwrap_or_else(default_expire))
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CommandDomain {
     #[serde(default = "default_expire", deserialize_with = "deserialize_expire")]
     expire_at: Timestamp,
@@ -140,7 +140,7 @@ impl CommandDomain {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "action", content = "data", rename_all = "lowercase")]
 pub enum Action {
     Inference(InferenceArgs),

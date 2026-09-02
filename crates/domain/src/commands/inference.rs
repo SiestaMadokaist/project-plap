@@ -64,7 +64,7 @@ where
     Ok(n_iter)
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct InferenceArgs {
     pub config: InferenceConfig<String>,
 }

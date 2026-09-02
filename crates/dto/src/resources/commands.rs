@@ -15,7 +15,7 @@ json_type!(GetListPayload);
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GetListResponse {
-    pub commands: Rc<Vec<CommandDomain>>,
+    pub commands: Vec<CommandDomain>,
 }
 json_type!(GetListResponse);
 impl DTO for GetListResponse {}

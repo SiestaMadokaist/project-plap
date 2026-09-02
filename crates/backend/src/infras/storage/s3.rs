@@ -427,14 +427,23 @@ impl From<ObjectVersion> for ItemVersion {
 
 #[cfg(test)]
 mod tests {
+    // use std::str::FromStr;
+
+    // use aws_sdk_s3::types::ObjectCannedAcl::PublicRead;
+
+    #[cfg(feature = "datatransfer")]
     use std::str::FromStr;
 
+    #[cfg(feature = "datatransfer")]
     use aws_sdk_s3::types::ObjectCannedAcl::PublicRead;
 
+    #[cfg(feature = "datatransfer")]
     use super::*;
     #[test]
     #[cfg(feature = "datatransfer")]
     fn test_download_args() -> Result<(), DomainError> {
+        use std::str::FromStr;
+
         let config = SdkConfig::builder()
             .behavior_version(aws_config::BehaviorVersion::latest())
             .build();
