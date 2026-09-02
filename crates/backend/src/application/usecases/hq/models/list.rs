@@ -22,17 +22,16 @@ impl<'a, C: IClients> GetListSvc<'a, C> {
         }
     }
 
-    async fn run(&self) -> Result<ListResponse<StoragePath>, DomainError> {
+    async fn run(&self) -> Result<resource::GetListResponse, DomainError> {
         // let valid = self.auth
         let storage = self.clients.model_storage();
         let paths = storage.ls(&self.payload.prefix).await?;
-        // let resp = resource::GetListResponse { paths };
         let resp = ListResponse::simple(paths);
         Ok(resp)
     }
 }
 
-impl<C: IClients> UsecaseAPI<ListResponse<StoragePath>> for GetListSvc<'_, C> {
+impl<C: IClients> UsecaseAPI<resource::GetListResponse> for GetListSvc<'_, C> {
     async fn exec(&self) -> Result<ListResponse<StoragePath>, DomainError> {
         let result = self.run().await?;
         Ok(result)

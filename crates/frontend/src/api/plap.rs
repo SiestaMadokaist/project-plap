@@ -1,5 +1,8 @@
-use domain::{errors::DomainError, storage::StoragePrefix};
-use dto::response::Response;
+use domain::{
+    errors::DomainError,
+    storage::{StoragePath, StoragePrefix},
+};
+use dto::{resources::list::ListResponse, response::Response};
 use gloo_net::http::Request;
 use pkg::{auth::claims::JWT, types::strings::URL};
 
@@ -16,28 +19,26 @@ impl PlapApi {
     pub async fn list_models(
         &self,
         prefix: StoragePrefix,
-    ) -> Result<dto::resources::models::GetListResponse, DomainError> {
+    ) -> Result<ListResponse<StoragePath>, DomainError> {
         let payload = dto::resources::models::GetListPayload { prefix };
         let url = self.host.e("/models/list");
         let builder = Request::post(&url.0)
             .json(&payload)
             .map_err(|x| DomainError::Serialize(x.to_string()))?;
-        let resp = self
-            .send::<dto::resources::models::GetListResponse>(builder)
-            .await
-            .map_err(|x| DomainError::HttpConnectionFailed(x.to_string()))?;
-        Ok(resp)
+        let resp = self.send::<ListResponse<StoragePath>>(builder).await?;
+        resp.get()
     }
 
-    async fn send<D: dto::response::DTO>(&self, req: Request) -> Result<D, DomainError> {
+    async fn send<D: dto::response::DTO>(&self, req: Request) -> Result<Response<D>, DomainError> {
         req.headers().set("Authorization", &self.auth.0);
-        let resp: Result<Response<D>, DomainError> = req
+        let resp: Response<D> = req
             .send()
             .await
             .map_err(|x| DomainError::HttpConnectionFailed(x.to_string()))?
             .json()
             .await
             .map_err(|x| DomainError::Serialize(x.to_string()))?;
-        resp.and_then(|x| x.get())
+        Ok(resp)
+        // resp.and_then(|x| x.get())
     }
 }

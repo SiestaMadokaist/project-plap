@@ -2,17 +2,13 @@ use domain::storage::{StoragePath, StoragePrefix};
 use pkg::json_type;
 use serde::{Deserialize, Serialize};
 
-use crate::response::DTO;
-
+use crate::{resources::list::ListResponse, response::DTO};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetListPayload {
     pub prefix: StoragePrefix,
 }
 json_type!(GetListPayload);
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct GetListResponse {
-    pub paths: Vec<StoragePath>,
-}
+pub type GetListResponse = ListResponse<StoragePath>;
 json_type!(GetListResponse);
 impl DTO for GetListResponse {}

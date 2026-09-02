@@ -4,16 +4,17 @@ use crate::response::DTO;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct ListMeta {
-    page: u32,
-    from: u32,
-    to: u32,
-    total: u32,
+    pub page: u32,
+    pub from: u32,
+    pub to: u32,
+    pub total: u32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ListResponse<T> {
-    data: Vec<T>,
-    meta: ListMeta,
+    pub list: Vec<T>,
+    #[serde(flatten)]
+    pub meta: ListMeta,
 }
 
 impl<T: DTO> ListResponse<T> {
@@ -21,9 +22,7 @@ impl<T: DTO> ListResponse<T> {
         Self::new(data, ListMeta::default())
     }
 
-    pub fn new(data: Vec<T>, meta: ListMeta) -> Self {
-        Self { data, meta }
+    pub fn new(list: Vec<T>, meta: ListMeta) -> Self {
+        Self { list, meta }
     }
 }
-
-impl<T: DTO> DTO for ListResponse<T> {}

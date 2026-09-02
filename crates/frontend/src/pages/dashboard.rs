@@ -59,7 +59,7 @@ pub fn Dashboard(jwt: JWT, set_session: WriteSignal<Option<JWT>>) -> impl IntoVi
                 <Suspense fallback=|| view! { <p class="muted">"Loading models…"</p> }>
                     {move || Suspend::new(async move {
                         match models.await {
-                            Ok(resp) => view! { <ModelList paths=resp.paths /> }.into_any(),
+                            Ok(resp) => view! { <ModelList paths=resp.list /> }.into_any(),
                             Err(DomainError::NotAllowed(_)) => {
                                 // session is no longer valid - drop it and let <App>
                                 // fall back to <Login> on the next frame.

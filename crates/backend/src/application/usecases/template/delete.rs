@@ -1,5 +1,8 @@
-use domain::{ctx::Context, storyline::StoryId};
-use dto::resources::{list::ListResponse, templates::DeleteTemplatePayload};
+use domain::ctx::Context;
+use dto::resources::{
+    list::ListResponse,
+    templates::{DeleteTemplatePayload, ListStoryTemplate},
+};
 use pkg::trait_repos;
 
 use crate::application::ports::{
@@ -24,8 +27,8 @@ impl<'a, R: TemplateListRepo> TemplateDeleteSvc<'a, R> {
     }
 }
 
-impl<'a, R: TemplateListRepo> UsecaseAPI<ListResponse<StoryId>> for TemplateDeleteSvc<'a, R> {
-    async fn exec(&self) -> Result<ListResponse<StoryId>, domain::errors::DomainError> {
+impl<'a, R: TemplateListRepo> UsecaseAPI<ListStoryTemplate> for TemplateDeleteSvc<'a, R> {
+    async fn exec(&self) -> Result<ListStoryTemplate, domain::errors::DomainError> {
         let repo = self.repos.story_template();
         let auth = self.ctx.auth();
         let username = &auth.username;
