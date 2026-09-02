@@ -9,7 +9,7 @@ use domain::{
     storage::{StorageBucket, StoragePath, StoragePrefix},
 };
 use dto::{
-    resources::{commands::CpPayload, models},
+    resources::{commands::CpModelPayload, models},
     response::Response,
 };
 use gloo_net::http::Request;
@@ -58,7 +58,7 @@ impl PlapApi {
         };
 
         let now = js_sys::Date::now();
-        let payload = CpPayload {
+        let payload = CpModelPayload {
             action_id: ActionId(format!("{}", now as i64)),
             priority: now as u64,
             args: NetworkArgs::new(
@@ -75,7 +75,7 @@ impl PlapApi {
             .json(&payload)
             .map_err(|x| DomainError::Serialize(x.to_string()))?;
         let resp = self
-            .send::<dto::resources::commands::CpResponse>(builder)
+            .send::<dto::resources::commands::CpModelResponse>(builder)
             .await?
             .get()?;
         Ok(resp.command)

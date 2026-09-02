@@ -261,16 +261,28 @@ body {
   overflow: hidden;
 }
 
-.panel-title {
-  margin: 0;
-  padding: 12px 16px;
+.panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 14px 16px;
   background: var(--surface-2);
   border-bottom: 1px solid var(--border);
+}
+
+.panel-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.panel-prefix {
   font-family: "SFMono-Regular", ui-monospace, "JetBrains Mono", Menlo, Consolas,
     monospace;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-dim);
+  font-size: 11px;
+  color: var(--text-mute);
 }
 
 .panel-note {
@@ -292,33 +304,66 @@ body {
 .item-list {
   list-style: none;
   margin: 0;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-height: 60vh;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  max-height: 62vh;
   overflow-y: auto;
 }
 
 .item {
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid transparent;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 72px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
   background: var(--surface-2);
-  font-family: "SFMono-Regular", ui-monospace, "JetBrains Mono", Menlo, Consolas,
-    monospace;
-  font-size: 12px;
   color: var(--text-dim);
-  word-break: break-all;
   cursor: pointer;
   transition:
     border-color 0.12s ease,
-    color 0.12s ease;
+    background 0.12s ease,
+    color 0.12s ease,
+    transform 0.12s ease;
 }
 
 .item:hover {
   border-color: var(--accent);
+  background: rgba(109, 139, 255, 0.08);
   color: var(--text);
+}
+
+.item:active {
+  transform: translateY(1px);
+}
+
+.item-name {
+  font-family: "SFMono-Regular", ui-monospace, "JetBrains Mono", Menlo, Consolas,
+    monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tag {
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-family: "SFMono-Regular", ui-monospace, "JetBrains Mono", Menlo, Consolas,
+    monospace;
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  color: var(--text-mute);
 }
 
 @media (prefers-reduced-motion: reduce) {

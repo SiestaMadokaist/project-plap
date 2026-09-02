@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use domain::{
     errors::DomainError,
     storage::{StoragePath, StoragePrefix},
@@ -13,12 +15,56 @@ use crate::{api::plap::PlapApi, session, API_BASE};
 const DIFFUSION_MODELS: &str = "comfyui/diffusion_models/";
 const LORAS: &str = "comfyui/loras/";
 
-/// A flat, recursive listing of everything under `prefix`. Clicking a row queues a
-/// copy of that object to `models/<rest>` via `/agents/command/cp`. Reused for both
-/// columns.
+/// One clickable entry: every object that shares a path once the extension is
+/// stripped (e.g. `…/render_studio-v2.0.{safetensors,jpg,json}`).
+struct Group {
+    /// stem relative to the panel prefix, e.g. `3188571/render_studio-v2.0`
+    name: String,
+    /// formats present, in listing order
+    exts: Vec<String>,
+    /// full s3 keys — one cp command is queued per key on click
+    keys: Vec<String>,
+}
+
+/// Collapse a flat key listing into per-stem groups.
+fn collapse(prefix: &str, paths: Vec<StoragePath>) -> Vec<Group> {
+    let mut order: Vec<String> = Vec::new();
+    let mut groups: HashMap<String, Group> = HashMap::new();
+
+    for p in paths {
+        let key = p.0;
+        let (stem, ext) = match key.rsplit_once('.') {
+            Some((s, e)) => (s.to_string(), Some(e.to_string())),
+            None => (key.clone(), None),
+        };
+
+        let group = groups.entry(stem.clone()).or_insert_with(|| {
+            order.push(stem.clone());
+            Group {
+                name: stem.strip_prefix(prefix).unwrap_or(&stem).to_string(),
+                exts: Vec::new(),
+                keys: Vec::new(),
+            }
+        });
+        if let Some(e) = ext {
+            if !group.exts.contains(&e) {
+                group.exts.push(e);
+            }
+        }
+        group.keys.push(key);
+    }
+
+    order.sort();
+    order.into_iter().filter_map(|s| groups.remove(&s)).collect()
+}
+
+/// A flat, recursive listing of everything under `prefix`, collapsed by stem.
+/// Clicking an entry queues a `comfyui/… -> models/…` copy for every file in it.
+/// Reused for both columns — only `title` / `prefix` differ.
 #[component]
 fn ModelList(
     api: PlapApi,
+    title: &'static str,
     prefix: &'static str,
     set_session: WriteSignal<Option<JWT>>,
 ) -> impl IntoView {
@@ -34,7 +80,10 @@ fn ModelList(
 
     view! {
         <section class="panel">
-            <h2 class="panel-title">{prefix}</h2>
+            <header class="panel-head">
+                <h2 class="panel-title">{title}</h2>
+                <span class="panel-prefix">{prefix}</span>
+            </header>
 
             {move || {
                 let s = status.get();
@@ -52,46 +101,73 @@ fn ModelList(
                             match items.await {
                                 Ok(resp) => {
                                     let bucket = resp.bucket;
-                                    let paths = resp.tree.paths;
-                                    if paths.is_empty() {
+                                    let groups = collapse(prefix, resp.tree.paths);
+                                    if groups.is_empty() {
                                         return view! {
                                             <p class="muted panel-note">"Nothing here."</p>
                                         }
                                             .into_any();
                                     }
-                                    let rows = paths
+                                    let rows = groups
                                         .into_iter()
-                                        .map(|p| {
+                                        .map(|g| {
                                             let api = api.clone();
                                             let bucket = bucket.clone();
-                                            let key = p.0;
-                                            let name = key
-                                                .strip_prefix(prefix)
-                                                .unwrap_or(&key)
-                                                .to_string();
+                                            let Group { name, exts, keys } = g;
+                                            let label = name.clone();
+                                            let n = keys.len();
                                             let on_click = move |_| {
                                                 let api = api.clone();
                                                 let bucket = bucket.clone();
-                                                let key = key.clone();
-                                                set_status.set(format!("Queuing {key}…"));
+                                                let keys = keys.clone();
+                                                let label = label.clone();
+                                                set_status
+                                                    .set(format!("Queuing {label} ({n})…"));
                                                 spawn_local(async move {
-                                                    let msg = match api
-                                                        .cp_model(bucket, StoragePath(key.clone()))
-                                                        .await
-                                                    {
-                                                        Ok(_) => format!("Queued {key}"),
-                                                        Err(e) => format!("Failed {key}: {e}"),
-                                                    };
-                                                    set_status.set(msg);
+                                                    let mut ok = 0usize;
+                                                    let mut failed: Option<String> = None;
+                                                    for k in &keys {
+                                                        match api
+                                                            .cp_model(
+                                                                bucket.clone(),
+                                                                StoragePath(k.clone()),
+                                                            )
+                                                            .await
+                                                        {
+                                                            Ok(_) => ok += 1,
+                                                            Err(e) => {
+                                                                failed = Some(e.to_string());
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                    set_status
+                                                        .set(match failed {
+                                                            None => {
+                                                                format!(
+                                                                    "Queued {label} — {ok} file(s)",
+                                                                )
+                                                            }
+                                                            Some(e) => {
+                                                                format!(
+                                                                    "Failed {label} after {ok}: {e}",
+                                                                )
+                                                            }
+                                                        });
                                                 });
                                             };
+                                            let tags = exts
+                                                .into_iter()
+                                                .map(|e| view! { <span class="tag">{e}</span> })
+                                                .collect_view();
                                             view! {
                                                 <li
                                                     class="item"
                                                     title="Promote to models/"
                                                     on:click=on_click
                                                 >
-                                                    {name}
+                                                    <span class="item-name">{name}</span>
+                                                    <span class="item-tags">{tags}</span>
                                                 </li>
                                             }
                                         })
@@ -149,8 +225,13 @@ pub fn Controls(jwt: JWT, set_session: WriteSignal<Option<JWT>>) -> impl IntoVie
             <section class="dash-body wide">
                 <h1>"Controls"</h1>
                 <div class="panels">
-                    <ModelList api=api.clone() prefix=DIFFUSION_MODELS set_session />
-                    <ModelList api=api.clone() prefix=LORAS set_session />
+                    <ModelList
+                        api=api.clone()
+                        title="Diffusion models"
+                        prefix=DIFFUSION_MODELS
+                        set_session
+                    />
+                    <ModelList api=api.clone() title="LoRAs" prefix=LORAS set_session />
                 </div>
             </section>
         </main>
