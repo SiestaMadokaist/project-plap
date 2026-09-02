@@ -1,10 +1,8 @@
-use std::rc::Rc;
-
 use crate::application::ports::{
     repository::{agent_command::AgentCommandRepository, container::HasAgentCommand},
     usecase::UsecaseAPI,
 };
-use domain::{commands::command::CommandDomain, errors::DomainError};
+use domain::errors::DomainError;
 use dto::resources::commands::{DeletePayload, GetListResponse};
 use pkg::macros::trait_repos;
 
@@ -29,7 +27,6 @@ impl<R: DeleteCommandRepos> UsecaseAPI<GetListResponse> for DeleteCommand<'_, R>
             .delete(&self.payload.action_id)
             .await
             .map_err(|x| x.into());
-        let list: Rc<Vec<CommandDomain>> = Rc::new(vec![]);
-        Ok(GetListResponse { commands: list })
+        Ok(GetListResponse { commands: vec![] })
     }
 }

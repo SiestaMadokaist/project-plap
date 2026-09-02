@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use crate::application::ports::repository::{
     agent_command::AgentCommandRepository, container::HasAgentCommand,
 };
@@ -26,9 +24,7 @@ impl<'a, R: ListCommandRepos> ListCommand<'a, R> {
             .by_stage(payload.stage, payload.limit)
             .await
             .map_err(|x| DomainError::Disconnected(x.to_string()))?;
-        let response = resource::GetListResponse {
-            commands: Rc::new(in_stage),
-        };
+        let response = resource::GetListResponse { commands: in_stage };
         Ok(response)
     }
 
