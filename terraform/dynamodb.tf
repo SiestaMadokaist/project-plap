@@ -45,6 +45,54 @@ resource "aws_dynamodb_table" "translations" {
   }
 }
 
+resource "aws_dynamodb_table" "users" {
+  name         = "${var.stage}-users"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "username"
+
+  attribute {
+    name = "username"
+    type = "S"
+  }
+
+  attribute {
+    name = "address"
+    type = "S"
+  }
+
+  # find() / login() look a user up by wallet address and read the whole record
+  # back, so the projection has to carry every UserItem field (user.rs).
+  global_secondary_index {
+    name            = "address"
+    hash_key        = "address"
+    projection_type = "ALL"
+  }
+
+  tags = {
+    Service = var.service_name
+    Stage   = var.stage
+  }
+}
+
+# HotReloadRepository::diffusion_config(&Username) -> DiffusionConfigDomain (domain/hot_reload.rs).
+# The repo impl is still todo!(), so this schema is provisional: keyed by `username` because
+# that's both the lookup argument and the domain's identifying field.
+resource "aws_dynamodb_table" "hot_reloads" {
+  name         = "${var.stage}-hot_reloads"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "username"
+
+  attribute {
+    name = "username"
+    type = "S"
+  }
+
+  tags = {
+    Service = var.service_name
+    Stage   = var.stage
+  }
+}
+
 resource "aws_dynamodb_table" "agent_commands" {
   name         = "${var.stage}-agent_commands"
   billing_mode = "PAY_PER_REQUEST"

@@ -46,6 +46,18 @@ resource "aws_iam_role_policy" "api" {
         ]
       },
       {
+        # DDBUserRepository (user.rs), wired into ApiRepos (bin/api/bootstrap/repo.rs): get/put/delete
+        # by `username` on the base table; find/login look up by wallet address via Query on the
+        # `address` GSI, so that index ARN is needed alongside the base table.
+        Sid    = "UsersReadWrite"
+        Effect = "Allow"
+        Action = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:Query"]
+        Resource = [
+          "arn:aws:dynamodb:${var.region}:${local.account_id}:table/${var.stage}-users",
+          "arn:aws:dynamodb:${var.region}:${local.account_id}:table/${var.stage}-users/index/address",
+        ]
+      },
+      {
         # NOTE: no "presets" table exists yet (not in dynamodb.tf, no DDBTable variant, no code path).
         # Add the aws_dynamodb_table resource before this grant does anything.
         Sid      = "PresetsReadWrite"
