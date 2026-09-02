@@ -338,7 +338,6 @@ impl StorageClient for S3Storage {
 
     async fn ls(&self, prefix: &StoragePrefix, recursive: bool) -> Result<DirTree, DomainError> {
         let fullprefix = self.remote_prefix.at(prefix);
-        dbg!(&fullprefix);
         let mut builder = self
             .client
             .list_objects()

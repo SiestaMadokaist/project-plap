@@ -1,8 +1,8 @@
-use domain::storage::{DirTree, StoragePath, StoragePrefix};
+use domain::storage::{DirTree, StoragePrefix};
 use pkg::json_type;
 use serde::{Deserialize, Serialize};
 
-use crate::{resources::list::ListResponse, response::DTO};
+use crate::response::DTO;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetListPayload {
     pub prefix: StoragePrefix,

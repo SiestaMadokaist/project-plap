@@ -2,7 +2,7 @@ STAGE     ?= production
 FUNCTIONS := api ws cron
 DIST_DIR  := dist
 
-S3_BIN_BUCKET := s3://virginia-ramadoka/bin
+S3_BIN_BUCKET := s3://secure-storage-ramadoka/bin
 
 TF_VARS := -var="stage=$(STAGE)"
 
