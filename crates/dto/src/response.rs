@@ -126,7 +126,7 @@ mod tests {
     impl DTO for Nested {}
 
     #[test]
-    fn shape_nested_ok() -> () {
+    fn shape_nested_ok() {
         let c1 = Nested::new(10, "xxx".into(), None);
         let c2 = Nested::new(100, "yyy".into(), Some(c1));
         let resp = Ok(c2).to_resp();
@@ -137,7 +137,7 @@ mod tests {
     }
 
     #[test]
-    fn shape_simple_ok() -> () {
+    fn shape_simple_ok() {
         let value = Ok(Placeholder(200)).to_resp();
         let s = serde_json::to_string(&value).unwrap();
         // length check to bypass inconsistent deserialize-ordering
@@ -145,7 +145,7 @@ mod tests {
     }
 
     #[test]
-    fn shape_fail() -> () {
+    fn shape_fail() {
         let err: Result<Placeholder, DomainError> = Err(EmptyResponse);
         let s = serde_json::to_string(&err.to_resp()).unwrap();
         // length check to bypass inconsistent deserialize-ordering

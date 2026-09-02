@@ -6,7 +6,7 @@ use crate::{
     storage::StoragePath,
 };
 
-id_type!(StoryId);
+id_type!(StoryTemplateId);
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RawTemplate(String);
@@ -33,12 +33,16 @@ use std::collections::{HashMap, HashSet};
  */
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Storyline {
-    id: StoryId,
+    id: StoryTemplateId,
     inferences: Vec<InferenceConfig<RawTemplate>>,
     variables: HashMap<String, String>,
 }
 
 impl Storyline {
+    pub fn id(&self) -> &StoryTemplateId {
+        &self.id
+    }
+
     pub fn loras(&self) -> HashSet<StoragePath> {
         let mut hash = HashSet::<StoragePath>::new();
         let inferences = &self.inferences;

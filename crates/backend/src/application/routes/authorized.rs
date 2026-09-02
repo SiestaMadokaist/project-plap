@@ -5,8 +5,14 @@ use serde::{Deserialize, Serialize};
 pub enum AuthorizedRoute {
     #[serde(rename = "/models/list")]
     ListModels,
+    #[serde(rename = "/models/preview")]
+    ModelPreview,
     #[serde(rename = "/agents/command/cp")]
     AgentModelCP,
+    #[serde(rename = "/agents/command/list")]
+    CommandList,
+    #[serde(rename = "/agents/command/delete")]
+    CommandDelete,
     // #[serde(rename = "/agents/command/delete")]
     // AgentCommandDelete,
     // #[serde(rename = "/agents/command/generate")]
@@ -15,5 +21,11 @@ pub enum AuthorizedRoute {
     // HQInstanceControl,
     #[serde(rename = "/story/templates")]
     TemplateList,
+    #[serde(rename = "/story/templates/create")]
+    TemplateWrite,
+    #[serde(rename = "/story/templates/delete")]
+    TemplateDelete,
+    #[serde(rename = "/story/templates/read")]
+    TemplateRead,
 }
 displayable!(AuthorizedRoute);

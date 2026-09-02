@@ -1,8 +1,21 @@
-use domain::{errors::DomainError, storage::StoragePrefix};
-use dto::response::Response;
+use std::path::PathBuf;
+
+use domain::{
+    commands::{
+        command::{ActionId, CommandDomain, CommandStage},
+        network::{LocalArgs, ModelDst, ModelSrc, NetworkArgs, S3Args},
+    },
+    errors::DomainError,
+    storage::{StorageBucket, StoragePath, StoragePrefix},
+};
+use dto::{
+    resources::{commands, commands::CpModelPayload, models},
+    response::Response,
+};
 use gloo_net::http::Request;
 use pkg::{auth::claims::JWT, types::strings::URL};
 
+#[derive(Clone)]
 pub struct PlapApi {
     auth: JWT,
     host: URL,
@@ -16,28 +29,108 @@ impl PlapApi {
     pub async fn list_models(
         &self,
         prefix: StoragePrefix,
-    ) -> Result<dto::resources::models::GetListResponse, DomainError> {
-        let payload = dto::resources::models::GetListPayload { prefix };
+        recursive: bool,
+    ) -> Result<models::GetListResponse, DomainError> {
+        let payload = dto::resources::models::GetListPayload { prefix, recursive };
         let url = self.host.e("/models/list");
         let builder = Request::post(&url.0)
             .json(&payload)
             .map_err(|x| DomainError::Serialize(x.to_string()))?;
-        let resp = self
-            .send::<dto::resources::models::GetListResponse>(builder)
-            .await
-            .map_err(|x| DomainError::HttpConnectionFailed(x.to_string()))?;
-        Ok(resp)
+        let resp = self.send::<models::GetListResponse>(builder).await?;
+        resp.get()
     }
 
-    async fn send<D: dto::response::DTO>(&self, req: Request) -> Result<D, DomainError> {
+    /// Queue an s3 -> localhost copy of `src` into the same path with the leading
+    /// `comfyui/` segment rewritten to `models/`. Returns the queued command.
+    pub async fn cp_model(
+        &self,
+        bucket: StorageBucket,
+        src: StoragePath,
+    ) -> Result<CommandDomain, DomainError> {
+        let dst = match src.0.strip_prefix("comfyui/") {
+            Some(rest) => format!("models/{rest}"),
+            None => {
+                return Err(DomainError::Prerequisite(format!(
+                    "expected a `comfyui/` path, got `{}`",
+                    src.0
+                )))
+            }
+        };
+
+        // deterministic id: re-queuing the same object overwrites its command
+        // rather than piling up duplicates.
+        let action_id = ActionId(format!("Network-{}", src.0));
+        let payload = CpModelPayload {
+            action_id,
+            priority: js_sys::Date::now() as u64,
+            args: NetworkArgs::new(
+                ModelSrc::S3(S3Args { bucket, path: src }),
+                ModelDst::Local(LocalArgs {
+                    forward: false,
+                    path: PathBuf::from(dst),
+                }),
+            ),
+        };
+
+        let url = self.host.e("/agents/command/cp");
+        let builder = Request::post(&url.0)
+            .json(&payload)
+            .map_err(|x| DomainError::Serialize(x.to_string()))?;
+        let resp = self
+            .send::<dto::resources::commands::CpModelResponse>(builder)
+            .await?
+            .get()?;
+        Ok(resp.command)
+    }
+
+    /// Drop one queued command by its `action_id`.
+    pub async fn delete_command(&self, action_id: ActionId) -> Result<(), DomainError> {
+        let payload = commands::DeletePayload { action_id };
+        let url = self.host.e("/agents/command/delete");
+        let builder = Request::post(&url.0)
+            .json(&payload)
+            .map_err(|x| DomainError::Serialize(x.to_string()))?;
+        self.send::<commands::GetListResponse>(builder).await?.get()?;
+        Ok(())
+    }
+
+    /// List agent commands currently in the queue (stage `in_progress`).
+    pub async fn list_commands(&self) -> Result<commands::GetListResponse, DomainError> {
+        let payload = commands::GetListPayload {
+            stage: CommandStage::InProgress,
+            limit: 100,
+        };
+        let url = self.host.e("/agents/command/list");
+        let builder = Request::post(&url.0)
+            .json(&payload)
+            .map_err(|x| DomainError::Serialize(x.to_string()))?;
+        self.send::<commands::GetListResponse>(builder).await?.get()
+    }
+
+    /// Fetch a preview for one collapsed entry: a presigned url for its image
+    /// sibling and/or the raw text of its json sibling. Either may be absent.
+    pub async fn preview(
+        &self,
+        image: Option<StoragePath>,
+        json: Option<StoragePath>,
+    ) -> Result<models::PreviewResponse, DomainError> {
+        let payload = models::PreviewPayload { image, json };
+        let url = self.host.e("/models/preview");
+        let builder = Request::post(&url.0)
+            .json(&payload)
+            .map_err(|x| DomainError::Serialize(x.to_string()))?;
+        self.send::<models::PreviewResponse>(builder).await?.get()
+    }
+
+    async fn send<D: dto::response::DTO>(&self, req: Request) -> Result<Response<D>, DomainError> {
         req.headers().set("Authorization", &self.auth.0);
-        let resp: Result<Response<D>, DomainError> = req
+        let resp: Response<D> = req
             .send()
             .await
             .map_err(|x| DomainError::HttpConnectionFailed(x.to_string()))?
             .json()
             .await
             .map_err(|x| DomainError::Serialize(x.to_string()))?;
-        resp.and_then(|x| x.get())
+        Ok(resp)
     }
 }

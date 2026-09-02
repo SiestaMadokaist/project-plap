@@ -1,5 +1,8 @@
-use domain::{ctx::Context, storyline::StoryId};
-use dto::resources::{list::ListResponse, templates::DeleteTemplatePayload};
+use domain::ctx::Context;
+use dto::resources::{
+    list::ListResponse,
+    templates::{DeleteTemplatePayload, ListStoryTemplate},
+};
 use pkg::trait_repos;
 
 use crate::application::ports::{
@@ -9,13 +12,13 @@ use crate::application::ports::{
 
 trait_repos!(TemplateListRepo, HasStoryTemplate);
 pub struct TemplateDeleteSvc<'a, R: TemplateListRepo> {
-    repos: R,
-    ctx: Context,
-    payload: &'a DeleteTemplatePayload,
+    repos: &'a R,
+    ctx: &'a Context,
+    payload: DeleteTemplatePayload,
 }
 
 impl<'a, R: TemplateListRepo> TemplateDeleteSvc<'a, R> {
-    pub fn new(repos: R, ctx: Context, payload: &'a DeleteTemplatePayload) -> Self {
+    pub fn new(repos: &'a R, ctx: &'a Context, payload: DeleteTemplatePayload) -> Self {
         Self {
             repos,
             ctx,
@@ -24,8 +27,8 @@ impl<'a, R: TemplateListRepo> TemplateDeleteSvc<'a, R> {
     }
 }
 
-impl<'a, R: TemplateListRepo> UsecaseAPI<ListResponse<StoryId>> for TemplateDeleteSvc<'a, R> {
-    async fn exec(&self) -> Result<ListResponse<StoryId>, domain::errors::DomainError> {
+impl<'a, R: TemplateListRepo> UsecaseAPI<ListStoryTemplate> for TemplateDeleteSvc<'a, R> {
+    async fn exec(&self) -> Result<ListStoryTemplate, domain::errors::DomainError> {
         let repo = self.repos.story_template();
         let auth = self.ctx.auth();
         let username = &auth.username;

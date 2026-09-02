@@ -1,3 +1,5 @@
+use std::ops::Add;
+
 use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::commands::{
@@ -72,24 +74,27 @@ impl Progression {
     }
 }
 
-const DEFAULT_TTL_SECONDS: i64 = 86400;
+const DEFAULT_TTL_SECONDS: Second = Second(86400);
 
-fn default_ttl() -> Option<Timestamp> {
-    Some(Timestamp(Timestamp::now().0 + DEFAULT_TTL_SECONDS))
+fn default_expire() -> Timestamp {
+    Timestamp::now()
+        .utc()
+        .map(|now| Timestamp::from(now.add(DEFAULT_TTL_SECONDS.to_delta())))
+        .unwrap_or_else(Timestamp::now)
 }
 
-fn deserialize_ttl<'de, D>(deserializer: D) -> Result<Option<Timestamp>, D::Error>
+fn deserialize_expire<'de, D>(deserializer: D) -> Result<Timestamp, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let ttl = Option::<Timestamp>::deserialize(deserializer)?;
-    Ok(ttl.or_else(default_ttl))
+    let expire = Option::<Timestamp>::deserialize(deserializer)?;
+    Ok(expire.unwrap_or_else(default_expire))
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CommandDomain {
-    #[serde(default = "default_ttl", deserialize_with = "deserialize_ttl")]
-    ttl: Option<Timestamp>,
+    #[serde(default = "default_expire", deserialize_with = "deserialize_expire")]
+    expire_at: Timestamp,
     pub action_id: ActionId,
     pub priority: u64,
     pub stage: CommandStage,
@@ -101,10 +106,10 @@ pub struct CommandDomain {
 
 impl CommandDomain {
     pub fn network(action_id: ActionId, args: NetworkArgs, priority: u64) -> Self {
-        let now = Timestamp::now();
-        let ttl = now.add(Second(86400));
+        let now = chrono::Utc::now();
+        let expire_at: Timestamp = now.add(DEFAULT_TTL_SECONDS.to_delta()).into();
         Self {
-            ttl: Some(ttl),
+            expire_at,
             action_id,
             progress: Progression {
                 total: Index0(1),
@@ -115,7 +120,7 @@ impl CommandDomain {
             priority,
             stage: CommandStage::InProgress,
             action: Network(args),
-            created_at: now,
+            created_at: now.into(),
         }
     }
     pub fn status(&self) -> String {
@@ -135,7 +140,7 @@ impl CommandDomain {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "action", content = "data", rename_all = "lowercase")]
 pub enum Action {
     Inference(InferenceArgs),

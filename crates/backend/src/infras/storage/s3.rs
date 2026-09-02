@@ -1,5 +1,6 @@
 #[cfg(feature = "datatransfer")]
 use std::path::PathBuf;
+#[cfg(feature = "datatransfer")]
 use std::{cell::OnceCell, path::Path, process::Stdio};
 
 use aws_config::SdkConfig;
@@ -8,6 +9,8 @@ use aws_sdk_s3::{
     types::ObjectCannedAcl::{self},
     Client,
 };
+use domain::storage::DirTree;
+#[cfg(feature = "datatransfer")]
 use tokio::process::Command;
 
 use crate::application::ports::clients::storage::StorageClient;
@@ -21,6 +24,7 @@ pub struct S3Storage {
     client: Client,
     region: ComputeRegion,
     bucket: String,
+    #[cfg(feature = "datatransfer")]
     bucket_region: OnceCell<String>,
     // set none if bucket doesnt allow acl
     acl: Option<ObjectCannedAcl>,
@@ -40,7 +44,10 @@ pub struct S3Storage {
      * "/" + <remote_path> => "s3://<bucket>//remote_path/to/target/file" <- double "//" after <bucket>
      */
     remote_prefix: StoragePrefix,
+    // read only through the `datatransfer` cp helpers (`abs_path` / `assert_within_limit`)
+    #[cfg_attr(not(feature = "datatransfer"), allow(dead_code))]
     local_workdir: StoragePrefix,
+    #[cfg_attr(not(feature = "datatransfer"), allow(dead_code))]
     max_size: i64, // in bytes (e.g: 50 GB) => (50 * 1024 * 1024 * 1024);
 }
 
@@ -63,6 +70,7 @@ impl S3Storage {
             client,
             region,
             bucket,
+            #[cfg(feature = "datatransfer")]
             bucket_region: OnceCell::new(),
             remote_prefix,
             local_workdir,
@@ -71,6 +79,7 @@ impl S3Storage {
         }
     }
 
+    #[cfg(feature = "datatransfer")]
     async fn bucket_region(&self) -> Result<ComputeRegion, DomainError> {
         if let Some(region) = self.bucket_region.get() {
             return ComputeRegion::try_from(region.as_str())
@@ -103,6 +112,7 @@ impl S3Storage {
         Ok(computed)
     }
 
+    #[cfg(feature = "datatransfer")]
     async fn is_same_region(&self) -> Result<bool, DomainError> {
         let bucket_region = self.bucket_region().await?;
         Ok(bucket_region == self.region)
@@ -112,6 +122,7 @@ impl S3Storage {
         format!("{}{}", self.remote_prefix, path.0)
     }
 
+    #[cfg(feature = "datatransfer")]
     fn assert_within_limit(&self, size: i64) -> Result<(), DomainError> {
         if size > self.max_size {
             return Err(DomainError::TransferTooLarge {
@@ -124,6 +135,7 @@ impl S3Storage {
 
     // sums the size of every object under `key` and reports whether it's a
     // single exact-match object (plain `cp`) or a prefix (`cp --recursive`).
+    #[cfg(feature = "datatransfer")]
     async fn remote_extent(&self, key: &str) -> Result<(i64, bool), DomainError> {
         let mut total: i64 = 0;
         let mut count: u32 = 0;
@@ -171,6 +183,7 @@ impl S3Storage {
         Ok((total, !(count == 1 && exact_match)))
     }
 
+    #[cfg(feature = "datatransfer")]
     fn local_size(path: &Path) -> std::io::Result<i64> {
         let meta = std::fs::metadata(path)?;
         if meta.is_dir() {
@@ -188,6 +201,7 @@ impl S3Storage {
      * using spawn aws s3 cp because it is much more faster than buffer streaming.
      * because aws s3 cp is performing the task in multiple connection.
      */
+    #[cfg(feature = "datatransfer")]
     async fn spawn_cp(&self, args: &Vec<String>) -> Result<(), DomainError> {
         let mut cmd = Command::new("aws");
         cmd.args(args);
@@ -315,6 +329,24 @@ impl StorageClient for S3Storage {
         String::from_utf8(bytes.to_vec()).map_err(|e| DomainError::Serialize(e.to_string()))
     }
 
+    async fn presigned_get(
+        &self,
+        path: &StoragePath,
+        ttl: std::time::Duration,
+    ) -> Result<String, DomainError> {
+        let config = aws_sdk_s3::presigning::PresigningConfig::expires_in(ttl)
+            .map_err(|e| DomainError::Serialize(e.to_string()))?;
+        let req = self
+            .client
+            .get_object()
+            .bucket(&self.bucket)
+            .key(self.key(path))
+            .presigned(config)
+            .await
+            .map_err(|e| DomainError::Disconnected(e.to_string()))?;
+        Ok(req.uri().to_string())
+    }
+
     fn public_url(&self, path: &StoragePath) -> String {
         format!(
             "https://{}.s3.{}.amazonaws.com/{}",
@@ -322,25 +354,38 @@ impl StorageClient for S3Storage {
         )
     }
 
-    async fn ls(&self, prefix: &StoragePrefix) -> Result<Vec<StoragePath>, DomainError> {
+    async fn ls(&self, prefix: &StoragePrefix, recursive: bool) -> Result<DirTree, DomainError> {
         let fullprefix = self.remote_prefix.at(prefix);
-        let result = self
+        let mut builder = self
             .client
             .list_objects()
             .bucket(&self.bucket)
-            .prefix(fullprefix)
-            .send()
-            .await;
+            .prefix(fullprefix);
+        if !recursive {
+            builder = builder.delimiter("/");
+        }
+        let result = builder.send().await;
         let vs = match result {
             Err(x) => Err(DomainError::HttpConnectionFailed(x.to_string())),
             Ok(items) => {
-                let vecs = items.contents.unwrap_or(vec![]);
-                let vocs = vecs
-                    .iter()
-                    .map(|o| o.clone().key.unwrap_or(String::from("")))
-                    .filter(|x| !x.is_empty());
-                let vcs: Vec<StoragePath> = vocs.map(StoragePath).collect();
-                Ok(vcs)
+                let vecs = {
+                    let paths: Vec<StoragePath> = items
+                        .contents()
+                        .iter()
+                        .map(|x| x.key.as_ref())
+                        .filter(|x| x.is_some())
+                        .map(|x| StoragePath(x.unwrap().clone()))
+                        .collect();
+                    let prefixes: Vec<StoragePrefix> = items
+                        .common_prefixes()
+                        .iter()
+                        .map(|x| x.prefix.as_ref())
+                        .filter(|x| x.is_some())
+                        .map(|x| StoragePrefix(x.unwrap().clone()))
+                        .collect();
+                    DirTree { paths, prefixes }
+                };
+                Ok(vecs)
             }
         }?;
         Ok(vs)
@@ -349,6 +394,18 @@ impl StorageClient for S3Storage {
     #[cfg(feature = "future")]
     async fn versions(&self, path: &StoragePath) -> Result<ItemVersion, DomainError> {
         todo!();
+    }
+
+    async fn delete(&self, path: &StoragePath) -> Result<(), DomainError> {
+        self.client
+            .delete_object()
+            .bucket(&self.bucket)
+            .key(self.key(path))
+            .send()
+            .await
+            .map_err(|e| DomainError::Disconnected(e.to_string()))?;
+        tracing::debug!("file deleted at {path}");
+        Ok(())
     }
 
     async fn write(&self, path: &StoragePath, data: &[u8]) -> Result<(), DomainError> {
@@ -388,14 +445,23 @@ impl From<ObjectVersion> for ItemVersion {
 
 #[cfg(test)]
 mod tests {
+    // use std::str::FromStr;
+
+    // use aws_sdk_s3::types::ObjectCannedAcl::PublicRead;
+
+    #[cfg(feature = "datatransfer")]
     use std::str::FromStr;
 
+    #[cfg(feature = "datatransfer")]
     use aws_sdk_s3::types::ObjectCannedAcl::PublicRead;
 
+    #[cfg(feature = "datatransfer")]
     use super::*;
     #[test]
     #[cfg(feature = "datatransfer")]
     fn test_download_args() -> Result<(), DomainError> {
+        use std::str::FromStr;
+
         let config = SdkConfig::builder()
             .behavior_version(aws_config::BehaviorVersion::latest())
             .build();

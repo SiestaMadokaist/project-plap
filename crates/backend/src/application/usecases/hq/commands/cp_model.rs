@@ -1,46 +1,31 @@
-use serde::{Deserialize, Serialize};
-
 use crate::application::ports::repository::{
     agent_command::AgentCommandRepository, container::HasAgentCommand,
 };
-use domain::{
-    commands::{
-        command::{ActionId, CommandDomain},
-        network::NetworkArgs,
-    },
-    errors::DomainError,
-};
-use pkg::{json_type, macros::trait_repos};
+use domain::{commands::command::CommandDomain, errors::DomainError};
+use dto::resources::commands::{CpModelPayload, CpModelResponse};
+use pkg::macros::trait_repos;
+
+trait_repos!(CPModelRepos, HasAgentCommand);
 
 /**
- * obtain model from a known remote service (e.g: civitai)
- * store it into remote storage service (e.g: s3)
+ * obtain a model from a known remote service (e.g: civitai / s3)
+ * and store it into remote storage service (e.g: s3) via the agent queue.
  */
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Payload {
-    action_id: ActionId,
-    args: NetworkArgs,
-    priority: u64,
-}
-json_type!(Payload);
-trait_repos!(CPModelRepos, HasAgentCommand);
-pub struct CPModel<'a, R: CPModelRepos> {
+pub struct CPModelSvc<'a, R: CPModelRepos> {
     repos: &'a R,
-    payload: Payload,
+    payload: CpModelPayload,
 }
 
-impl<'a, R: CPModelRepos> CPModel<'a, R> {
-    pub fn new(repos: &'a R, payload: Payload) -> Self {
+impl<'a, R: CPModelRepos> CPModelSvc<'a, R> {
+    pub fn new(repos: &'a R, payload: CpModelPayload) -> Self {
         Self { repos, payload }
     }
 
-    pub async fn exec(&self) -> Result<serde_json::Value, DomainError> {
-        let result = self.run().await?;
-        let v = serde_json::to_value(result).map_err(|x| DomainError::Serialize(x.to_string()));
-        v
+    pub async fn exec(&self) -> Result<CpModelResponse, DomainError> {
+        self.run().await
     }
 
-    async fn run(&self) -> Result<ActionId, DomainError> {
+    async fn run(&self) -> Result<CpModelResponse, DomainError> {
         let repo = self.repos.agent_command();
         let command = CommandDomain::network(
             self.payload.action_id.clone(),
@@ -48,10 +33,9 @@ impl<'a, R: CPModelRepos> CPModel<'a, R> {
             self.payload.priority,
         );
         tracing::debug!("command: {}", serde_json::to_value(&command)?);
-        let result = repo
-            .insert(command)
+        repo.insert(command.clone())
             .await
-            .map_err(|x| DomainError::ApiError(x.to_string()));
-        result
+            .map_err(|x| DomainError::ApiError(x.to_string()))?;
+        Ok(CpModelResponse { command })
     }
 }

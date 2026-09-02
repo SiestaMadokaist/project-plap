@@ -1,3 +1,5 @@
+use std::ops::Add;
+
 use async_trait::async_trait;
 use domain::errors::DomainError;
 use dto::resources::login::{ClientAnswer, ReqChallenge, ServerChallenge};
@@ -71,15 +73,15 @@ fn deny(e: impl ToString) -> DomainError {
 #[async_trait(?Send)]
 impl Authorizer for EthAuth {
     async fn challenge(&self, req: ReqChallenge) -> Result<ServerChallenge, DomainError> {
-        let now = Timestamp::now();
+        let now = Timestamp::now().utc().expect("should be a valid utc");
         if !req.is_valid(&now, &self.clock_skew, &self.session_ttl) {
             return Err(deny("challenge request failed validation"));
         }
-        let exp = now.add(self.challenge_ttl.clone());
+        let exp = now.add(self.challenge_ttl.to_delta());
         Ok(ServerChallenge::new(
             req.address().clone(),
             req.iat(),
-            exp,
+            exp.into(),
             Challenge::random(),
             &self.privkey,
         ))
@@ -93,8 +95,8 @@ impl Authorizer for EthAuth {
             return Err(deny("challenge signature is not ours"));
         }
         // 2. it hasn't gone stale
-        let now = Timestamp::now();
-        if sc.exp().sub(&now).0 <= 0 {
+        let now = chrono::Utc::now();
+        if sc.exp().0 <= now.timestamp() {
             return Err(deny("challenge has expired"));
         }
         // 3. the answer was signed by the wallet the challenge is bound to
@@ -107,8 +109,8 @@ impl Authorizer for EthAuth {
         let claims = AuthClaims {
             username,
             sub: sc.address().hex().0,
-            iat: now,
-            exp: now.add(self.session_ttl.clone()),
+            iat: now.into(),
+            exp: now.add(self.session_ttl.to_delta()).into(),
         };
         JWT::sign(&claims, self.secret.as_bytes()).map_err(deny)
     }

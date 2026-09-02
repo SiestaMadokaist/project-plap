@@ -1,5 +1,5 @@
-use domain::{ctx::Context, storyline::StoryId};
-use dto::resources::list::ListResponse;
+use domain::ctx::Context;
+use dto::resources::{list::ListResponse, templates::ListStoryTemplate};
 use pkg::trait_repos;
 
 use crate::application::ports::{
@@ -19,11 +19,12 @@ impl<'a, R: TemplateListRepo> TemplateListSvc<'a, R> {
     }
 }
 
-impl<'a, R: TemplateListRepo> UsecaseAPI<ListResponse<StoryId>> for TemplateListSvc<'a, R> {
-    async fn exec(&self) -> Result<ListResponse<StoryId>, domain::errors::DomainError> {
+impl<'a, R: TemplateListRepo> UsecaseAPI<ListStoryTemplate> for TemplateListSvc<'a, R> {
+    async fn exec(&self) -> Result<ListStoryTemplate, domain::errors::DomainError> {
         let repo = self.repos.story_template();
         let auth = self.ctx.auth();
-        let stories = repo.list(&auth.username).await?;
+        // story template structure is flat single level under auth.username
+        let stories = repo.list(&auth.username, false).await?;
         Ok(ListResponse::simple(stories))
     }
 }

@@ -129,19 +129,14 @@ mod tests {
             "/../../samples/inputs/mocks/saber.comfy.png"
         ))?;
         let exif = Exif::<ComfyUI>::new(data);
-        let text = exif.text();
-        print!("raw: {}\n", text);
         let checkpoint = exif.checkpoint()?;
-        print!("checkpoint: {}\n", checkpoint);
         assert_eq!(checkpoint, "cosplayillustriousmi_v20.safetensors");
 
         let positive = exif.positive()?;
-        print!("positive: {}\n", positive);
         assert!(positive.starts_with("photorealistic"));
         assert!(positive.ends_with("fate series."));
 
         let negative = exif.negative()?;
-        print!("negative: {}\n", negative);
         assert!(negative.starts_with("lowres, bad anatomy"));
         assert!(negative.ends_with("username, blurry"));
 

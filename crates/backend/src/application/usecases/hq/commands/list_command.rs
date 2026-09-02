@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use crate::application::ports::repository::{
     agent_command::AgentCommandRepository, container::HasAgentCommand,
 };
@@ -26,16 +24,12 @@ impl<'a, R: ListCommandRepos> ListCommand<'a, R> {
             .by_stage(payload.stage, payload.limit)
             .await
             .map_err(|x| DomainError::Disconnected(x.to_string()))?;
-        let response = resource::GetListResponse {
-            commands: Rc::new(in_stage),
-        };
+        let response = resource::GetListResponse { commands: in_stage };
         Ok(response)
     }
 
-    pub async fn exec(&self) -> Result<serde_json::Value, DomainError> {
-        let result = self.run().await?;
-        let value = serde_json::to_value(result)?;
-        Ok(value)
+    pub async fn exec(&self) -> Result<resource::GetListResponse, DomainError> {
+        self.run().await
     }
 }
 

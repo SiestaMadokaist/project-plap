@@ -64,7 +64,7 @@ where
     Ok(n_iter)
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct InferenceArgs {
     pub config: InferenceConfig<String>,
 }
@@ -74,7 +74,7 @@ mod tests {
     use crate::commands::inference::InferenceConfig;
 
     #[test]
-    fn shape_test() -> () {
+    fn shape_test() {
         let buffer = std::fs::read(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../../samples/inputs/jsons/domain/commands/inference.json"
