@@ -23,7 +23,8 @@ impl<'a, R: TemplateListRepo> UsecaseAPI<ListStoryTemplate> for TemplateListSvc<
     async fn exec(&self) -> Result<ListStoryTemplate, domain::errors::DomainError> {
         let repo = self.repos.story_template();
         let auth = self.ctx.auth();
-        let stories = repo.list(&auth.username).await?;
+        // story template structure is flat single level under auth.username
+        let stories = repo.list(&auth.username, false).await?;
         Ok(ListResponse::simple(stories))
     }
 }

@@ -7,7 +7,11 @@ use pkg::auth::claims::Username;
 #[cfg_attr(test, mockall::automock)]
 #[allow(async_fn_in_trait)]
 pub trait StoryTemplateRepository {
-    async fn list(&self, owner: &Username) -> Result<Vec<StoryTemplateId>, DomainError>;
+    async fn list(
+        &self,
+        owner: &Username,
+        recursive: bool,
+    ) -> Result<Vec<StoryTemplateId>, DomainError>;
 
     async fn get(&self, owner: &Username, id: &StoryTemplateId) -> Result<Storyline, DomainError>;
 

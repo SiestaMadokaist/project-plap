@@ -9,6 +9,7 @@ use aws_sdk_s3::{
     types::ObjectCannedAcl::{self},
     Client,
 };
+use domain::storage::DirTree;
 #[cfg(feature = "datatransfer")]
 use tokio::process::Command;
 
@@ -335,26 +336,39 @@ impl StorageClient for S3Storage {
         )
     }
 
-    async fn ls(&self, prefix: &StoragePrefix) -> Result<Vec<StoragePath>, DomainError> {
+    async fn ls(&self, prefix: &StoragePrefix, recursive: bool) -> Result<DirTree, DomainError> {
         let fullprefix = self.remote_prefix.at(prefix);
         dbg!(&fullprefix);
-        let result = self
+        let mut builder = self
             .client
             .list_objects()
             .bucket(&self.bucket)
-            .prefix(fullprefix)
-            .send()
-            .await;
+            .prefix(fullprefix);
+        if !recursive {
+            builder = builder.delimiter("/");
+        }
+        let result = builder.send().await;
         let vs = match result {
             Err(x) => Err(DomainError::HttpConnectionFailed(x.to_string())),
             Ok(items) => {
-                let vecs = items.contents.unwrap_or(vec![]);
-                let vocs = vecs
-                    .iter()
-                    .map(|o| o.clone().key.unwrap_or(String::from("")))
-                    .filter(|x| !x.is_empty());
-                let vcs: Vec<StoragePath> = vocs.map(StoragePath).collect();
-                Ok(vcs)
+                let vecs = {
+                    let paths: Vec<StoragePath> = items
+                        .contents()
+                        .iter()
+                        .map(|x| x.key.as_ref())
+                        .filter(|x| x.is_some())
+                        .map(|x| StoragePath(x.unwrap().clone()))
+                        .collect();
+                    let prefixes: Vec<StoragePrefix> = items
+                        .common_prefixes()
+                        .iter()
+                        .map(|x| x.prefix.as_ref())
+                        .filter(|x| x.is_some())
+                        .map(|x| StoragePrefix(x.unwrap().clone()))
+                        .collect();
+                    DirTree { paths, prefixes }
+                };
+                Ok(vecs)
             }
         }?;
         Ok(vs)

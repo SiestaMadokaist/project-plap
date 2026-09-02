@@ -36,12 +36,17 @@ impl StoryTemplateRepository for S3StoryRepository {
         Ok(json)
     }
 
-    async fn list(&self, owner: &Username) -> Result<Vec<StoryTemplateId>, DomainError> {
+    async fn list(
+        &self,
+        owner: &Username,
+        recursive: bool,
+    ) -> Result<Vec<StoryTemplateId>, DomainError> {
         let prefix = StoragePrefix(owner.0.clone());
-        let items = self.storage.ls(&prefix).await?;
+        let items = self.storage.ls(&prefix, recursive).await?;
         // `ls` yields full object keys (`<remote_prefix>/<username>/<story_id>`);
         // the story id is just the last path segment.
         let ids = items
+            .paths
             .into_iter()
             .filter_map(|p| p.0.rsplit('/').next().map(str::to_owned))
             .filter(|name| !name.is_empty())

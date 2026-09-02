@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 
 use domain::{
     errors::DomainError,
-    storage::{StorageBucket, StoragePath, StoragePrefix},
+    storage::{DirTree, StorageBucket, StoragePath, StoragePrefix},
 };
 
 #[cfg_attr(test, mockall::automock)]
@@ -15,7 +15,7 @@ pub trait StorageClient {
     async fn write(&self, path: &StoragePath, data: &[u8]) -> Result<(), DomainError>;
     async fn delete(&self, path: &StoragePath) -> Result<(), DomainError>;
     fn public_url(&self, path: &StoragePath) -> String;
-    async fn ls(&self, prefix: &StoragePrefix) -> Result<Vec<StoragePath>, DomainError>;
+    async fn ls(&self, prefix: &StoragePrefix, recursive: bool) -> Result<DirTree, DomainError>;
 
     #[cfg(feature = "datatransfer")]
     async fn upload(&self, local: &Path, remote: &StoragePath) -> Result<(), DomainError>;

@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use domain::{
     errors::DomainError,
-    storage::{StoragePath, StoragePrefix},
+    storage::{DirTree, StoragePrefix},
 };
 use leptos::prelude::*;
 use pkg::{auth::claims::JWT, types::strings::URL};
@@ -10,8 +10,16 @@ use pkg::{auth::claims::JWT, types::strings::URL};
 use crate::{api::plap::PlapApi, session, API_BASE};
 
 #[component]
-fn ModelList(paths: Vec<StoragePath>) -> impl IntoView {
+fn ModelList(tree: DirTree) -> impl IntoView {
+    let paths = tree.paths;
+    let prefixes = tree.prefixes;
     view! {
+        <ul class="model-list">
+            {prefixes
+                .into_iter()
+                .map(|path| view! { <li class="model">{path.0}</li> })
+                .collect_view()}
+        </ul>
         <ul class="model-list">
             {paths
                 .into_iter()
@@ -59,7 +67,7 @@ pub fn Dashboard(jwt: JWT, set_session: WriteSignal<Option<JWT>>) -> impl IntoVi
                 <Suspense fallback=|| view! { <p class="muted">"Loading models…"</p> }>
                     {move || Suspend::new(async move {
                         match models.await {
-                            Ok(resp) => view! { <ModelList paths=resp.list /> }.into_any(),
+                            Ok(resp) => view! { <ModelList tree=resp.0 /> }.into_any(),
                             Err(DomainError::NotAllowed(_)) => {
                                 // session is no longer valid - drop it and let <App>
                                 // fall back to <Login> on the next frame.

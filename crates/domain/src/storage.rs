@@ -1,4 +1,5 @@
 use pkg::macros::id_type;
+use serde::{Deserialize, Serialize};
 
 id_type!(StorageBucket);
 id_type!(StoragePath);
@@ -8,6 +9,12 @@ impl From<&str> for StoragePrefix {
     fn from(value: &str) -> Self {
         StoragePrefix(value.into())
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DirTree {
+    pub paths: Vec<StoragePath>,
+    pub prefixes: Vec<StoragePrefix>,
 }
 
 impl StoragePrefix {

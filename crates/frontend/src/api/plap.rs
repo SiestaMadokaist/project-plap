@@ -1,8 +1,5 @@
-use domain::{
-    errors::DomainError,
-    storage::{StoragePath, StoragePrefix},
-};
-use dto::{resources::list::ListResponse, response::Response};
+use domain::{errors::DomainError, storage::StoragePrefix};
+use dto::{resources::models, response::Response};
 use gloo_net::http::Request;
 use pkg::{auth::claims::JWT, types::strings::URL};
 
@@ -19,13 +16,16 @@ impl PlapApi {
     pub async fn list_models(
         &self,
         prefix: StoragePrefix,
-    ) -> Result<ListResponse<StoragePath>, DomainError> {
-        let payload = dto::resources::models::GetListPayload { prefix };
+    ) -> Result<models::GetListResponse, DomainError> {
+        let payload = dto::resources::models::GetListPayload {
+            prefix,
+            recursive: false,
+        };
         let url = self.host.e("/models/list");
         let builder = Request::post(&url.0)
             .json(&payload)
             .map_err(|x| DomainError::Serialize(x.to_string()))?;
-        let resp = self.send::<ListResponse<StoragePath>>(builder).await?;
+        let resp = self.send::<models::GetListResponse>(builder).await?;
         resp.get()
     }
 
