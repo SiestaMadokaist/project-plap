@@ -9,6 +9,10 @@ pub enum AuthorizedRoute {
     ModelPreview,
     #[serde(rename = "/agents/command/cp")]
     AgentModelCP,
+    #[serde(rename = "/agents/command/list")]
+    CommandList,
+    #[serde(rename = "/agents/command/delete")]
+    CommandDelete,
     // #[serde(rename = "/agents/command/delete")]
     // AgentCommandDelete,
     // #[serde(rename = "/agents/command/generate")]

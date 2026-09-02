@@ -23,10 +23,9 @@ impl<'a, R: DeleteCommandRepos> DeleteCommand<'a, R> {
 impl<R: DeleteCommandRepos> UsecaseAPI<GetListResponse> for DeleteCommand<'_, R> {
     async fn exec(&self) -> Result<GetListResponse, domain::errors::DomainError> {
         let repo = self.repos.agent_command();
-        let _: Result<(), DomainError> = repo
-            .delete(&self.payload.action_id)
+        repo.delete(&self.payload.action_id)
             .await
-            .map_err(|x| x.into());
+            .map_err(DomainError::from)?;
         Ok(GetListResponse { commands: vec![] })
     }
 }

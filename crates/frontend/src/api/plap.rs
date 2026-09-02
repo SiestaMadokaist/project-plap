@@ -2,14 +2,14 @@ use std::path::PathBuf;
 
 use domain::{
     commands::{
-        command::{ActionId, CommandDomain},
+        command::{ActionId, CommandDomain, CommandStage},
         network::{LocalArgs, ModelDst, ModelSrc, NetworkArgs, S3Args},
     },
     errors::DomainError,
     storage::{StorageBucket, StoragePath, StoragePrefix},
 };
 use dto::{
-    resources::{commands::CpModelPayload, models},
+    resources::{commands, commands::CpModelPayload, models},
     response::Response,
 };
 use gloo_net::http::Request;
@@ -57,10 +57,12 @@ impl PlapApi {
             }
         };
 
-        let now = js_sys::Date::now();
+        // deterministic id: re-queuing the same object overwrites its command
+        // rather than piling up duplicates.
+        let action_id = ActionId(format!("Network-{}", src.0));
         let payload = CpModelPayload {
-            action_id: ActionId(format!("{}", now as i64)),
-            priority: now as u64,
+            action_id,
+            priority: js_sys::Date::now() as u64,
             args: NetworkArgs::new(
                 ModelSrc::S3(S3Args { bucket, path: src }),
                 ModelDst::Local(LocalArgs {
@@ -79,6 +81,30 @@ impl PlapApi {
             .await?
             .get()?;
         Ok(resp.command)
+    }
+
+    /// Drop one queued command by its `action_id`.
+    pub async fn delete_command(&self, action_id: ActionId) -> Result<(), DomainError> {
+        let payload = commands::DeletePayload { action_id };
+        let url = self.host.e("/agents/command/delete");
+        let builder = Request::post(&url.0)
+            .json(&payload)
+            .map_err(|x| DomainError::Serialize(x.to_string()))?;
+        self.send::<commands::GetListResponse>(builder).await?.get()?;
+        Ok(())
+    }
+
+    /// List agent commands currently in the queue (stage `in_progress`).
+    pub async fn list_commands(&self) -> Result<commands::GetListResponse, DomainError> {
+        let payload = commands::GetListPayload {
+            stage: CommandStage::InProgress,
+            limit: 100,
+        };
+        let url = self.host.e("/agents/command/list");
+        let builder = Request::post(&url.0)
+            .json(&payload)
+            .map_err(|x| DomainError::Serialize(x.to_string()))?;
+        self.send::<commands::GetListResponse>(builder).await?.get()
     }
 
     /// Fetch a preview for one collapsed entry: a presigned url for its image

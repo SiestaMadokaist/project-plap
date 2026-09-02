@@ -50,10 +50,10 @@ impl DDBAgentCommandRepository {
 
 impl AgentCommandRepository for DDBAgentCommandRepository {
     async fn delete(&self, id: &ActionId) -> Result<(), AgentCommandError> {
-        let _deleted = self
-            .client
+        self.client
             .delete_item()
             .table_name(&self.table)
+            .key("action_id", AttributeValue::S(id.clone().into()))
             .send()
             .await
             .map_err(|x| AgentCommandError::Disconnected(x.to_string()))?;
@@ -187,6 +187,7 @@ impl AgentCommandRepository for DDBAgentCommandRepository {
                 .table_name(&self.table)
                 .condition_expression("attribute_exists(action_id)")
                 .attribute_updates("progress", m)
+                .key("action_id", AttributeValue::S(id.0.clone()))
                 .send()
                 .await
                 .map_err(|e| {

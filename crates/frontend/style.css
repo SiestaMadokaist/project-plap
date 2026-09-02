@@ -244,7 +244,7 @@ body {
 /* ---------- model panels ---------- */
 
 .dash-body.wide {
-  max-width: 1040px;
+  max-width: 1240px;
 }
 
 .panels {
@@ -310,6 +310,51 @@ body {
   gap: 8px;
   max-height: 62vh;
   overflow-y: auto;
+}
+
+.cmd-list {
+  grid-template-columns: 1fr;
+}
+
+.cmd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.cmd-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cmd-del {
+  flex: none;
+}
+
+.cmd-id {
+  font-family: "SFMono-Regular", ui-monospace, "JetBrains Mono", Menlo, Consolas,
+    monospace;
+  font-size: 12px;
+  color: var(--text);
+  word-break: break-all;
+}
+
+.cmd-prio {
+  font-size: 11px;
+  color: var(--text-mute);
+}
+
+.cmd-stage {
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .item {

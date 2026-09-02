@@ -25,6 +25,7 @@ impl DTO for GetListResponse {}
 pub struct DeletePayload {
     pub action_id: ActionId,
 }
+json_type!(DeletePayload);
 
 /// Body of `POST /agents/command/cp`: queue an s3 -> localhost model copy.
 #[derive(Debug, Serialize, Deserialize)]

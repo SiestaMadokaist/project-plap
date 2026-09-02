@@ -104,6 +104,8 @@ fn ModelList(
     title: &'static str,
     prefix: &'static str,
     set_session: WriteSignal<Option<JWT>>,
+    /// bumped after a queue action so the agent-queue panel refetches
+    bump_queue: WriteSignal<u32>,
 ) -> impl IntoView {
     let (status, set_status) = signal(String::new());
     let (preview, set_preview) = signal::<Option<PreviewReq>>(None);
@@ -229,6 +231,9 @@ fn ModelList(
                                                                     "Failed {label} after {ok}: {e}",
                                                                 ),
                                                             });
+                                                        if ok > 0 {
+                                                            bump_queue.update(|n| *n += 1);
+                                                        }
                                                     });
                                                 }
                                             };
@@ -421,9 +426,136 @@ fn ModelList(
     }
 }
 
+/// Agent commands currently in the queue. For now just `action_id` + `priority`,
+/// each with a delete button.
+#[component]
+fn AgentCommands(
+    api: PlapApi,
+    set_session: WriteSignal<Option<JWT>>,
+    /// refetch trigger — bumped here on delete, and by the model panels on queue
+    reload: ReadSignal<u32>,
+    set_reload: WriteSignal<u32>,
+) -> impl IntoView {
+    let (status, set_status) = signal(String::new());
+
+    let items = LocalResource::new({
+        let api = api.clone();
+        move || {
+            let api = api.clone();
+            reload.track();
+            async move { api.list_commands().await }
+        }
+    });
+
+    view! {
+        <section class="panel">
+            <header class="panel-head">
+                <h2 class="panel-title">"In progress"</h2>
+                <span class="panel-prefix">"agent queue"</span>
+            </header>
+
+            {move || {
+                let s = status.get();
+                (!s.is_empty()).then(|| view! { <p class="panel-status">{s}</p> })
+            }}
+
+            <Suspense fallback=|| {
+                view! { <p class="muted panel-note">"Loading…"</p> }
+            }>
+                {
+                    let api = api.clone();
+                    move || {
+                        let api = api.clone();
+                        Suspend::new(async move {
+                            match items.await {
+                                Ok(resp) => {
+                                    let cmds = resp.commands;
+                                    if cmds.is_empty() {
+                                        return view! {
+                                            <p class="muted panel-note">"Nothing in progress."</p>
+                                        }
+                                            .into_any();
+                                    }
+                                    let rows = cmds
+                                        .into_iter()
+                                        .map(|c| {
+                                            let id = c.action_id.0.clone();
+                                            let prio = c.priority;
+                                            let stage = c.status();
+                                            let on_delete = {
+                                                let api = api.clone();
+                                                let del = c.action_id.clone();
+                                                move |_| {
+                                                    let api = api.clone();
+                                                    let del = del.clone();
+                                                    set_status
+                                                        .set(format!("Deleting {}…", del.0));
+                                                    spawn_local(async move {
+                                                        match api.delete_command(del).await {
+                                                            Ok(_) => set_status.set(String::new()),
+                                                            Err(e) => set_status
+                                                                .set(format!("Delete failed: {e}")),
+                                                        }
+                                                        set_reload.update(|n| *n += 1);
+                                                    });
+                                                }
+                                            };
+                                            view! {
+                                                <li class="cmd">
+                                                    <div class="cmd-main">
+                                                        <span class="cmd-id">{id}</span>
+                                                        <span class="cmd-prio">
+                                                            <span class="cmd-stage">{stage}</span>
+                                                            {format!(" · priority {prio}")}
+                                                        </span>
+                                                    </div>
+                                                    <button
+                                                        class="peek-btn cmd-del"
+                                                        title="Delete"
+                                                        on:click=on_delete
+                                                    >
+                                                        "✕"
+                                                    </button>
+                                                </li>
+                                            }
+                                        })
+                                        .collect_view();
+                                    view! { <ul class="item-list cmd-list">{rows}</ul> }.into_any()
+                                }
+                                Err(DomainError::NotAllowed(_)) => {
+                                    request_animation_frame(move || {
+                                        session::clear();
+                                        set_session.set(None);
+                                    });
+                                    view! {
+                                        <p class="muted panel-note">
+                                            "Session expired — returning to sign in…"
+                                        </p>
+                                    }
+                                        .into_any()
+                                }
+                                Err(err) => {
+                                    view! {
+                                        <p class="auth-error">{format!("Failed to load: {err}")}</p>
+                                    }
+                                        .into_any()
+                                }
+                            }
+                        })
+                    }
+                }
+            </Suspense>
+        </section>
+    }
+}
+
 #[component]
 pub fn Controls(jwt: JWT, set_session: WriteSignal<Option<JWT>>) -> impl IntoView {
     let api = PlapApi::new(jwt, URL(API_BASE.to_string()));
+
+    // shared refetch trigger for the agent-queue panel: queue actions in the model
+    // panels and deletes in the queue panel all bump it.
+    let (queue_reload, set_queue_reload) = signal(0u32);
 
     let logout = move |_| {
         session::clear();
@@ -450,8 +582,21 @@ pub fn Controls(jwt: JWT, set_session: WriteSignal<Option<JWT>>) -> impl IntoVie
                         title="Diffusion models"
                         prefix=DIFFUSION_MODELS
                         set_session
+                        bump_queue=set_queue_reload
                     />
-                    <ModelList api=api.clone() title="LoRAs" prefix=LORAS set_session />
+                    <ModelList
+                        api=api.clone()
+                        title="LoRAs"
+                        prefix=LORAS
+                        set_session
+                        bump_queue=set_queue_reload
+                    />
+                    <AgentCommands
+                        api=api.clone()
+                        set_session
+                        reload=queue_reload
+                        set_reload=set_queue_reload
+                    />
                 </div>
             </section>
         </main>

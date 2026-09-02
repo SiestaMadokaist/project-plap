@@ -28,10 +28,8 @@ impl<'a, R: ListCommandRepos> ListCommand<'a, R> {
         Ok(response)
     }
 
-    pub async fn exec(&self) -> Result<serde_json::Value, DomainError> {
-        let result = self.run().await?;
-        let value = serde_json::to_value(result)?;
-        Ok(value)
+    pub async fn exec(&self) -> Result<resource::GetListResponse, DomainError> {
+        self.run().await
     }
 }
 

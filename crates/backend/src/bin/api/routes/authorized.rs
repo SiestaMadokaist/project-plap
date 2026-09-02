@@ -5,7 +5,9 @@ use backend::application::{
     routes::authorized::AuthorizedRoute,
     usecases::{
         hq::{
-            commands::cp_model::CPModelSvc,
+            commands::{
+                cp_model::CPModelSvc, delete::DeleteCommand, list_command::ListCommand,
+            },
             models::{list::GetListSvc, preview::PreviewSvc},
         },
         template::{
@@ -45,6 +47,18 @@ pub fn authorized_routes() -> Router<AuthorizedRoute> {
         .insert(
             AuthorizedRoute::AgentModelCP.to_string(),
             AuthorizedRoute::AgentModelCP,
+        )
+        .expect(expectation);
+    router
+        .insert(
+            AuthorizedRoute::CommandList.to_string(),
+            AuthorizedRoute::CommandList,
+        )
+        .expect(expectation);
+    router
+        .insert(
+            AuthorizedRoute::CommandDelete.to_string(),
+            AuthorizedRoute::CommandDelete,
         )
         .expect(expectation);
     router
@@ -97,6 +111,14 @@ pub async fn handle_authorized(
             }
             AuthorizedRoute::AgentModelCP => {
                 let svc = CPModelSvc::new(repos.as_ref(), payload.try_into()?);
+                svc.exec().await.to_result()
+            }
+            AuthorizedRoute::CommandList => {
+                let svc = ListCommand::new(repos.as_ref(), payload.try_into()?);
+                svc.exec().await.to_result()
+            }
+            AuthorizedRoute::CommandDelete => {
+                let svc = DeleteCommand::new(repos.as_ref(), payload.try_into()?);
                 svc.exec().await.to_result()
             }
             AuthorizedRoute::TemplateWrite => {
