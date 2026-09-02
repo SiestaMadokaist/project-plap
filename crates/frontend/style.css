@@ -348,10 +348,130 @@ body {
   word-break: break-all;
 }
 
+.item-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .item-tags {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+}
+
+.peek-btn {
+  flex: none;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+  transition:
+    border-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.peek-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+/* ---------- preview modal ---------- */
+
+.modal-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(4, 6, 10, 0.72);
+  backdrop-filter: blur(2px);
+}
+
+.modal {
+  width: 100%;
+  max-width: 560px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.modal-title {
+  font-family: "SFMono-Regular", ui-monospace, "JetBrains Mono", Menlo, Consolas,
+    monospace;
+  font-size: 13px;
+  color: var(--text);
+  word-break: break-all;
+}
+
+.modal-body {
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.preview-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.preview-fig {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.preview-cap {
+  margin: 0;
+  font-family: "SFMono-Regular", ui-monospace, "JetBrains Mono", Menlo, Consolas,
+    monospace;
+  font-size: 11px;
+  color: var(--text-mute);
+  word-break: break-all;
+}
+
+.preview-img {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.preview-json {
+  margin: 0;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-family: "SFMono-Regular", ui-monospace, "JetBrains Mono", Menlo, Consolas,
+    monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  white-space: pre;
+  overflow-x: auto;
 }
 
 .tag {

@@ -81,6 +81,21 @@ impl PlapApi {
         Ok(resp.command)
     }
 
+    /// Fetch a preview for one collapsed entry: a presigned url for its image
+    /// sibling and/or the raw text of its json sibling. Either may be absent.
+    pub async fn preview(
+        &self,
+        image: Option<StoragePath>,
+        json: Option<StoragePath>,
+    ) -> Result<models::PreviewResponse, DomainError> {
+        let payload = models::PreviewPayload { image, json };
+        let url = self.host.e("/models/preview");
+        let builder = Request::post(&url.0)
+            .json(&payload)
+            .map_err(|x| DomainError::Serialize(x.to_string()))?;
+        self.send::<models::PreviewResponse>(builder).await?.get()
+    }
+
     async fn send<D: dto::response::DTO>(&self, req: Request) -> Result<Response<D>, DomainError> {
         req.headers().set("Authorization", &self.auth.0);
         let resp: Response<D> = req

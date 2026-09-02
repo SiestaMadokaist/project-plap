@@ -329,6 +329,24 @@ impl StorageClient for S3Storage {
         String::from_utf8(bytes.to_vec()).map_err(|e| DomainError::Serialize(e.to_string()))
     }
 
+    async fn presigned_get(
+        &self,
+        path: &StoragePath,
+        ttl: std::time::Duration,
+    ) -> Result<String, DomainError> {
+        let config = aws_sdk_s3::presigning::PresigningConfig::expires_in(ttl)
+            .map_err(|e| DomainError::Serialize(e.to_string()))?;
+        let req = self
+            .client
+            .get_object()
+            .bucket(&self.bucket)
+            .key(self.key(path))
+            .presigned(config)
+            .await
+            .map_err(|e| DomainError::Disconnected(e.to_string()))?;
+        Ok(req.uri().to_string())
+    }
+
     fn public_url(&self, path: &StoragePath) -> String {
         format!(
             "https://{}.s3.{}.amazonaws.com/{}",

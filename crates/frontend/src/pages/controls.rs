@@ -6,6 +6,7 @@ use domain::{
 };
 use leptos::prelude::*;
 use pkg::{auth::claims::JWT, types::strings::URL};
+use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::spawn_local;
 
 use crate::{api::plap::PlapApi, session, API_BASE};
@@ -26,6 +27,30 @@ struct Group {
     keys: Vec<String>,
 }
 
+/// What the preview modal is currently showing.
+#[derive(Clone)]
+struct PreviewReq {
+    name: String,
+    image: Option<StoragePath>,
+    json: Option<StoragePath>,
+}
+
+/// Split a key into `(stem, ext)`. `.civitai.json` counts as one extension so a
+/// civitai sidecar collapses into the same group as its model / `model.json`.
+fn split_ext(key: &str) -> (&str, Option<String>) {
+    match key.rsplit_once('.') {
+        Some((rest, "json")) if rest.ends_with(".civitai") => {
+            (&rest[..rest.len() - ".civitai".len()], Some("civitai.json".into()))
+        }
+        Some((stem, ext)) => (stem, Some(ext.to_ascii_lowercase())),
+        None => (key, None),
+    }
+}
+
+fn basename(key: &str) -> &str {
+    key.rsplit_once('/').map(|(_, b)| b).unwrap_or(key)
+}
+
 /// Collapse a flat key listing into per-stem groups.
 fn collapse(prefix: &str, paths: Vec<StoragePath>) -> Vec<Group> {
     let mut order: Vec<String> = Vec::new();
@@ -33,10 +58,8 @@ fn collapse(prefix: &str, paths: Vec<StoragePath>) -> Vec<Group> {
 
     for p in paths {
         let key = p.0;
-        let (stem, ext) = match key.rsplit_once('.') {
-            Some((s, e)) => (s.to_string(), Some(e.to_string())),
-            None => (key.clone(), None),
-        };
+        let (stem, ext) = split_ext(&key);
+        let stem = stem.to_string();
 
         let group = groups.entry(stem.clone()).or_insert_with(|| {
             order.push(stem.clone());
@@ -58,8 +81,22 @@ fn collapse(prefix: &str, paths: Vec<StoragePath>) -> Vec<Group> {
     order.into_iter().filter_map(|s| groups.remove(&s)).collect()
 }
 
+/// Re-indent JSON to two spaces via the browser's own `JSON`. Falls back to the
+/// raw text if it doesn't parse.
+fn pretty_json(raw: &str) -> String {
+    let parsed = match js_sys::JSON::parse(raw) {
+        Ok(v) => v,
+        Err(_) => return raw.to_string(),
+    };
+    js_sys::JSON::stringify_with_replacer_and_space(&parsed, &JsValue::NULL, &JsValue::from_f64(2.0))
+        .ok()
+        .and_then(|s| s.as_string())
+        .unwrap_or_else(|| raw.to_string())
+}
+
 /// A flat, recursive listing of everything under `prefix`, collapsed by stem.
-/// Clicking an entry queues a `comfyui/… -> models/…` copy for every file in it.
+/// Clicking an entry queues a `comfyui/… -> models/…` copy for every file in it;
+/// the eye button opens a preview of the image / json siblings.
 /// Reused for both columns — only `title` / `prefix` differ.
 #[component]
 fn ModelList(
@@ -69,12 +106,27 @@ fn ModelList(
     set_session: WriteSignal<Option<JWT>>,
 ) -> impl IntoView {
     let (status, set_status) = signal(String::new());
+    let (preview, set_preview) = signal::<Option<PreviewReq>>(None);
 
     let items = LocalResource::new({
         let api = api.clone();
         move || {
             let api = api.clone();
             async move { api.list_models(StoragePrefix(prefix.into()), true).await }
+        }
+    });
+
+    let preview_data = LocalResource::new({
+        let api = api.clone();
+        move || {
+            let api = api.clone();
+            let req = preview.get();
+            async move {
+                match req {
+                    None => Ok::<_, DomainError>(None),
+                    Some(r) => api.preview(r.image, r.json).await.map(Some),
+                }
+            }
         }
     });
 
@@ -114,52 +166,89 @@ fn ModelList(
                                             let api = api.clone();
                                             let bucket = bucket.clone();
                                             let Group { name, exts, keys } = g;
-                                            let label = name.clone();
                                             let n = keys.len();
-                                            let on_click = move |_| {
+                                            let img_key = keys
+                                                .iter()
+                                                .find(|k| {
+                                                    matches!(
+                                                        split_ext(k).1.as_deref(),
+                                                        Some("png" | "jpg" | "jpeg")
+                                                    )
+                                                })
+                                                .cloned();
+                                            // prefer a plain `model.json`; fall back to the
+                                            // civitai sidecar.
+                                            let json_key = keys
+                                                .iter()
+                                                .find(|k| split_ext(k).1.as_deref() == Some("json"))
+                                                .or_else(|| {
+                                                    keys.iter().find(|k| {
+                                                        split_ext(k).1.as_deref()
+                                                            == Some("civitai.json")
+                                                    })
+                                                })
+                                                .cloned();
+                                            let has_preview =
+                                                img_key.is_some() || json_key.is_some();
+
+                                            let q_label = name.clone();
+                                            let on_click = {
                                                 let api = api.clone();
                                                 let bucket = bucket.clone();
-                                                let keys = keys.clone();
-                                                let label = label.clone();
-                                                set_status
-                                                    .set(format!("Queuing {label} ({n})…"));
-                                                spawn_local(async move {
-                                                    let mut ok = 0usize;
-                                                    let mut failed: Option<String> = None;
-                                                    for k in &keys {
-                                                        match api
-                                                            .cp_model(
-                                                                bucket.clone(),
-                                                                StoragePath(k.clone()),
-                                                            )
-                                                            .await
-                                                        {
-                                                            Ok(_) => ok += 1,
-                                                            Err(e) => {
-                                                                failed = Some(e.to_string());
-                                                                break;
+                                                move |_| {
+                                                    let api = api.clone();
+                                                    let bucket = bucket.clone();
+                                                    let keys = keys.clone();
+                                                    let label = q_label.clone();
+                                                    set_status
+                                                        .set(format!("Queuing {label} ({n})…"));
+                                                    spawn_local(async move {
+                                                        let mut ok = 0usize;
+                                                        let mut failed: Option<String> = None;
+                                                        for k in &keys {
+                                                            match api
+                                                                .cp_model(
+                                                                    bucket.clone(),
+                                                                    StoragePath(k.clone()),
+                                                                )
+                                                                .await
+                                                            {
+                                                                Ok(_) => ok += 1,
+                                                                Err(e) => {
+                                                                    failed = Some(e.to_string());
+                                                                    break;
+                                                                }
                                                             }
                                                         }
-                                                    }
-                                                    set_status
-                                                        .set(match failed {
-                                                            None => {
-                                                                format!(
+                                                        set_status
+                                                            .set(match failed {
+                                                                None => format!(
                                                                     "Queued {label} — {ok} file(s)",
-                                                                )
-                                                            }
-                                                            Some(e) => {
-                                                                format!(
+                                                                ),
+                                                                Some(e) => format!(
                                                                     "Failed {label} after {ok}: {e}",
-                                                                )
-                                                            }
-                                                        });
-                                                });
+                                                                ),
+                                                            });
+                                                    });
+                                                }
                                             };
+
+                                            let p_name = name.clone();
+                                            let on_preview = move |ev: leptos::ev::MouseEvent| {
+                                                ev.stop_propagation();
+                                                set_preview
+                                                    .set(Some(PreviewReq {
+                                                        name: p_name.clone(),
+                                                        image: img_key.clone().map(StoragePath),
+                                                        json: json_key.clone().map(StoragePath),
+                                                    }));
+                                            };
+
                                             let tags = exts
                                                 .into_iter()
                                                 .map(|e| view! { <span class="tag">{e}</span> })
                                                 .collect_view();
+
                                             view! {
                                                 <li
                                                     class="item"
@@ -167,7 +256,21 @@ fn ModelList(
                                                     on:click=on_click
                                                 >
                                                     <span class="item-name">{name}</span>
-                                                    <span class="item-tags">{tags}</span>
+                                                    <div class="item-foot">
+                                                        <span class="item-tags">{tags}</span>
+                                                        {has_preview
+                                                            .then(|| {
+                                                                view! {
+                                                                    <button
+                                                                        class="peek-btn"
+                                                                        title="Preview"
+                                                                        on:click=on_preview
+                                                                    >
+                                                                        "👁"
+                                                                    </button>
+                                                                }
+                                                            })}
+                                                    </div>
                                                 </li>
                                             }
                                         })
@@ -197,6 +300,123 @@ fn ModelList(
                     }
                 }
             </Suspense>
+
+            {move || {
+                preview
+                    .get()
+                    .map(|req| {
+                        let name = req.name.clone();
+                        let image_name = req.image.as_ref().map(|p| basename(&p.0).to_string());
+                        let json_name = req.json.as_ref().map(|p| basename(&p.0).to_string());
+                        view! {
+                            <div
+                                class="modal-scrim"
+                                on:click=move |_| set_preview.set(None)
+                            >
+                                <div
+                                    class="modal"
+                                    on:click=|ev: leptos::ev::MouseEvent| ev.stop_propagation()
+                                >
+                                    <header class="modal-head">
+                                        <span class="modal-title">{name}</span>
+                                        <button
+                                            class="ghost-btn"
+                                            on:click=move |_| set_preview.set(None)
+                                        >
+                                            "Close"
+                                        </button>
+                                    </header>
+                                    <div class="modal-body">
+                                        <Suspense fallback=|| {
+                                            view! { <p class="muted">"Loading…"</p> }
+                                        }>
+                                            {
+                                                let image_name = image_name.clone();
+                                                let json_name = json_name.clone();
+                                                move || {
+                                                let image_name = image_name.clone();
+                                                let json_name = json_name.clone();
+                                                Suspend::new(async move {
+                                                match preview_data.await {
+                                                    Ok(Some(p)) => {
+                                                        let img = p
+                                                            .image_url
+                                                            .map(|u| {
+                                                                view! {
+                                                                    <figure class="preview-fig">
+                                                                        {image_name
+                                                                            .map(|n| {
+                                                                                view! {
+                                                                                    <figcaption class="preview-cap">
+                                                                                        {n}
+                                                                                    </figcaption>
+                                                                                }
+                                                                            })}
+                                                                        <img class="preview-img" src=u />
+                                                                    </figure>
+                                                                }
+                                                            });
+                                                        let js = p
+                                                            .json
+                                                            .map(|raw| {
+                                                                view! {
+                                                                    <figure class="preview-fig">
+                                                                        {json_name
+                                                                            .map(|n| {
+                                                                                view! {
+                                                                                    <figcaption class="preview-cap">
+                                                                                        {n}
+                                                                                    </figcaption>
+                                                                                }
+                                                                            })}
+                                                                        <pre class="preview-json">
+                                                                            {pretty_json(&raw)}
+                                                                        </pre>
+                                                                    </figure>
+                                                                }
+                                                            });
+                                                        let empty = img.is_none() && js.is_none();
+                                                        view! {
+                                                            <div class="preview-stack">
+                                                                {img}
+                                                                {js}
+                                                                {empty
+                                                                    .then(|| {
+                                                                        view! {
+                                                                            <p class="muted">
+                                                                                "No preview available."
+                                                                            </p>
+                                                                        }
+                                                                    })}
+                                                            </div>
+                                                        }
+                                                            .into_any()
+                                                    }
+                                                    Ok(None) => {
+                                                        view! {
+                                                            <p class="muted">"No preview available."</p>
+                                                        }
+                                                            .into_any()
+                                                    }
+                                                    Err(e) => {
+                                                        view! {
+                                                            <p class="auth-error">
+                                                                {format!("Preview failed: {e}")}
+                                                            </p>
+                                                        }
+                                                            .into_any()
+                                                    }
+                                                }
+                                                })
+                                                }
+                                            }
+                                        </Suspense>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    })
+            }}
         </section>
     }
 }

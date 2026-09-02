@@ -4,7 +4,10 @@ use backend::application::{
     ports::usecase::UsecaseAPI,
     routes::authorized::AuthorizedRoute,
     usecases::{
-        hq::{commands::cp_model::CPModelSvc, models::list::GetListSvc},
+        hq::{
+            commands::cp_model::CPModelSvc,
+            models::{list::GetListSvc, preview::PreviewSvc},
+        },
         template::{
             delete::TemplateDeleteSvc, list::TemplateListSvc, read::TemplateReadSvc,
             write::TemplateWriteSvc,
@@ -30,6 +33,12 @@ pub fn authorized_routes() -> Router<AuthorizedRoute> {
         .insert(
             AuthorizedRoute::ListModels.to_string(),
             AuthorizedRoute::ListModels,
+        )
+        .expect(expectation);
+    router
+        .insert(
+            AuthorizedRoute::ModelPreview.to_string(),
+            AuthorizedRoute::ModelPreview,
         )
         .expect(expectation);
     router
@@ -80,6 +89,10 @@ pub async fn handle_authorized(
         Ok(matched) => match matched.value {
             AuthorizedRoute::ListModels => {
                 let svc = GetListSvc::new(clients.as_ref(), payload.try_into()?);
+                svc.exec().await.to_result()
+            }
+            AuthorizedRoute::ModelPreview => {
+                let svc = PreviewSvc::new(clients.as_ref(), payload.try_into()?);
                 svc.exec().await.to_result()
             }
             AuthorizedRoute::AgentModelCP => {

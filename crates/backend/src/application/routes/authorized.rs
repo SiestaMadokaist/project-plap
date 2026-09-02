@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 pub enum AuthorizedRoute {
     #[serde(rename = "/models/list")]
     ListModels,
+    #[serde(rename = "/models/preview")]
+    ModelPreview,
     #[serde(rename = "/agents/command/cp")]
     AgentModelCP,
     // #[serde(rename = "/agents/command/delete")]

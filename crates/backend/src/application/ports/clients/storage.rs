@@ -12,6 +12,12 @@ pub trait StorageClient {
     fn provider_name() -> String;
     fn bucket(&self) -> StorageBucket;
     async fn read(&self, path: &StoragePath) -> Result<String, DomainError>;
+    /// A short-lived presigned GET url, for handing a single object straight to the browser.
+    async fn presigned_get(
+        &self,
+        path: &StoragePath,
+        ttl: std::time::Duration,
+    ) -> Result<String, DomainError>;
     async fn write(&self, path: &StoragePath, data: &[u8]) -> Result<(), DomainError>;
     async fn delete(&self, path: &StoragePath) -> Result<(), DomainError>;
     fn public_url(&self, path: &StoragePath) -> String;
