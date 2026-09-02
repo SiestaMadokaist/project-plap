@@ -59,11 +59,15 @@ coverage-lcov:
 build:
 	cargo lambda build -p backend --release --arm64 --bin api --bin ws --bin cron
 
+# Each function ships its own dotenv at the zip root, loaded via ENV_PATH (see lambda.tf).
+# api needs the auth/storage vars in .env.api; ws/cron run on .env.production.
 package: build
 	mkdir -p $(DIST_DIR)
 	@for fn in $(FUNCTIONS); do \
-		echo "unzipped size $$fn: $$(du -h target/lambda/$$fn/bootstrap | cut -f1)"; \
-		zip -j $(DIST_DIR)/$$fn.zip target/lambda/$$fn/bootstrap .env.production; \
+		case $$fn in api) env=.env.api ;; *) env=.env.production ;; esac; \
+		echo "unzipped size $$fn: $$(du -h target/lambda/$$fn/bootstrap | cut -f1) ($$env)"; \
+		rm -f $(DIST_DIR)/$$fn.zip; \
+		zip -j $(DIST_DIR)/$$fn.zip target/lambda/$$fn/bootstrap $$env; \
 	done
 
 # --- deploy just the api function (skips ws/cron, still WIP) ---
@@ -74,7 +78,8 @@ build-api:
 package-api: build-api
 	mkdir -p $(DIST_DIR)
 	@echo "unzipped size api: $$(du -h target/lambda/api/bootstrap | cut -f1)"
-	zip -j $(DIST_DIR)/api.zip target/lambda/api/bootstrap .env.production
+	rm -f $(DIST_DIR)/api.zip
+	zip -j $(DIST_DIR)/api.zip target/lambda/api/bootstrap .env.api
 
 deploy-api: package-api
 	cd terraform && terraform apply -target=aws_lambda_function.api -auto-approve $(TF_VARS)

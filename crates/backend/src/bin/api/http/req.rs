@@ -17,6 +17,37 @@ pub struct ApiEvent {
     body: Option<String>,
     #[serde(rename = "isBase64Encoded", default)]
     is_base64_encoded: bool,
+    /// `requestContext.http` carries the method. Defaulted so a hand-rolled local
+    /// fixture without it still deserializes.
+    #[serde(rename = "requestContext", default)]
+    request_context: RequestContext,
+}
+
+#[derive(Deserialize, Debug, Default)]
+struct RequestContext {
+    #[serde(default)]
+    http: HttpDescription,
+}
+
+#[derive(Deserialize, Debug, Default)]
+struct HttpDescription {
+    #[serde(default)]
+    method: String,
+}
+
+impl ApiEvent {
+    /// Case-insensitive header lookup.
+    pub fn header(&self, name: &str) -> Option<&str> {
+        self.headers
+            .iter()
+            .find(|(k, _)| k.eq_ignore_ascii_case(name))
+            .map(|(_, v)| v.as_str())
+    }
+
+    /// HTTP verb (`GET`, `POST`, `OPTIONS`, …). Empty string if the event omitted it.
+    pub fn method(&self) -> &str {
+        &self.request_context.http.method
+    }
 }
 
 #[derive(Debug)]
@@ -29,10 +60,7 @@ impl HttpEvent {
         let raw = self
             .0
             .payload
-            .headers
-            .iter()
-            .find(|(k, _)| k.eq_ignore_ascii_case("authorization"))
-            .map(|(_, v)| v.as_str())
+            .header("authorization")
             .ok_or_else(|| DomainError::NotAllowed("missing authorization header".into()))?;
         let token = raw.strip_prefix("Bearer ").unwrap_or(raw).trim();
         Ok(JWT(token.into()))
@@ -58,5 +86,9 @@ impl HttpEvent {
 
     pub fn path(&self) -> &str {
         &self.0.payload.raw_path
+    }
+
+    pub fn method(&self) -> &str {
+        self.0.payload.method()
     }
 }

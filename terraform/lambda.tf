@@ -15,7 +15,9 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      ENV_PATH = ".env.${var.stage}"
+      # api.zip bundles .env.api (not .env.${stage}) — it carries the auth/storage
+      # config the other functions don't need. See the `package` target in the Makefile.
+      ENV_PATH = ".env.api"
     }
   }
 

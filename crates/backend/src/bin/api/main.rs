@@ -20,7 +20,7 @@ use pkg::auth::claims::JWT;
 use crate::{
     http::{
         req::{ApiEvent, HttpEvent},
-        resp::{no, ServerResponse},
+        resp::{no, no_content, ServerResponse},
     },
     routes::{
         authorized::{authorized_routes, handle_authorized},
@@ -69,6 +69,12 @@ async fn main() -> Result<(), Error> {
         let authorized_rt = authorized_router.clone();
         let http_event = HttpEvent(event);
         async move {
+            // CORS preflight: the $default route hands OPTIONS to us; answer 204 and
+            // let API Gateway's cors_configuration attach the Access-Control-* headers.
+            if http_event.method().eq_ignore_ascii_case("OPTIONS") {
+                return Ok::<ServerResponse, Error>(no_content());
+            }
+
             let path = http_event.path().to_string();
             // check public first because authorized might throw error if unauthorized
             let handled: Result<ServerResponse, DomainError> = if public_rt.at(&path).is_ok() {

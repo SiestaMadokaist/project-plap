@@ -2,11 +2,15 @@ resource "aws_apigatewayv2_api" "http" {
   name          = "${var.service_name}-${var.stage}-http"
   protocol_type = "HTTP"
 
+  # API Gateway answers the OPTIONS preflight itself (never invokes the Lambda) and
+  # injects these headers on every response. Scoped to the frontend origin, which
+  # API Gateway echoes back on a match. `authorization` must be listed explicitly —
+  # the Fetch spec doesn't let `*` cover it.
   cors_configuration {
-    allow_origins = ["*"]
+    allow_origins = ["https://${var.frontend_domain}"]
     allow_methods = ["*"]
-    allow_headers = ["*"]
-    max_age       = 300
+    allow_headers = ["authorization", "content-type"]
+    max_age       = 86400
   }
 }
 
