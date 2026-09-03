@@ -12,7 +12,7 @@ use pkg::{
 };
 use wasm_bindgen_futures::spawn_local;
 
-use crate::{api::auth::AuthApi, session, wallet, API_BASE};
+use crate::{api::auth::AuthApi, env::ENV, session, wallet};
 
 /// How long a requested challenge/session may span. Must sit under the server's
 /// `AUTH_SESSION_TTL`; the exact value only matters for the server's sanity checks.
@@ -54,7 +54,7 @@ async fn authenticate(step: RwSignal<Step>) -> Result<JWT, String> {
     let address = AddressETH(account.trim_start_matches("0x").to_lowercase());
 
     step.set(Step::Requesting);
-    let api = AuthApi::new(URL(API_BASE.to_string()));
+    let api = AuthApi::new(URL(ENV.api_base.to_string()));
     let now = Timestamp((js_sys::Date::now() / 1000.0) as i64);
     let req = ReqChallenge::new(address, now, Second(REQUEST_TTL_SECONDS));
     let challenge = api

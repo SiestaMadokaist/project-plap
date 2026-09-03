@@ -2,14 +2,14 @@ use std::collections::HashMap;
 
 use domain::{
     errors::DomainError,
-    storage::{StoragePath, StoragePrefix},
+    storage::{StorageBucket, StoragePath, StoragePrefix},
 };
 use leptos::prelude::*;
 use pkg::{auth::claims::JWT, types::strings::URL};
 use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::spawn_local;
 
-use crate::{api::plap::PlapApi, session, API_BASE};
+use crate::{api::plap::PlapApi, env::ENV, session};
 
 /// The two prefixes the panels list. Trailing slash keeps the match tight
 /// (so `loras/` doesn't also pull in a sibling like `loras_xl/`).
@@ -35,16 +35,30 @@ struct PreviewReq {
     json: Option<StoragePath>,
 }
 
-/// Split a key into `(stem, ext)`. `.civitai.json` counts as one extension so a
-/// civitai sidecar collapses into the same group as its model / `model.json`.
+/// Split a key into `(stem, ext)`. Two shapes fold onto a shorter stem so they
+/// group with the model they belong to rather than forming their own entry:
+/// - `<stem>.civitai.json` — the civitai sidecar
+/// - `<stem>.image-<n>.png` — a generated preview sample
 fn split_ext(key: &str) -> (&str, Option<String>) {
     match key.rsplit_once('.') {
-        Some((rest, "json")) if rest.ends_with(".civitai") => {
-            (&rest[..rest.len() - ".civitai".len()], Some("civitai.json".into()))
-        }
+        Some((rest, "json")) if rest.ends_with(".civitai") => (
+            &rest[..rest.len() - ".civitai".len()],
+            Some("civitai.json".into()),
+        ),
+        Some((rest, "png")) => match sample_stem(rest) {
+            Some(stem) => (stem, Some("png".into())),
+            None => (rest, Some("png".into())),
+        },
         Some((stem, ext)) => (stem, Some(ext.to_ascii_lowercase())),
         None => (key, None),
     }
+}
+
+/// `foo/bar.image-3` -> `Some("foo/bar")`; the segment after `.image-` must be
+/// all digits, otherwise this isn't a preview sample.
+fn sample_stem(rest: &str) -> Option<&str> {
+    let (stem, n) = rest.rsplit_once(".image-")?;
+    (!n.is_empty() && n.bytes().all(|b| b.is_ascii_digit())).then_some(stem)
 }
 
 fn basename(key: &str) -> &str {
@@ -78,7 +92,10 @@ fn collapse(prefix: &str, paths: Vec<StoragePath>) -> Vec<Group> {
     }
 
     order.sort();
-    order.into_iter().filter_map(|s| groups.remove(&s)).collect()
+    order
+        .into_iter()
+        .filter_map(|s| groups.remove(&s))
+        .collect()
 }
 
 /// Re-indent JSON to two spaces via the browser's own `JSON`. Falls back to the
@@ -88,10 +105,14 @@ fn pretty_json(raw: &str) -> String {
         Ok(v) => v,
         Err(_) => return raw.to_string(),
     };
-    js_sys::JSON::stringify_with_replacer_and_space(&parsed, &JsValue::NULL, &JsValue::from_f64(2.0))
-        .ok()
-        .and_then(|s| s.as_string())
-        .unwrap_or_else(|| raw.to_string())
+    js_sys::JSON::stringify_with_replacer_and_space(
+        &parsed,
+        &JsValue::NULL,
+        &JsValue::from_f64(2.0),
+    )
+    .ok()
+    .and_then(|s| s.as_string())
+    .unwrap_or_else(|| raw.to_string())
 }
 
 /// A flat, recursive listing of everything under `prefix`, collapsed by stem.
@@ -109,11 +130,14 @@ fn ModelList(
 ) -> impl IntoView {
     let (status, set_status) = signal(String::new());
     let (preview, set_preview) = signal::<Option<PreviewReq>>(None);
+    // bumped by the panel's refresh button to re-run the listing
+    let (reload, set_reload) = signal(0u32);
 
     let items = LocalResource::new({
         let api = api.clone();
         move || {
             let api = api.clone();
+            reload.track();
             async move { api.list_models(StoragePrefix(prefix.into()), true).await }
         }
     });
@@ -137,6 +161,13 @@ fn ModelList(
             <header class="panel-head">
                 <h2 class="panel-title">{title}</h2>
                 <span class="panel-prefix">{prefix}</span>
+                <button
+                    class="peek-btn panel-refresh"
+                    title="Refresh"
+                    on:click=move |_| set_reload.update(|n| *n += 1)
+                >
+                    "↻"
+                </button>
             </header>
 
             {move || {
@@ -154,19 +185,17 @@ fn ModelList(
                         Suspend::new(async move {
                             match items.await {
                                 Ok(resp) => {
-                                    let bucket = resp.bucket;
                                     let groups = collapse(prefix, resp.tree.paths);
                                     if groups.is_empty() {
                                         return view! {
                                             <p class="muted panel-note">"Nothing here."</p>
                                         }
-                                            .into_any();
+                                        .into_any();
                                     }
                                     let rows = groups
                                         .into_iter()
                                         .map(|g| {
                                             let api = api.clone();
-                                            let bucket = bucket.clone();
                                             let Group { name, exts, keys } = g;
                                             let n = keys.len();
                                             let img_key = keys
@@ -196,10 +225,8 @@ fn ModelList(
                                             let q_label = name.clone();
                                             let on_click = {
                                                 let api = api.clone();
-                                                let bucket = bucket.clone();
                                                 move |_| {
                                                     let api = api.clone();
-                                                    let bucket = bucket.clone();
                                                     let keys = keys.clone();
                                                     let label = q_label.clone();
                                                     set_status
@@ -209,10 +236,7 @@ fn ModelList(
                                                         let mut failed: Option<String> = None;
                                                         for k in &keys {
                                                             match api
-                                                                .cp_model(
-                                                                    bucket.clone(),
-                                                                    StoragePath(k.clone()),
-                                                                )
+                                                                .cp_model(StoragePath(k.clone()))
                                                                 .await
                                                             {
                                                                 Ok(_) => ok += 1,
@@ -426,13 +450,116 @@ fn ModelList(
     }
 }
 
+/// Standalone action panel: queue the `comfyui/bootstraps/ -> models/` copy.
+/// Sits above the "Diffusion models" list in its column.
+#[component]
+fn SyncBootstraps(api: PlapApi, bump_queue: WriteSignal<u32>) -> impl IntoView {
+    let (status, set_status) = signal(String::new());
+
+    let on_sync = move |_| {
+        let api = api.clone();
+        set_status.set("Queuing bootstraps…".to_string());
+        spawn_local(async move {
+            match api.cp_bootstraps().await {
+                Ok(_) => {
+                    set_status.set("Queued comfyui/bootstraps/ -> models/".to_string());
+                    bump_queue.update(|n| *n += 1);
+                }
+                Err(e) => set_status.set(format!("Bootstrap sync failed: {e}")),
+            }
+        });
+    };
+
+    view! {
+        <section class="panel">
+            <header class="panel-head">
+                <h2 class="panel-title">"Bootstraps"</h2>
+                <span class="panel-prefix">"comfyui/bootstraps/ -> models/"</span>
+            </header>
+
+            {move || {
+                let s = status.get();
+                (!s.is_empty()).then(|| view! { <p class="panel-status">{s}</p> })
+            }}
+
+            <div class="panel-actions">
+                <button class="ghost-btn" on:click=on_sync>
+                    "Sync bootstraps -> models/"
+                </button>
+            </div>
+        </section>
+    }
+}
+
+/// Standalone action panel: pull a civitai model version by id into the agent
+/// queue. Sits above the "In progress" queue in its column.
+#[component]
+fn CivitaiPull(api: PlapApi, bump_queue: WriteSignal<u32>) -> impl IntoView {
+    let (status, set_status) = signal(String::new());
+    let (version_id, set_version_id) = signal(String::new());
+
+    // Enter queues a civitai -> localhost download for that model version id.
+    let on_key = move |ev: leptos::ev::KeyboardEvent| {
+        if ev.key() != "Enter" {
+            return;
+        }
+        let raw = version_id.get_untracked();
+        let trimmed = raw.trim();
+        let id: u32 = match trimmed.parse() {
+            Ok(id) if id > 0 => id,
+            _ => {
+                set_status.set(format!("'{trimmed}' is not a valid civitai version id"));
+                return;
+            }
+        };
+        set_status.set(format!("Queuing civitai {id}…"));
+        set_version_id.set(String::new());
+        let api = api.clone();
+        spawn_local(async move {
+            match api.cp_civitai(id).await {
+                Ok(_) => {
+                    set_status.set(format!("Queued civitai {id}"));
+                    bump_queue.update(|n| *n += 1);
+                }
+                Err(e) => set_status.set(format!("civitai {id} failed: {e}")),
+            }
+        });
+    };
+
+    view! {
+        <section class="panel">
+            <header class="panel-head">
+                <h2 class="panel-title">"Civitai"</h2>
+                <span class="panel-prefix">"version id -> queue"</span>
+            </header>
+
+            {move || {
+                let s = status.get();
+                (!s.is_empty()).then(|| view! { <p class="panel-status">{s}</p> })
+            }}
+
+            <div class="panel-actions">
+                <input
+                    class="panel-input"
+                    type="number"
+                    min="1"
+                    placeholder="civitai version id — press Enter"
+                    prop:value=move || version_id.get()
+                    on:input=move |ev| set_version_id.set(event_target_value(&ev))
+                    on:keydown=on_key
+                />
+            </div>
+        </section>
+    }
+}
+
 /// Agent commands currently in the queue. For now just `action_id` + `priority`,
 /// each with a delete button.
 #[component]
 fn AgentCommands(
     api: PlapApi,
     set_session: WriteSignal<Option<JWT>>,
-    /// refetch trigger — bumped here on delete, and by the model panels on queue
+    /// refetch trigger — bumped here on delete, and by the action panels on queue
     reload: ReadSignal<u32>,
     set_reload: WriteSignal<u32>,
 ) -> impl IntoView {
@@ -443,7 +570,7 @@ fn AgentCommands(
         move || {
             let api = api.clone();
             reload.track();
-            async move { api.list_commands().await }
+            async move { api.list_taskqueue().await }
         }
     });
 
@@ -452,6 +579,13 @@ fn AgentCommands(
             <header class="panel-head">
                 <h2 class="panel-title">"In progress"</h2>
                 <span class="panel-prefix">"agent queue"</span>
+                <button
+                    class="peek-btn panel-refresh"
+                    title="Refresh"
+                    on:click=move |_| set_reload.update(|n| *n += 1)
+                >
+                    "↻"
+                </button>
             </header>
 
             {move || {
@@ -551,7 +685,12 @@ fn AgentCommands(
 
 #[component]
 pub fn Controls(jwt: JWT, set_session: WriteSignal<Option<JWT>>) -> impl IntoView {
-    let api = PlapApi::new(jwt, URL(API_BASE.to_string()));
+    let api = PlapApi::new(
+        jwt,
+        URL(ENV.api_base.to_string()),
+        StorageBucket(ENV.model_bucket.to_string()),
+        StorageBucket(ENV.io_bucket.to_string()),
+    );
 
     // shared refetch trigger for the agent-queue panel: queue actions in the model
     // panels and deletes in the queue panel all bump it.
@@ -577,26 +716,34 @@ pub fn Controls(jwt: JWT, set_session: WriteSignal<Option<JWT>>) -> impl IntoVie
             <section class="dash-body wide">
                 <h1>"Controls"</h1>
                 <div class="panels">
-                    <ModelList
-                        api=api.clone()
-                        title="Diffusion models"
-                        prefix=DIFFUSION_MODELS
-                        set_session
-                        bump_queue=set_queue_reload
-                    />
-                    <ModelList
-                        api=api.clone()
-                        title="LoRAs"
-                        prefix=LORAS
-                        set_session
-                        bump_queue=set_queue_reload
-                    />
-                    <AgentCommands
-                        api=api.clone()
-                        set_session
-                        reload=queue_reload
-                        set_reload=set_queue_reload
-                    />
+                    <div class="panel-col">
+                        <SyncBootstraps api=api.clone() bump_queue=set_queue_reload />
+                        <ModelList
+                            api=api.clone()
+                            title="Diffusion models"
+                            prefix=DIFFUSION_MODELS
+                            set_session
+                            bump_queue=set_queue_reload
+                        />
+                    </div>
+                    <div class="panel-col">
+                        <ModelList
+                            api=api.clone()
+                            title="LoRAs"
+                            prefix=LORAS
+                            set_session
+                            bump_queue=set_queue_reload
+                        />
+                    </div>
+                    <div class="panel-col">
+                        <CivitaiPull api=api.clone() bump_queue=set_queue_reload />
+                        <AgentCommands
+                            api=api.clone()
+                            set_session
+                            reload=queue_reload
+                            set_reload=set_queue_reload
+                        />
+                    </div>
                 </div>
             </section>
         </main>

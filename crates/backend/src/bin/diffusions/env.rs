@@ -32,6 +32,8 @@ pub struct DiffusionEnv {
     pub watch_interval: Second,
     pub queue_interval: Second,
     pub idle_tolerance: Second,
+
+    blacklist_tags: String,
 }
 const DEFAULT_MAX_DATA_TRANSFER_BYTES: i64 = 30 * 1024 * 1024 * 1024;
 
@@ -74,7 +76,20 @@ impl DiffusionEnv {
             watch_interval: var_second("WATCH_INTERVAL"),
             queue_interval: var_second("QUEUE_INTERVAL"),
             idle_tolerance: var_second("IDLE_TOLERANCE"),
+
+            blacklist_tags: env::var("BLACKLIST_TAGS").expect("BLACKLIST_TAGS must be set"),
         }
+    }
+
+    /// `BLACKLIST_TAGS` is a comma-separated list; split it, trim each entry, and
+    /// drop blanks (trailing comma, `a,,b`, etc.).
+    pub fn blacklist_tags(&self) -> Vec<String> {
+        self.blacklist_tags
+            .split(',')
+            .map(str::trim)
+            .filter(|t| !t.is_empty())
+            .map(String::from)
+            .collect()
     }
 
     pub fn sanity_run(&self) -> bool {

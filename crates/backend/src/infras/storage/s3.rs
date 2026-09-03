@@ -232,9 +232,11 @@ impl S3Storage {
     ) -> Result<Vec<String>, DomainError> {
         let key = self.key(remote);
         let src = format!("s3://{}/{key}", self.bucket);
+        tracing::debug!("copying from {}", src);
         let dst = local
             .to_str()
             .ok_or_else(|| DomainError::Serialize("local path is not valid UTF-8".into()))?;
+        tracing::debug!("copying from {}", dst);
         let mut args = vec!["s3".into(), "cp".into(), src, dst.into()];
         if recursive {
             args.push("--recursive".into());
@@ -280,6 +282,7 @@ impl StorageClient for S3Storage {
 
     #[cfg(feature = "datatransfer")]
     async fn download(&self, remote: &StoragePath, local: &Path) -> Result<(), DomainError> {
+        tracing::debug!("starting download");
         let same_region = self.is_same_region().await?;
         if !same_region {
             let err = DomainError::BillOptimization(

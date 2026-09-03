@@ -97,9 +97,10 @@ deploy-bin:
 frontend-serve:
 	cd crates/frontend && trunk serve
 
-# PLAP_API_BASE is baked into the wasm at build time (see crates/frontend/src/lib.rs).
-# Injected from terraform's api_url output when available; otherwise the bundle
-# targets the local `cargo lambda watch`.
+# Build-time config (API base, bucket names) comes from .env.frontend.example,
+# read by crates/frontend/build.rs and baked into the wasm. A process env var of
+# the same name overrides the file — here PLAP_API_BASE is set from terraform's
+# api_url output when the stack is applied, so a shipped bundle targets the deployed API.
 frontend-build:
 	cd crates/frontend && $(if $(strip $(API_URL)),PLAP_API_BASE="$(API_URL)" )trunk build --release
 

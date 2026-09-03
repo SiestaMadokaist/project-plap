@@ -66,11 +66,20 @@ resource "aws_iam_role_policy" "api" {
         Resource = ["arn:aws:dynamodb:${var.region}:${local.account_id}:table/${var.stage}-presets"]
       },
       {
-        # GetListModel::run -> storage.ls() on the model bucket (list.rs). List only, no object access needed.
+        # GetListModel::run -> storage.ls() on the model bucket (list.rs).
         Sid      = "ModelBucketList"
         Effect   = "Allow"
         Action   = ["s3:ListBucket"]
         Resource = ["arn:aws:s3:::virginia-ramadoka"]
+      },
+      {
+        # PreviewSvc::exec -> storage.read() (get_object) for the .civitai.json, and
+        # storage.presigned_get() for the preview image — both need GetObject on the
+        # objects, a separate grant from ListBucket above.
+        Sid      = "ModelBucketObjectRead"
+        Effect   = "Allow"
+        Action   = ["s3:GetObject"]
+        Resource = ["arn:aws:s3:::virginia-ramadoka/comfyui/*"]
       },
       {
         # ap3.ramadoka.com = OUTPUT_BUCKET (ApiClients, output_storage), objects written with PublicRead ACL.

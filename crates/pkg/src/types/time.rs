@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 /*
  * ms since epoch
  */
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TimestampMS(pub i64);
 
 impl TimestampMS {
@@ -18,6 +18,11 @@ impl TimestampMS {
         let sec = p / 1000;
         let nsec: u32 = (p % 1_000_000) as u32;
         DateTime::from_timestamp(sec, nsec)
+    }
+    pub fn to_datestring(&self) -> Option<String> {
+        let dt = self.utc()?;
+        let formatted = dt.format("%Y-%m-%d");
+        Some(formatted.to_string())
     }
 }
 

@@ -254,6 +254,14 @@ body {
   align-items: start;
 }
 
+/* one grid column = an action panel stacked above its list panel */
+.panel-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
 .panel {
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -299,6 +307,35 @@ body {
   color: var(--text-dim);
   font-size: 12px;
   word-break: break-all;
+}
+
+.panel-actions {
+  padding: 12px 16px;
+}
+
+.panel-refresh {
+  margin-left: auto;
+  align-self: center;
+}
+
+.panel-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.panel-input::placeholder {
+  color: var(--text-mute);
+}
+
+.panel-input:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 .item-list {
