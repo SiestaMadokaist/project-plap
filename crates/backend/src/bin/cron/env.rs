@@ -4,6 +4,8 @@ use domain::storage::StoragePrefix;
 use pkg::{enums::stage::Stage, types::strings::URL, utils::var_or};
 pub struct CronEnv {
     stage: String,
+    pub sentry_dsn: Option<String>,
+    pub sentry_env: String,
     pub openai_model: String,
     pub syosetu_host: String,
     pub proxy_host: Option<String>,
@@ -24,6 +26,8 @@ impl CronEnv {
     pub fn from_env() -> Self {
         Self {
             stage: var_or("STAGE", "production"),
+            sentry_dsn: env::var("SENTRY_DSN").ok().filter(|s| !s.is_empty()),
+            sentry_env: var_or("SENTRY_ENV", "unknown"),
             openai_model: var_or("OPENAI_MODEL", "gpt-4o"),
             syosetu_host: var_or("SYOSETU_HOST", "https://ncode.syosetu.com"),
             proxy_host: env::var("PROXY_HOST").ok(),

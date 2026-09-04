@@ -11,6 +11,9 @@ pub struct DiffusionEnv {
     civitai_host: String,
     sanity_run: String,
 
+    pub sentry_dsn: Option<String>,
+    pub sentry_env: String,
+
     pub localhost: bool,
     pub max_data_transfer: i64,
     pub watch_dir: String,
@@ -29,9 +32,7 @@ pub struct DiffusionEnv {
     pub model_bucket: String,
     pub model_prefix: StoragePrefix,
 
-    pub watch_interval: Second,
-    pub queue_interval: Second,
-    pub idle_tolerance: Second,
+    pub cache_ttl: Second,
 
     blacklist_tags: String,
 }
@@ -40,9 +41,12 @@ const DEFAULT_MAX_DATA_TRANSFER_BYTES: i64 = 30 * 1024 * 1024 * 1024;
 impl DiffusionEnv {
     pub fn from_env() -> Self {
         Self {
-            localhost: true, // @todo
+            localhost: env::var("IS_LOCALHOST").expect("IS_LOCALHOST flag must be set") == "true", // @todo
             stage: var_or("STAGE", "production"),
             sanity_run: var_or("SANITY_RUN", "false"),
+
+            sentry_dsn: env::var("SENTRY_DSN").ok().filter(|s| !s.is_empty()),
+            sentry_env: var_or("SENTRY_ENV", "unknown"),
 
             civitai_apikey: env::var("CIVITAI_APIKEY").expect("CIVITAI_APIKEY must be set"),
             civitai_host: env::var("CIVITAI_HOST").expect("CIVITAI_HOST must be set"),
@@ -72,12 +76,8 @@ impl DiffusionEnv {
             output_prefix: env::var("OUTPUT_PREFIX")
                 .map(StoragePrefix)
                 .expect("OUTPUT PREFIX must be set"),
-
-            watch_interval: var_second("WATCH_INTERVAL"),
-            queue_interval: var_second("QUEUE_INTERVAL"),
-            idle_tolerance: var_second("IDLE_TOLERANCE"),
-
             blacklist_tags: env::var("BLACKLIST_TAGS").expect("BLACKLIST_TAGS must be set"),
+            cache_ttl: var_second("CACHE_TTL"),
         }
     }
 

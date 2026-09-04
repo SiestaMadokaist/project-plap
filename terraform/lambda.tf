@@ -41,6 +41,9 @@ resource "aws_lambda_function" "ws" {
   environment {
     variables = {
       ENV_PATH = ".env.${var.stage}"
+      # ws and cron share .env.${stage}, so SENTRY_DSN lives there but SENTRY_ENV
+      # is set per-function here (a real process env var wins over the dotenv file).
+      SENTRY_ENV = "ws"
     }
   }
 
@@ -63,7 +66,8 @@ resource "aws_lambda_function" "cron" {
 
   environment {
     variables = {
-      ENV_PATH = ".env.${var.stage}"
+      ENV_PATH   = ".env.${var.stage}"
+      SENTRY_ENV = "cron"
     }
   }
 

@@ -4,6 +4,7 @@ use crate::application::ports::{
 };
 use domain::{errors::DomainError, storage::StoragePath};
 use pkg::{
+    auth::claims::Username,
     exif::{
         comfyui::ComfyUI,
         traits::{Exif, ExifTraits},
@@ -34,7 +35,8 @@ trait_clients!(
     SaveOutputClient,
     clients::container::HasOutputStorage,
     clients::container::HasModelStorage,
-    clients::container::HasNotification
+    clients::container::HasNotification,
+    clients::container::HasComputeAgent
 );
 trait_repos!(
     SaveOutputRepos,
@@ -97,13 +99,25 @@ impl<'a, C: SaveOutputClient, R: SaveOutputRepos> SaveOutput<'a, C, R> {
         Ok(())
     }
 
-    fn store_path(&self) -> StoragePath {
+    /// Who launched this instance, read back from its own `Username` tag via
+    /// `ComputeAgent::username` (ec2:DescribeTags) - same source `IdleTerminator`
+    /// uses to key its `HotReloadRepository` lookups.
+    async fn username(&self) -> Result<Username, DomainError> {
+        self.clients
+            .agent()
+            .username()
+            .await
+            .map_err(|e| DomainError::Disconnected(e.to_string()))
+    }
+
+    async fn store_path(&self) -> Result<StoragePath, DomainError> {
         let now = self.now;
+        let username = self.username().await?;
         let ds = now.to_datestring();
         let date_string = ds.unwrap_or("UNKNOWN-DATE".into());
         let filename = format!("{}.png", now.0);
-        let s = format!("{}/{}", date_string, filename);
-        StoragePath(s)
+        let s = format!("{}/{}/{}", username, date_string, filename);
+        Ok(StoragePath(s))
     }
 
     async fn ioread(&self) -> Result<&Vec<u8>, DomainError> {
@@ -147,7 +161,6 @@ impl<'a, C: SaveOutputClient, R: SaveOutputRepos> SaveOutput<'a, C, R> {
         let prompt = exif
             .positive()
             .map_err(|x| DomainError::Prerequisite(x.to_string()))?;
-
         // Preview must be SFW: if the positive prompt carries any blacklisted tag,
         // skip publishing the preview entirely (case-insensitive substring match;
         // empty entries are ignored so they can't blacklist everything).
@@ -159,7 +172,6 @@ impl<'a, C: SaveOutputClient, R: SaveOutputRepos> SaveOutput<'a, C, R> {
             tracing::info!("preview skipped: blacklisted tag in prompt");
             return Ok(());
         }
-
         let model_storage = self.clients.model_storage();
         let preview_path = self.preview_path().await?;
         let data = self.ioread().await?;
@@ -171,7 +183,7 @@ impl<'a, C: SaveOutputClient, R: SaveOutputRepos> SaveOutput<'a, C, R> {
         let c = self.clients;
         let output_storage = c.output_storage();
         let data = self.ioread().await?;
-        let remote_path = self.store_path();
+        let remote_path = self.store_path().await?;
         let local_path = self.relative_path();
         tracing::info!(
             "uploading {} to {}",

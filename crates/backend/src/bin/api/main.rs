@@ -50,9 +50,10 @@ async fn route_authorized(
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Error> {
     backend::init_env();
+    let env = ApiEnv::from_env();
+    let _sentry = backend::init_sentry(env.sentry_dsn.as_deref(), &env.sentry_env);
     backend::init_tracing();
 
-    let env = ApiEnv::from_env();
     if env.sanity_run() {
         return Ok(());
     }

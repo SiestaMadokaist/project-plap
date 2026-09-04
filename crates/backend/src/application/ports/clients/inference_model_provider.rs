@@ -1,6 +1,6 @@
-use std::path::PathBuf;
 #[cfg(feature = "datatransfer")]
 use std::path::Path;
+use std::path::PathBuf;
 
 use pkg::{
     civitai::{dto::model_version::ModelVersionDTO, typing::ModelCategory},

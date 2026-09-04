@@ -375,6 +375,16 @@ body {
   flex: none;
 }
 
+.cmd-actions {
+  display: flex;
+  flex: none;
+  gap: 6px;
+}
+
+.compute-panel {
+  margin-bottom: 32px;
+}
+
 .cmd-id {
   font-family: "SFMono-Regular", ui-monospace, "JetBrains Mono", Menlo, Consolas,
     monospace;
@@ -463,6 +473,11 @@ body {
   color: var(--text);
 }
 
+.peek-btn.danger:hover {
+  border-color: var(--danger-border);
+  color: var(--danger-text);
+}
+
 /* ---------- preview modal ---------- */
 
 .modal-scrim {
@@ -519,6 +534,21 @@ body {
   gap: 14px;
 }
 
+/* fixed 3-up grid: a single sample still occupies one third, not the full width */
+.preview-images {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+
+/* keep captions to one line so the image rows stay aligned in their cells */
+.preview-images .preview-cap {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .preview-fig {
   margin: 0;
   display: flex;
@@ -537,6 +567,8 @@ body {
 
 .preview-img {
   width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
   border-radius: 10px;
   border: 1px solid var(--border);
 }

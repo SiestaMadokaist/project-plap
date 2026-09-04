@@ -32,6 +32,7 @@ impl<'a, C: ManageComputeClients> ManageCompute<'a, C> {
         let opt_engine = engines.get(region);
         let engine = opt_engine.ok_or(DomainError::InvalidRegion(region.to_string()))?;
         match command {
+            ComputeCommand::Start => engine.start(id).await?,
             ComputeCommand::Terminate => engine.terminate(id).await?,
             ComputeCommand::Reboot => engine.reboot(id).await?,
             ComputeCommand::Stop => engine.stop(id).await?,

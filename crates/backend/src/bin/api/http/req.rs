@@ -50,7 +50,6 @@ impl ApiEvent {
     }
 }
 
-#[derive(Debug)]
 pub struct HttpEvent(pub LambdaEvent<ApiEvent>);
 
 impl HttpEvent {

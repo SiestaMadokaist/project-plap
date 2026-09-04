@@ -13,6 +13,9 @@ pub struct ApiEnv {
     stage: String,
     sanity_run: String,
 
+    pub sentry_dsn: Option<String>,
+    pub sentry_env: String,
+
     pub discord_username: String,
     pub discord_webhook_url: URL,
 
@@ -41,6 +44,9 @@ impl ApiEnv {
         Self {
             sanity_run: var_or("SANITY_RUN", "false"),
             stage: env::var("STAGE").expect("stage must be set"),
+
+            sentry_dsn: env::var("SENTRY_DSN").ok().filter(|s| !s.is_empty()),
+            sentry_env: var_or("SENTRY_ENV", "unknown"),
             discord_username: var_or("DISCORD_USERNAME", "lambda-api"),
             discord_webhook_url: env::var("DISCORD_WEBHOOK_URL")
                 .map(URL)

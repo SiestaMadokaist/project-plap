@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use domain::{
+    commands::compute::{ComputeArgs, ComputeCommand, ComputeRegion},
     errors::DomainError,
     storage::{StorageBucket, StoragePath, StoragePrefix},
 };
@@ -10,6 +11,16 @@ use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::spawn_local;
 
 use crate::{api::plap::PlapApi, env::ENV, session};
+
+/// Every region an EC2 engine may be configured for — see
+/// `domain::commands::compute::ComputeRegion`. No enumeration helper exists on
+/// the domain type itself, so the panel's region picker lists them by hand.
+const COMPUTE_REGIONS: [ComputeRegion; 1] = [
+    // ComputeRegion::AwsApSoutheast1,
+    // ComputeRegion::AWSApSoutheast2,
+    // ComputeRegion::AWSApSoutheast3,
+    ComputeRegion::AWSUsEast1,
+];
 
 /// The two prefixes the panels list. Trailing slash keeps the match tight
 /// (so `loras/` doesn't also pull in a sibling like `loras_xl/`).
@@ -31,9 +42,13 @@ struct Group {
 #[derive(Clone)]
 struct PreviewReq {
     name: String,
-    image: Option<StoragePath>,
+    /// image sample siblings, capped at [`MAX_PREVIEW_IMAGES`]
+    images: Vec<StoragePath>,
     json: Option<StoragePath>,
 }
+
+/// How many image samples the preview modal shows for one entry.
+const MAX_PREVIEW_IMAGES: usize = 3;
 
 /// Split a key into `(stem, ext)`. Two shapes fold onto a shorter stem so they
 /// group with the model they belong to rather than forming their own entry:
@@ -150,7 +165,7 @@ fn ModelList(
             async move {
                 match req {
                     None => Ok::<_, DomainError>(None),
-                    Some(r) => api.preview(r.image, r.json).await.map(Some),
+                    Some(r) => api.preview(r.images, r.json).await.map(Some),
                 }
             }
         }
@@ -198,15 +213,19 @@ fn ModelList(
                                             let api = api.clone();
                                             let Group { name, exts, keys } = g;
                                             let n = keys.len();
-                                            let img_key = keys
+                                            // S3 lists lexicographically, so `.image-1/2/3.png`
+                                            // sort ahead of a `.jpeg` — take the first few.
+                                            let img_keys: Vec<String> = keys
                                                 .iter()
-                                                .find(|k| {
+                                                .filter(|k| {
                                                     matches!(
                                                         split_ext(k).1.as_deref(),
                                                         Some("png" | "jpg" | "jpeg")
                                                     )
                                                 })
-                                                .cloned();
+                                                .take(MAX_PREVIEW_IMAGES)
+                                                .cloned()
+                                                .collect();
                                             // prefer a plain `model.json`; fall back to the
                                             // civitai sidecar.
                                             let json_key = keys
@@ -220,7 +239,7 @@ fn ModelList(
                                                 })
                                                 .cloned();
                                             let has_preview =
-                                                img_key.is_some() || json_key.is_some();
+                                                !img_keys.is_empty() || json_key.is_some();
 
                                             let q_label = name.clone();
                                             let on_click = {
@@ -268,7 +287,11 @@ fn ModelList(
                                                 set_preview
                                                     .set(Some(PreviewReq {
                                                         name: p_name.clone(),
-                                                        image: img_key.clone().map(StoragePath),
+                                                        images: img_keys
+                                                            .iter()
+                                                            .cloned()
+                                                            .map(StoragePath)
+                                                            .collect(),
                                                         json: json_key.clone().map(StoragePath),
                                                     }));
                                             };
@@ -335,7 +358,8 @@ fn ModelList(
                     .get()
                     .map(|req| {
                         let name = req.name.clone();
-                        let image_name = req.image.as_ref().map(|p| basename(&p.0).to_string());
+                        let image_names: Vec<String> =
+                            req.images.iter().map(|p| basename(&p.0).to_string()).collect();
                         let json_name = req.json.as_ref().map(|p| basename(&p.0).to_string());
                         view! {
                             <div
@@ -360,31 +384,36 @@ fn ModelList(
                                             view! { <p class="muted">"Loading…"</p> }
                                         }>
                                             {
-                                                let image_name = image_name.clone();
+                                                let image_names = image_names.clone();
                                                 let json_name = json_name.clone();
                                                 move || {
-                                                let image_name = image_name.clone();
+                                                let image_names = image_names.clone();
                                                 let json_name = json_name.clone();
                                                 Suspend::new(async move {
                                                 match preview_data.await {
                                                     Ok(Some(p)) => {
-                                                        let img = p
-                                                            .image_url
-                                                            .map(|u| {
-                                                                view! {
-                                                                    <figure class="preview-fig">
-                                                                        {image_name
-                                                                            .map(|n| {
-                                                                                view! {
-                                                                                    <figcaption class="preview-cap">
-                                                                                        {n}
-                                                                                    </figcaption>
-                                                                                }
-                                                                            })}
-                                                                        <img class="preview-img" src=u />
-                                                                    </figure>
-                                                                }
-                                                            });
+                                                        let has_img = !p.image_urls.is_empty();
+                                                        let has_json = p.json.is_some();
+                                                        // one <figure> per sample, laid out in a
+                                                        // fixed 3-col grid (a lone image stays 1/3 wide)
+                                                        let imgs = has_img.then(|| {
+                                                            let figs = p
+                                                                .image_urls
+                                                                .into_iter()
+                                                                .zip(image_names)
+                                                                .map(|(u, n)| {
+                                                                    view! {
+                                                                        <figure class="preview-fig">
+                                                                            <figcaption class="preview-cap">
+                                                                                {n}
+                                                                            </figcaption>
+                                                                            <img class="preview-img" src=u />
+                                                                        </figure>
+                                                                    }
+                                                                })
+                                                                .collect_view();
+                                                            view! { <div class="preview-images">{figs}</div> }
+                                                        });
                                                         let js = p
                                                             .json
                                                             .map(|raw| {
@@ -404,12 +433,11 @@ fn ModelList(
                                                                     </figure>
                                                                 }
                                                             });
-                                                        let empty = img.is_none() && js.is_none();
                                                         view! {
                                                             <div class="preview-stack">
-                                                                {img}
+                                                                {imgs}
                                                                 {js}
-                                                                {empty
+                                                                {(!has_img && !has_json)
                                                                     .then(|| {
                                                                         view! {
                                                                             <p class="muted">
@@ -683,6 +711,228 @@ fn AgentCommands(
     }
 }
 
+/// Launch/list/start/stop/reboot panel for the EC2 instances behind `hq`.
+/// Listing, launch, and per-instance actions are all scoped to whichever
+/// region is currently selected in the picker.
+#[component]
+fn ComputePanel(api: PlapApi, set_session: WriteSignal<Option<JWT>>) -> impl IntoView {
+    let (status, set_status) = signal(String::new());
+    let (region, set_region) = signal(COMPUTE_REGIONS[0]);
+    let (reload, set_reload) = signal(0u32);
+
+    let items = LocalResource::new({
+        let api = api.clone();
+        move || {
+            let api = api.clone();
+            let region = region.get();
+            reload.track();
+            async move { api.list_compute(region).await }
+        }
+    });
+
+    let on_region_change = move |ev: leptos::ev::Event| {
+        let raw = event_target_value(&ev);
+        if let Ok(r) = ComputeRegion::try_from(raw.as_str()) {
+            set_region.set(r);
+        }
+    };
+
+    // shared by the "Launch on demand" / "Launch spot instance" buttons — uses
+    // whichever region is currently selected in the picker above.
+    let launch = {
+        let api = api.clone();
+        move |spot: bool| {
+            let api = api.clone();
+            let region = region.get_untracked();
+            let kind = if spot { "spot" } else { "on-demand" };
+            set_status.set(format!("Launching {kind} instance in {region}…"));
+            spawn_local(async move {
+                match api.launch_compute(spot, region).await {
+                    Ok(dto) => set_status.set(format!("Launched {kind} {}", dto.0.id)),
+                    Err(e) => set_status.set(format!("Launch failed: {e}")),
+                }
+                set_reload.update(|n| *n += 1);
+            });
+        }
+    };
+    let on_launch_on_demand = {
+        let launch = launch.clone();
+        move |_| launch(false)
+    };
+    let on_launch_spot = move |_| launch(true);
+
+    // shared by the Start/Stop/Reboot buttons on every row — only the command differs.
+    let dispatch = {
+        let api = api.clone();
+        move |id: domain::commands::compute::ComputeInstanceID, command: ComputeCommand| {
+            let api = api.clone();
+            let region = region.get_untracked();
+            let label = format!("{command:?}");
+            set_status.set(format!("{label} {id}…"));
+            spawn_local(async move {
+                let args = ComputeArgs {
+                    instance_id: id.clone(),
+                    command,
+                    region,
+                };
+                match api.control_compute(args).await {
+                    Ok(_) => set_status.set(format!("{label} sent to {id}")),
+                    Err(e) => set_status.set(format!("{label} on {id} failed: {e}")),
+                }
+                set_reload.update(|n| *n += 1);
+            });
+        }
+    };
+
+    view! {
+        <section class="panel compute-panel">
+            <header class="panel-head">
+                <h2 class="panel-title">"Compute"</h2>
+                <select class="panel-input compute-region" on:change=on_region_change>
+                    {COMPUTE_REGIONS
+                        .iter()
+                        .map(|r| {
+                            let value = r.to_string();
+                            let r = *r;
+                            view! {
+                                <option value=value.clone() selected=move || region.get() == r>
+                                    {value.clone()}
+                                </option>
+                            }
+                        })
+                        .collect_view()}
+                </select>
+                <button class="ghost-btn" on:click=on_launch_on_demand>
+                    "Launch on demand"
+                </button>
+                <button class="ghost-btn" on:click=on_launch_spot>
+                    "Launch spot instance"
+                </button>
+                <button
+                    class="peek-btn panel-refresh"
+                    title="Refresh"
+                    on:click=move |_| set_reload.update(|n| *n += 1)
+                >
+                    "↻"
+                </button>
+            </header>
+
+            {move || {
+                let s = status.get();
+                (!s.is_empty()).then(|| view! { <p class="panel-status">{s}</p> })
+            }}
+
+            <Suspense fallback=|| {
+                view! { <p class="muted panel-note">"Loading…"</p> }
+            }>
+                {
+                    let dispatch = dispatch.clone();
+                    move || {
+                        let dispatch = dispatch.clone();
+                        Suspend::new(async move {
+                            match items.await {
+                                Ok(resp) => {
+                                    if resp.instances.is_empty() {
+                                        return view! {
+                                            <p class="muted panel-note">
+                                                "No instances in this region."
+                                            </p>
+                                        }
+                                            .into_any();
+                                    }
+                                    let rows = resp
+                                        .instances
+                                        .into_iter()
+                                        .map(|inst| {
+                                            let id = inst.id.clone();
+                                            let ip = inst
+                                                .ip
+                                                .map(|ip| ip.to_string())
+                                                .unwrap_or_else(|| "-".to_string());
+                                            let meta = format!(
+                                                "{} · {}{} · {ip}",
+                                                inst.status,
+                                                inst.tipe,
+                                                if inst.is_spot { " · spot" } else { "" },
+                                            );
+                                            let start = {
+                                                let dispatch = dispatch.clone();
+                                                let id = id.clone();
+                                                move |_| dispatch(id.clone(), ComputeCommand::Start)
+                                            };
+                                            let stop = {
+                                                let dispatch = dispatch.clone();
+                                                let id = id.clone();
+                                                move |_| dispatch(id.clone(), ComputeCommand::Stop)
+                                            };
+                                            let reboot = {
+                                                let dispatch = dispatch.clone();
+                                                let id = id.clone();
+                                                move |_| dispatch(id.clone(), ComputeCommand::Reboot)
+                                            };
+                                            let terminate = {
+                                                let dispatch = dispatch.clone();
+                                                let id = id.clone();
+                                                move |_| {
+                                                    dispatch(id.clone(), ComputeCommand::Terminate)
+                                                }
+                                            };
+                                            view! {
+                                                <li class="cmd">
+                                                    <div class="cmd-main">
+                                                        <span class="cmd-id">{id.to_string()}</span>
+                                                        <span class="cmd-prio">{meta}</span>
+                                                    </div>
+                                                    <div class="cmd-actions">
+                                                        <button class="peek-btn" on:click=start>
+                                                            "Start"
+                                                        </button>
+                                                        <button class="peek-btn" on:click=stop>
+                                                            "Stop"
+                                                        </button>
+                                                        <button class="peek-btn" on:click=reboot>
+                                                            "Reboot"
+                                                        </button>
+                                                        <button
+                                                            class="peek-btn danger"
+                                                            on:click=terminate
+                                                        >
+                                                            "Terminate"
+                                                        </button>
+                                                    </div>
+                                                </li>
+                                            }
+                                        })
+                                        .collect_view();
+                                    view! { <ul class="item-list cmd-list">{rows}</ul> }.into_any()
+                                }
+                                Err(DomainError::NotAllowed(_)) => {
+                                    request_animation_frame(move || {
+                                        session::clear();
+                                        set_session.set(None);
+                                    });
+                                    view! {
+                                        <p class="muted panel-note">
+                                            "Session expired — returning to sign in…"
+                                        </p>
+                                    }
+                                        .into_any()
+                                }
+                                Err(err) => {
+                                    view! {
+                                        <p class="auth-error">{format!("Failed to load: {err}")}</p>
+                                    }
+                                        .into_any()
+                                }
+                            }
+                        })
+                    }
+                }
+            </Suspense>
+        </section>
+    }
+}
+
 #[component]
 pub fn Controls(jwt: JWT, set_session: WriteSignal<Option<JWT>>) -> impl IntoView {
     let api = PlapApi::new(
@@ -715,6 +965,7 @@ pub fn Controls(jwt: JWT, set_session: WriteSignal<Option<JWT>>) -> impl IntoVie
 
             <section class="dash-body wide">
                 <h1>"Controls"</h1>
+                <ComputePanel api=api.clone() set_session />
                 <div class="panels">
                     <div class="panel-col">
                         <SyncBootstraps api=api.clone() bump_queue=set_queue_reload />

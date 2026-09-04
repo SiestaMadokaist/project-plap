@@ -76,18 +76,23 @@ resource "aws_iam_role_policy" "api" {
         # PreviewSvc::exec -> storage.read() (get_object) for the .civitai.json, and
         # storage.presigned_get() for the preview image — both need GetObject on the
         # objects, a separate grant from ListBucket above.
-        Sid      = "ModelBucketObjectRead"
+        # DeleteSvc::run -> storage.delete() (models/delete.rs) on model_storage removes
+        # entries the frontend selects from the browsed comfyui/ tree, so DeleteObject
+        # is scoped the same way as the GetObject read above.
+        Sid      = "ModelBucketObjectReadDelete"
         Effect   = "Allow"
-        Action   = ["s3:GetObject"]
+        Action   = ["s3:GetObject", "s3:DeleteObject"]
         Resource = ["arn:aws:s3:::virginia-ramadoka/comfyui/*"]
       },
       {
         # ap3.ramadoka.com = OUTPUT_BUCKET (ApiClients, output_storage), objects written with PublicRead ACL.
+        # DeleteObject: DeleteSvc::run -> storage.delete() (models/delete.rs) also has to clear generated
+        # artifacts out of the output bucket.
         # v.ramadoka.com is not referenced by any current .env.* file or code path - confirm this is still
         # actually needed before applying.
         Sid    = "OutputBucketReadWrite"
         Effect = "Allow"
-        Action = ["s3:GetObject", "s3:PutObject", "s3:PutObjectAcl", "s3:ListBucket"]
+        Action = ["s3:GetObject", "s3:PutObject", "s3:PutObjectAcl", "s3:DeleteObject", "s3:ListBucket"]
         Resource = [
           "arn:aws:s3:::ap3.ramadoka.com",
           "arn:aws:s3:::ap3.ramadoka.com/*",
@@ -96,11 +101,12 @@ resource "aws_iam_role_policy" "api" {
         ]
       },
       {
-        # NOTE: ManageCompute usecase exists but isn't wired into routes() in bin/api/main.rs yet, and
-        # ComputeEngine::{stop,launch,terminate,reboot} are all todo!(). Spot actions added per request
-        # for "in case I can spawn spot instance" - RunInstances alone (with InstanceMarketOptions) is
-        # enough for spot-at-launch; the RequestSpotInstances family is only needed for the older
-        # standalone Spot Request workflow. Keep both until you pick one.
+        # LaunchCompute/ManageCompute/ListCompute (hq/controls/*.rs), wired into
+        # HQInstanceLaunch/HQInstanceControl/HQInstanceList in bin/api/routes/authorized.rs.
+        # Spot actions kept from an earlier "in case I can spawn spot instance" pass - RunInstances
+        # alone (with InstanceMarketOptions, see EC2::launch's `spot` param) is enough for spot-at-launch;
+        # the RequestSpotInstances family is only needed for the older standalone Spot Request workflow.
+        # Keep both until you pick one.
         Sid    = "ComputeControl"
         Effect = "Allow"
         Action = [
@@ -119,12 +125,32 @@ resource "aws_iam_role_policy" "api" {
         Resource = ["*"]
       },
       {
-        # Pairs with ComputeControl above - only needed once api actually launches instances with the
-        # diffusion-agent instance profile attached.
-        Sid      = "PassRoleForSpotLaunch"
+        # Pairs with ComputeControl above - RunInstances launches with whichever instance
+        # profile is attached to the (hand-managed, not in this terraform config) launch
+        # template LaunchConfig.template_id points at. Today that's the pre-existing
+        # `stable-diffusions-ec2` role (created 2023, outside terraform); `diffusion_agent`
+        # is this project's own not-yet-attached replacement (see its resource block below -
+        # "Attach this profile to it manually until that's automated"). Grant both so launch
+        # keeps working through that migration; drop `stable-diffusions-ec2` once the launch
+        # template is switched to the `diffusion_agent` profile.
+        Sid    = "PassRoleForSpotLaunch"
+        Effect = "Allow"
+        Action = ["iam:PassRole"]
+        Resource = [
+          aws_iam_role.diffusion_agent.arn,
+          "arn:aws:iam::${local.account_id}:role/stable-diffusions-ec2",
+        ]
+      },
+      {
+        # LaunchCompute::exec -> HotReloadRepository::launch_config (hotreload.rs), GetItem by the
+        # caller's own (username, "launch") key - never Query. This was missing even though
+        # LaunchCompute has called it since it was wired in; only the cron role had HotReloadRead*
+        # (for the not-yet-built launch/config endpoints note below), not api - surfaced as
+        # DynamoDB AccessDeniedException on every launch attempt.
+        Sid      = "HotReloadRead"
         Effect   = "Allow"
-        Action   = ["iam:PassRole"]
-        Resource = [aws_iam_role.diffusion_agent.arn]
+        Action   = ["dynamodb:GetItem"]
+        Resource = ["arn:aws:dynamodb:${var.region}:${local.account_id}:table/${var.stage}-hot_reloads"]
       },
     ]
   })
@@ -201,10 +227,12 @@ resource "aws_iam_role_policy" "cron" {
         Resource = ["arn:aws:s3:::stardust-frontiers/project-translation/*"]
       },
       {
-        # NOTE: HotReloadRepository::diffusion_config() is todo!() - unimplemented, nothing calls this yet.
-        Sid      = "HotReloadRead"
+        # HotReloadRepository::launch_config + set (infras/repos/dynamo/hotreload.rs), for
+        # the not-yet-built launch/config endpoints. GetItem/PutItem only, keyed by the
+        # full (username, context) primary key - never Query.
+        Sid      = "HotReloadReadWrite"
         Effect   = "Allow"
-        Action   = ["dynamodb:GetItem"]
+        Action   = ["dynamodb:GetItem", "dynamodb:PutItem"]
         Resource = ["arn:aws:dynamodb:${var.region}:${local.account_id}:table/${var.stage}-hot_reloads"]
       },
     ]
@@ -255,6 +283,15 @@ resource "aws_iam_role_policy" "diffusion_agent" {
         ]
       },
       {
+        # IdleTerminator::optimization -> HotReloadRepository::bill_optimization
+        # (trigger/idle_terminator.rs), keyed by the box's own Username tag. GetItem
+        # only - one (username, "bill") item by its full key, never Query.
+        Sid      = "HotReloadRead"
+        Effect   = "Allow"
+        Action   = ["dynamodb:GetItem"]
+        Resource = ["arn:aws:dynamodb:${var.region}:${local.account_id}:table/${var.stage}-hot_reloads"]
+      },
+      {
         # EC2DiffusionClients::new - model_storage (bootstrap/client.rs). MODEL_BUCKET in .env.diffusion.
         Sid      = "ModelBucketList"
         Effect   = "Allow"
@@ -275,18 +312,29 @@ resource "aws_iam_role_policy" "diffusion_agent" {
         Resource = ["arn:aws:s3:::ap3.ramadoka.com/*"]
       },
       {
-        # NOTE: ComputeEngine::{stop,terminate,reboot} are todo!() - ManageCompute isn't called anywhere yet.
-        # No ec2:StartInstances here on purpose - a stopped instance can't call StartInstances on itself;
-        # that's the api role's job (see ComputeControl above), triggered externally.
+        # ComputeEngine::{stop,terminate,reboot}, called via IdleTerminator -> ManageCompute
+        # (trigger/idle_terminator.rs) when the box has sat idle past its bill-optimization
+        # tolerance. No ec2:StartInstances here on purpose - a stopped instance can't call
+        # StartInstances on itself; that's the api role's job (see ComputeControl above),
+        # triggered externally.
+        # DescribeTags: EC2Agent::username (infras/compute_agent/ec2.rs) reads its own
+        # `Username` tag back at boot - the tag EC2::launch stamps on RunInstances - so
+        # IdleTerminator knows which HotReloadRepository record to read.
         # NOTE on "handle if own self is spot instances": that's an IMDS concern, not an IAM one - spot
         # interruption notices come from http://169.254.169.254/latest/meta-data/spot/instance-action,
         # same unauthenticated metadata endpoint EC2Agent already polls for ip()/instance_id()/region() in
         # infras/compute_agent/ec2.rs. No extra IAM action covers "detect my own spot termination"; added
         # none here. If you instead want the agent to check its own state via the EC2 API rather than IMDS,
         # DescribeInstances (below) already covers that.
-        Sid      = "SelfComputeControl"
-        Effect   = "Allow"
-        Action   = ["ec2:DescribeInstances", "ec2:StopInstances", "ec2:TerminateInstances", "ec2:RebootInstances"]
+        Sid    = "SelfComputeControl"
+        Effect = "Allow"
+        Action = [
+          "ec2:DescribeInstances",
+          "ec2:DescribeTags",
+          "ec2:StopInstances",
+          "ec2:TerminateInstances",
+          "ec2:RebootInstances",
+        ]
         Resource = ["*"]
       },
     ]
