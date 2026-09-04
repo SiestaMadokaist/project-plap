@@ -21,9 +21,6 @@ async fn main() -> anyhow::Result<()> {
     if env.sanity_run() {
         return Ok(());
     }
-    let queue_interval = env.queue_interval.clone();
-    let track_interval = env.watch_interval.clone();
-    let idle_tolerance = env.idle_tolerance.clone();
     let config = aws_config::from_env().load().await;
     let dynamo = aws_sdk_dynamodb::Client::new(&config);
     let watch_dir = env.watch_dir.clone();
@@ -32,21 +29,25 @@ async fn main() -> anyhow::Result<()> {
     let start_at = Timestamp::now();
     let rc_start_at = Rc::new(Cell::new(start_at));
     let rc_start_peek = Peek::new(rc_start_at.clone());
-    let queue_handler = CommandQ::new(clients.as_ref(), repos.as_ref(), queue_interval);
-    let blacklists = env.blacklist_tags();
+    let queue_handler = CommandQ::new(
+        clients.as_ref(),
+        repos.as_ref(),
+        pkg::types::time::Second(1),
+    );
+    let blacklists = &env.blacklist_tags();
+    // let blacklists = env.blacklist_tags();
     let output_listener = NewOutputListener::new(
         clients.as_ref(),
         repos.as_ref(),
         watch_dir,
         rc_start_at.clone(),
-        &blacklists,
+        blacklists,
     );
     let idle_terminator = IdleTerminator::new(
         clients.as_ref(),
         repos.as_ref(),
         rc_start_peek,
-        idle_tolerance,
-        track_interval,
+        env.cache_ttl,
     );
     tokio::try_join!(
         queue_handler.run(),

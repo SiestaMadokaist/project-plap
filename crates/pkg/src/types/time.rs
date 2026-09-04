@@ -68,7 +68,7 @@ impl From<DateTime<Utc>> for Timestamp {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Copy)]
 pub struct Second(pub i64);
 impl Second {
     pub fn to_delta(&self) -> TimeDelta {

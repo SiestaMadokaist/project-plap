@@ -51,7 +51,7 @@ impl ApiRepos {
             ),
             hotreload: DDBHotReloadRepository::new(
                 client.clone(),
-                DDBTable::AgentCommands.table_name(stage),
+                DDBTable::HotReloads.table_name(stage),
             ),
             user: DDBUserRepository::new(client.clone(), DDBTable::Users.table_name(stage)),
             story: S3StoryRepository::new(storage),

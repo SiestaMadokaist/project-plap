@@ -1,5 +1,6 @@
 use crate::application::ports::clients::compute_agent::ComputeAgent;
 use domain::commands::compute::{ComputeInstanceID, ComputeRegion};
+use pkg::auth::claims::Username;
 
 pub struct LocalhostAgent {
     _name: String,
@@ -29,5 +30,11 @@ impl ComputeAgent for LocalhostAgent {
     }
     async fn region(&self) -> anyhow::Result<ComputeRegion> {
         Ok(ComputeRegion::AWSApSoutheast2)
+    }
+    // No instance/DescribeTags on localhost - read the same USERNAME a real box would
+    // have gotten from its launch tag, so a local run can still hit HotReloadRepository.
+    async fn username(&self) -> anyhow::Result<Username> {
+        let name = std::env::var("USERNAME").unwrap_or_else(|_| "guest".into());
+        Ok(Username(name))
     }
 }

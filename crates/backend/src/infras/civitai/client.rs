@@ -1,6 +1,6 @@
-use std::path::PathBuf;
 #[cfg(feature = "datatransfer")]
 use std::path::Path;
+use std::path::PathBuf;
 
 use crate::application::ports::clients::inference_model_provider::InferenceModelProvider;
 use domain::storage::StoragePrefix;

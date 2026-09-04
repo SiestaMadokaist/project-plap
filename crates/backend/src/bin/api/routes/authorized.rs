@@ -5,8 +5,10 @@ use backend::application::{
     routes::authorized::AuthorizedRoute,
     usecases::{
         hq::{
-            commands::{
-                cp_model::CPModelSvc, delete::DeleteCommand, list_command::ListCommand,
+            commands::{cp_model::CPModelSvc, delete::DeleteCommand, list_command::ListCommand},
+            controls::{
+                launch_compute::LaunchCompute, list_compute::ListCompute,
+                manage_compute::ManageCompute,
             },
             models::{list::GetListSvc, preview::PreviewSvc},
         },
@@ -86,6 +88,24 @@ pub fn authorized_routes() -> Router<AuthorizedRoute> {
         )
         .expect(expectation);
     router
+        .insert(
+            AuthorizedRoute::HQInstanceLaunch.to_string(),
+            AuthorizedRoute::HQInstanceLaunch,
+        )
+        .expect(expectation);
+    router
+        .insert(
+            AuthorizedRoute::HQInstanceControl.to_string(),
+            AuthorizedRoute::HQInstanceControl,
+        )
+        .expect(expectation);
+    router
+        .insert(
+            AuthorizedRoute::HQInstanceList.to_string(),
+            AuthorizedRoute::HQInstanceList,
+        )
+        .expect(expectation);
+    router
 }
 
 pub async fn handle_authorized(
@@ -135,6 +155,19 @@ pub async fn handle_authorized(
             }
             AuthorizedRoute::TemplateRead => {
                 let svc = TemplateReadSvc::new(repos.as_ref(), ctx, payload.try_into()?);
+                svc.exec().await.to_result()
+            }
+            AuthorizedRoute::HQInstanceLaunch => {
+                let svc =
+                    LaunchCompute::new(clients.as_ref(), repos.as_ref(), ctx, payload.try_into()?);
+                svc.exec().await.to_result()
+            }
+            AuthorizedRoute::HQInstanceControl => {
+                let svc = ManageCompute::new(clients.as_ref(), payload.try_into()?);
+                svc.exec().await.to_result()
+            }
+            AuthorizedRoute::HQInstanceList => {
+                let svc = ListCompute::new(clients.as_ref(), payload.try_into()?);
                 svc.exec().await.to_result()
             }
         },

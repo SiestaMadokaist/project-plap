@@ -1,11 +1,11 @@
 use crate::application::ports::clients::translator::TranslatorClient;
-use domain::errors::DomainError;
 use async_openai::{
     config::OpenAIConfig,
     error::OpenAIError,
     types::{ChatCompletionRequestMessage, CreateChatCompletionRequest, Model},
     Client,
 };
+use domain::errors::DomainError;
 use tokio::sync::OnceCell;
 const SYSTEM_PROMPT: &str = include_str!("../../../../../prompts/translate.txt");
 

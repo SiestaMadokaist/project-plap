@@ -5,6 +5,8 @@ use crate::application::{
     },
     usecases::agent::h_inference::HandleInference,
 };
+#[cfg(feature = "datatransfer")]
+use domain::commands::network::NetworkArgs;
 use domain::{
     commands::{
         command::{Action, CommandDomain, CommandStage, Progression},
@@ -12,8 +14,6 @@ use domain::{
     },
     errors::DomainError,
 };
-#[cfg(feature = "datatransfer")]
-use domain::commands::network::NetworkArgs;
 use pkg::macros::{trait_clients, trait_repos};
 
 trait_clients!(

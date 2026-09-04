@@ -1,4 +1,5 @@
 pub mod commands;
+pub mod computes;
 pub mod health;
 pub mod list;
 pub mod login;

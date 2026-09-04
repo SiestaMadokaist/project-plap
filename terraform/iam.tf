@@ -96,11 +96,12 @@ resource "aws_iam_role_policy" "api" {
         ]
       },
       {
-        # NOTE: ManageCompute usecase exists but isn't wired into routes() in bin/api/main.rs yet, and
-        # ComputeEngine::{stop,launch,terminate,reboot} are all todo!(). Spot actions added per request
-        # for "in case I can spawn spot instance" - RunInstances alone (with InstanceMarketOptions) is
-        # enough for spot-at-launch; the RequestSpotInstances family is only needed for the older
-        # standalone Spot Request workflow. Keep both until you pick one.
+        # LaunchCompute/ManageCompute/ListCompute (hq/controls/*.rs), wired into
+        # HQInstanceLaunch/HQInstanceControl/HQInstanceList in bin/api/routes/authorized.rs.
+        # Spot actions kept from an earlier "in case I can spawn spot instance" pass - RunInstances
+        # alone (with InstanceMarketOptions, see EC2::launch's `spot` param) is enough for spot-at-launch;
+        # the RequestSpotInstances family is only needed for the older standalone Spot Request workflow.
+        # Keep both until you pick one.
         Sid    = "ComputeControl"
         Effect = "Allow"
         Action = [
@@ -125,6 +126,17 @@ resource "aws_iam_role_policy" "api" {
         Effect   = "Allow"
         Action   = ["iam:PassRole"]
         Resource = [aws_iam_role.diffusion_agent.arn]
+      },
+      {
+        # LaunchCompute::exec -> HotReloadRepository::launch_config (hotreload.rs), GetItem by the
+        # caller's own (username, "launch") key - never Query. This was missing even though
+        # LaunchCompute has called it since it was wired in; only the cron role had HotReloadRead*
+        # (for the not-yet-built launch/config endpoints note below), not api - surfaced as
+        # DynamoDB AccessDeniedException on every launch attempt.
+        Sid      = "HotReloadRead"
+        Effect   = "Allow"
+        Action   = ["dynamodb:GetItem"]
+        Resource = ["arn:aws:dynamodb:${var.region}:${local.account_id}:table/${var.stage}-hot_reloads"]
       },
     ]
   })
@@ -201,10 +213,12 @@ resource "aws_iam_role_policy" "cron" {
         Resource = ["arn:aws:s3:::stardust-frontiers/project-translation/*"]
       },
       {
-        # NOTE: HotReloadRepository::diffusion_config() is todo!() - unimplemented, nothing calls this yet.
-        Sid      = "HotReloadRead"
+        # HotReloadRepository::launch_config + set (infras/repos/dynamo/hotreload.rs), for
+        # the not-yet-built launch/config endpoints. GetItem/PutItem only, keyed by the
+        # full (username, context) primary key - never Query.
+        Sid      = "HotReloadReadWrite"
         Effect   = "Allow"
-        Action   = ["dynamodb:GetItem"]
+        Action   = ["dynamodb:GetItem", "dynamodb:PutItem"]
         Resource = ["arn:aws:dynamodb:${var.region}:${local.account_id}:table/${var.stage}-hot_reloads"]
       },
     ]
@@ -255,6 +269,15 @@ resource "aws_iam_role_policy" "diffusion_agent" {
         ]
       },
       {
+        # IdleTerminator::optimization -> HotReloadRepository::bill_optimization
+        # (trigger/idle_terminator.rs), keyed by the box's own Username tag. GetItem
+        # only - one (username, "bill") item by its full key, never Query.
+        Sid      = "HotReloadRead"
+        Effect   = "Allow"
+        Action   = ["dynamodb:GetItem"]
+        Resource = ["arn:aws:dynamodb:${var.region}:${local.account_id}:table/${var.stage}-hot_reloads"]
+      },
+      {
         # EC2DiffusionClients::new - model_storage (bootstrap/client.rs). MODEL_BUCKET in .env.diffusion.
         Sid      = "ModelBucketList"
         Effect   = "Allow"
@@ -275,18 +298,29 @@ resource "aws_iam_role_policy" "diffusion_agent" {
         Resource = ["arn:aws:s3:::ap3.ramadoka.com/*"]
       },
       {
-        # NOTE: ComputeEngine::{stop,terminate,reboot} are todo!() - ManageCompute isn't called anywhere yet.
-        # No ec2:StartInstances here on purpose - a stopped instance can't call StartInstances on itself;
-        # that's the api role's job (see ComputeControl above), triggered externally.
+        # ComputeEngine::{stop,terminate,reboot}, called via IdleTerminator -> ManageCompute
+        # (trigger/idle_terminator.rs) when the box has sat idle past its bill-optimization
+        # tolerance. No ec2:StartInstances here on purpose - a stopped instance can't call
+        # StartInstances on itself; that's the api role's job (see ComputeControl above),
+        # triggered externally.
+        # DescribeTags: EC2Agent::username (infras/compute_agent/ec2.rs) reads its own
+        # `Username` tag back at boot - the tag EC2::launch stamps on RunInstances - so
+        # IdleTerminator knows which HotReloadRepository record to read.
         # NOTE on "handle if own self is spot instances": that's an IMDS concern, not an IAM one - spot
         # interruption notices come from http://169.254.169.254/latest/meta-data/spot/instance-action,
         # same unauthenticated metadata endpoint EC2Agent already polls for ip()/instance_id()/region() in
         # infras/compute_agent/ec2.rs. No extra IAM action covers "detect my own spot termination"; added
         # none here. If you instead want the agent to check its own state via the EC2 API rather than IMDS,
         # DescribeInstances (below) already covers that.
-        Sid      = "SelfComputeControl"
-        Effect   = "Allow"
-        Action   = ["ec2:DescribeInstances", "ec2:StopInstances", "ec2:TerminateInstances", "ec2:RebootInstances"]
+        Sid    = "SelfComputeControl"
+        Effect = "Allow"
+        Action = [
+          "ec2:DescribeInstances",
+          "ec2:DescribeTags",
+          "ec2:StopInstances",
+          "ec2:TerminateInstances",
+          "ec2:RebootInstances",
+        ]
         Resource = ["*"]
       },
     ]

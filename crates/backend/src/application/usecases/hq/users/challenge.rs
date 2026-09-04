@@ -29,7 +29,9 @@ impl<'a, C: IChallengeClients, R: IChallengeRepos> GetChallenge<'a, C, R> {
     }
 }
 
-impl<C: IChallengeClients, R: IChallengeRepos> UsecaseAPI<ServerChallenge> for GetChallenge<'_, C, R> {
+impl<C: IChallengeClients, R: IChallengeRepos> UsecaseAPI<ServerChallenge>
+    for GetChallenge<'_, C, R>
+{
     async fn exec(&self) -> Result<ServerChallenge, DomainError> {
         self.repos
             .user()

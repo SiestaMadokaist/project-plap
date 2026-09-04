@@ -1,18 +1,23 @@
 use std::collections::HashMap;
 
-/// Build-time config for the wasm bundle. Values come from `.env.frontend.example`
-/// at the workspace root — the committed template, not anyone's local
-/// `.env.frontend`. None of them are secret; they end up in the shipped bundle.
+/// Build-time config for the wasm bundle. Values come from `.env.frontend` at the
+/// workspace root when it exists (local builds and `make frontend-deploy`), and
+/// otherwise from the committed `.env.frontend.example` template — the only one
+/// present in CI. None of them are secret; they end up in the shipped bundle.
 /// An explicit process env var of the same name wins over the file, so
 /// `make frontend-build` can still override the API base from a terraform output.
 /// Missing keys fall back to the defaults in `src/env.rs`.
 const KEYS: &[&str] = &["PLAP_API_BASE", "PLAP_MODEL_BUCKET", "PLAP_IO_BUCKET"];
 
 fn main() {
-    let env_path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../.env.frontend.example");
-    println!("cargo:rerun-if-changed={env_path}");
+    let root = concat!(env!("CARGO_MANIFEST_DIR"), "/../..");
+    let local = format!("{root}/.env.frontend");
+    let template = format!("{root}/.env.frontend.example");
+    println!("cargo:rerun-if-changed={local}");
+    println!("cargo:rerun-if-changed={template}");
 
-    let from_file = std::fs::read_to_string(env_path)
+    let from_file = std::fs::read_to_string(&local)
+        .or_else(|_| std::fs::read_to_string(&template))
         .map(|s| parse_dotenv(&s))
         .unwrap_or_default();
 

@@ -51,7 +51,8 @@ pub async fn handle_public(
     let matched = router
         .at(&path)
         .map_err(|e| DomainError::Prerequisite(e.to_string()))?;
-    let resp: Result<dto::response::Response<serde_json::Value>, DomainError> = match matched.value {
+    let resp: Result<dto::response::Response<serde_json::Value>, DomainError> = match matched.value
+    {
         PublicRoute::GetChallenge => {
             GetChallenge::new(clients.as_ref(), repos.as_ref(), event.body()?.try_into()?)
                 .exec()

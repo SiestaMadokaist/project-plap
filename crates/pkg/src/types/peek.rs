@@ -11,5 +11,3 @@ impl<T: Copy> Peek<T> {
         self.0.get()
     }
 }
-
-// pub type Immutable<'a, X> = &'a X;

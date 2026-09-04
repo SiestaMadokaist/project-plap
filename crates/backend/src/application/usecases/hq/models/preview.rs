@@ -29,15 +29,15 @@ impl<C: IClients> UsecaseAPI<resource::PreviewResponse> for PreviewSvc<'_, C> {
     async fn exec(&self) -> Result<resource::PreviewResponse, DomainError> {
         let storage = self.clients.model_storage();
 
-        let image_url = match &self.payload.image {
-            Some(path) => Some(storage.presigned_get(path, PREVIEW_TTL).await?),
-            None => None,
-        };
+        let mut image_urls = Vec::with_capacity(self.payload.images.len());
+        for path in &self.payload.images {
+            image_urls.push(storage.presigned_get(path, PREVIEW_TTL).await?);
+        }
         let json = match &self.payload.json {
             Some(path) => Some(storage.read(path).await?),
             None => None,
         };
 
-        Ok(resource::PreviewResponse { image_url, json })
+        Ok(resource::PreviewResponse { image_urls, json })
     }
 }

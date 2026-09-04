@@ -1,4 +1,4 @@
-use std::env::VarError;
+use std::{env::VarError, net::IpAddr};
 
 use serde::{Deserialize, Serialize};
 
@@ -22,6 +22,16 @@ impl ComputeRegion {
         let invalid_msg = format!("invalid region: {}", s);
         ComputeRegion::try_from(s.as_str()).map_err(|_| VarError::NotUnicode(invalid_msg.into()))
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ComputeInstance {
+    pub ip: Option<IpAddr>,
+    pub id: ComputeInstanceID,
+    pub is_spot: bool,
+    pub status: String, // idk, if ec2 has enum for status just return it.
+    #[serde(rename = "type")]
+    pub tipe: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, thiserror::Error)]
@@ -55,6 +65,7 @@ id_type!(ComputeInstanceID);
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum ComputeCommand {
+    Start,
     Terminate,
     Stop,
     Reboot,
@@ -76,4 +87,16 @@ mod tests {
         assert_eq!(command.instance_id.0, "test123");
         Ok(())
     }
+}
+
+/// Per-region provisioning inputs for [`EC2::launch`]. The launch template
+/// (created in terraform) carries the AMI, instance type, key pair, IAM profile,
+/// security groups and spot-market options; only `user_data` is overridden.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LaunchConfig {
+    pub region: ComputeRegion,
+    pub template_id: String,
+    pub image_id: String,
+    /// `None` resolves to the template's default version.
+    pub template_version: Option<String>,
 }

@@ -29,9 +29,7 @@ pub struct DiffusionEnv {
     pub model_bucket: String,
     pub model_prefix: StoragePrefix,
 
-    pub watch_interval: Second,
-    pub queue_interval: Second,
-    pub idle_tolerance: Second,
+    pub cache_ttl: Second,
 
     blacklist_tags: String,
 }
@@ -40,7 +38,7 @@ const DEFAULT_MAX_DATA_TRANSFER_BYTES: i64 = 30 * 1024 * 1024 * 1024;
 impl DiffusionEnv {
     pub fn from_env() -> Self {
         Self {
-            localhost: true, // @todo
+            localhost: env::var("IS_LOCALHOST").expect("IS_LOCALHOST flag must be set") == "true", // @todo
             stage: var_or("STAGE", "production"),
             sanity_run: var_or("SANITY_RUN", "false"),
 
@@ -72,12 +70,8 @@ impl DiffusionEnv {
             output_prefix: env::var("OUTPUT_PREFIX")
                 .map(StoragePrefix)
                 .expect("OUTPUT PREFIX must be set"),
-
-            watch_interval: var_second("WATCH_INTERVAL"),
-            queue_interval: var_second("QUEUE_INTERVAL"),
-            idle_tolerance: var_second("IDLE_TOLERANCE"),
-
             blacklist_tags: env::var("BLACKLIST_TAGS").expect("BLACKLIST_TAGS must be set"),
+            cache_ttl: var_second("CACHE_TTL"),
         }
     }
 

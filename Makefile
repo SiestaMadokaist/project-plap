@@ -97,8 +97,9 @@ deploy-bin:
 frontend-serve:
 	cd crates/frontend && trunk serve
 
-# Build-time config (API base, bucket names) comes from .env.frontend.example,
-# read by crates/frontend/build.rs and baked into the wasm. A process env var of
+# Build-time config (API base, bucket names) comes from .env.frontend (or
+# .env.frontend.example when the former is absent, e.g. CI), read by
+# crates/frontend/build.rs and baked into the wasm. A process env var of
 # the same name overrides the file — here PLAP_API_BASE is set from terraform's
 # api_url output when the stack is applied, so a shipped bundle targets the deployed API.
 frontend-build:

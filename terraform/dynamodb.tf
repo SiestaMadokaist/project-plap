@@ -74,16 +74,24 @@ resource "aws_dynamodb_table" "users" {
   }
 }
 
-# HotReloadRepository::diffusion_config(&Username) -> DiffusionConfigDomain (domain/hot_reload.rs).
-# The repo impl is still todo!(), so this schema is provisional: keyed by `username` because
-# that's both the lookup argument and the domain's identifying field.
+# HotReloadRepository (domain/hot_reload.rs, infras/repos/dynamo/hotreload.rs). One item per
+# (username, context) pair - `context` is "bill" | "launch" (HotReloadCfg's serde tag), so a
+# user can hold a BillOptimization record and a LaunchConfig record at once.
+# bill_optimization/launch_config: GetItem on the full key. get: Query on `username` alone,
+# returning every context that user has.
 resource "aws_dynamodb_table" "hot_reloads" {
   name         = "${var.stage}-hot_reloads"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "username"
+  range_key    = "context"
 
   attribute {
     name = "username"
+    type = "S"
+  }
+
+  attribute {
+    name = "context"
     type = "S"
   }
 

@@ -19,18 +19,21 @@ pub struct GetListResponse {
 json_type!(GetListResponse);
 impl DTO for GetListResponse {}
 
-/// Preview request for one collapsed entry. Either sibling may be absent.
+/// Preview request for one collapsed entry. Any part may be empty/absent; at most
+/// a handful of image samples are requested at once.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PreviewPayload {
-    pub image: Option<StoragePath>,
+    #[serde(default)]
+    pub images: Vec<StoragePath>,
     pub json: Option<StoragePath>,
 }
 json_type!(PreviewPayload);
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PreviewResponse {
-    /// presigned GET url for the image sibling, if one was requested
-    pub image_url: Option<String>,
+    /// presigned GET urls for the requested image samples, in request order
+    #[serde(default)]
+    pub image_urls: Vec<String>,
     /// raw text of the json sibling, if one was requested
     pub json: Option<String>,
 }
