@@ -120,12 +120,21 @@ resource "aws_iam_role_policy" "api" {
         Resource = ["*"]
       },
       {
-        # Pairs with ComputeControl above - only needed once api actually launches instances with the
-        # diffusion-agent instance profile attached.
-        Sid      = "PassRoleForSpotLaunch"
-        Effect   = "Allow"
-        Action   = ["iam:PassRole"]
-        Resource = [aws_iam_role.diffusion_agent.arn]
+        # Pairs with ComputeControl above - RunInstances launches with whichever instance
+        # profile is attached to the (hand-managed, not in this terraform config) launch
+        # template LaunchConfig.template_id points at. Today that's the pre-existing
+        # `stable-diffusions-ec2` role (created 2023, outside terraform); `diffusion_agent`
+        # is this project's own not-yet-attached replacement (see its resource block below -
+        # "Attach this profile to it manually until that's automated"). Grant both so launch
+        # keeps working through that migration; drop `stable-diffusions-ec2` once the launch
+        # template is switched to the `diffusion_agent` profile.
+        Sid    = "PassRoleForSpotLaunch"
+        Effect = "Allow"
+        Action = ["iam:PassRole"]
+        Resource = [
+          aws_iam_role.diffusion_agent.arn,
+          "arn:aws:iam::${local.account_id}:role/stable-diffusions-ec2",
+        ]
       },
       {
         # LaunchCompute::exec -> HotReloadRepository::launch_config (hotreload.rs), GetItem by the
