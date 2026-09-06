@@ -14,7 +14,7 @@ use crate::application::usecases::agent::{
     save_output::SaveOutput,
     traits::{AgentClients, AgentRepos},
 };
-use pkg::types::time::Timestamp;
+use pkg::types::time::{Timestamp, TimestampMS};
 
 pub struct NewOutputListener<'a, C: AgentClients, R: AgentRepos> {
     clients: &'a C,
@@ -22,6 +22,7 @@ pub struct NewOutputListener<'a, C: AgentClients, R: AgentRepos> {
     dir: String,
     last_active: Rc<Cell<Timestamp>>,
     watcher: OnceCell<INotifyWatcher>,
+    blacklist_tags: &'a Vec<String>,
 }
 
 impl<'a, C: AgentClients, R: AgentRepos> NewOutputListener<'a, C, R> {
@@ -30,6 +31,7 @@ impl<'a, C: AgentClients, R: AgentRepos> NewOutputListener<'a, C, R> {
         repos: &'a R,
         dir: String,
         last_active: Rc<Cell<Timestamp>>,
+        blacklist_tags: &'a Vec<String>,
     ) -> Self {
         Self {
             clients,
@@ -37,6 +39,7 @@ impl<'a, C: AgentClients, R: AgentRepos> NewOutputListener<'a, C, R> {
             dir,
             last_active,
             watcher: OnceCell::new(),
+            blacklist_tags,
         }
     }
 
@@ -63,8 +66,15 @@ impl<'a, C: AgentClients, R: AgentRepos> NewOutputListener<'a, C, R> {
             tracing::info!("detected change for: {}", output_path.display());
             output_count += 1;
             let path = output_path.clone();
-            let now = Timestamp::now();
-            let saveoutput = SaveOutput::new(self.clients, self.repos, self.watchdir(), path, now);
+            let now = TimestampMS::now();
+            let saveoutput = SaveOutput::new(
+                self.clients,
+                self.repos,
+                self.watchdir(),
+                path,
+                now,
+                self.blacklist_tags,
+            );
             saveoutput.exec().await?;
         }
         if output_count == 0 {

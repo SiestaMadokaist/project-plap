@@ -45,6 +45,62 @@ resource "aws_dynamodb_table" "translations" {
   }
 }
 
+resource "aws_dynamodb_table" "users" {
+  name         = "${var.stage}-users"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "username"
+
+  attribute {
+    name = "username"
+    type = "S"
+  }
+
+  attribute {
+    name = "address"
+    type = "S"
+  }
+
+  # find() / login() look a user up by wallet address and read the whole record
+  # back, so the projection has to carry every UserItem field (user.rs).
+  global_secondary_index {
+    name            = "address"
+    hash_key        = "address"
+    projection_type = "ALL"
+  }
+
+  tags = {
+    Service = var.service_name
+    Stage   = var.stage
+  }
+}
+
+# HotReloadRepository (domain/hot_reload.rs, infras/repos/dynamo/hotreload.rs). One item per
+# (username, context) pair - `context` is "bill" | "launch" (HotReloadCfg's serde tag), so a
+# user can hold a BillOptimization record and a LaunchConfig record at once.
+# bill_optimization/launch_config: GetItem on the full key. get: Query on `username` alone,
+# returning every context that user has.
+resource "aws_dynamodb_table" "hot_reloads" {
+  name         = "${var.stage}-hot_reloads"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "username"
+  range_key    = "context"
+
+  attribute {
+    name = "username"
+    type = "S"
+  }
+
+  attribute {
+    name = "context"
+    type = "S"
+  }
+
+  tags = {
+    Service = var.service_name
+    Stage   = var.stage
+  }
+}
+
 resource "aws_dynamodb_table" "agent_commands" {
   name         = "${var.stage}-agent_commands"
   billing_mode = "PAY_PER_REQUEST"

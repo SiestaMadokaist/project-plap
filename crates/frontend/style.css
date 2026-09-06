@@ -254,6 +254,14 @@ body {
   align-items: start;
 }
 
+/* one grid column = an action panel stacked above its list panel */
+.panel-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
 .panel {
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -301,6 +309,35 @@ body {
   word-break: break-all;
 }
 
+.panel-actions {
+  padding: 12px 16px;
+}
+
+.panel-refresh {
+  margin-left: auto;
+  align-self: center;
+}
+
+.panel-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.panel-input::placeholder {
+  color: var(--text-mute);
+}
+
+.panel-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 .item-list {
   list-style: none;
   margin: 0;
@@ -336,6 +373,16 @@ body {
 
 .cmd-del {
   flex: none;
+}
+
+.cmd-actions {
+  display: flex;
+  flex: none;
+  gap: 6px;
+}
+
+.compute-panel {
+  margin-bottom: 32px;
 }
 
 .cmd-id {
@@ -426,6 +473,11 @@ body {
   color: var(--text);
 }
 
+.peek-btn.danger:hover {
+  border-color: var(--danger-border);
+  color: var(--danger-text);
+}
+
 /* ---------- preview modal ---------- */
 
 .modal-scrim {
@@ -482,6 +534,21 @@ body {
   gap: 14px;
 }
 
+/* fixed 3-up grid: a single sample still occupies one third, not the full width */
+.preview-images {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+
+/* keep captions to one line so the image rows stay aligned in their cells */
+.preview-images .preview-cap {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .preview-fig {
   margin: 0;
   display: flex;
@@ -500,6 +567,8 @@ body {
 
 .preview-img {
   width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
   border-radius: 10px;
   border: 1px solid var(--border);
 }

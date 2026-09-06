@@ -3,6 +3,7 @@ use std::rc::Rc;
 // use async_openai::{config::OpenAIConfig, Client as OpenAIClient};
 use aws_config::SdkConfig;
 
+use crate::env::DiffusionEnv;
 use aws_sdk_s3::types::ObjectCannedAcl::PublicRead;
 use backend::{
     application::ports::clients::{
@@ -23,9 +24,6 @@ use backend::{
         storage::s3::S3Storage,
     },
 };
-use domain::commands::compute::ComputeRegion;
-
-use crate::env::DiffusionEnv;
 
 pub struct EC2DiffusionClients {
     output_storage: S3Storage,
@@ -42,18 +40,16 @@ impl EC2DiffusionClients {
         Rc::new(Self::new(env, config))
     }
 
-    fn agent(env: &DiffusionEnv) -> Box<dyn ComputeAgent> {
+    fn agent(env: &DiffusionEnv, config: &SdkConfig) -> Box<dyn ComputeAgent> {
         if env.localhost {
             Box::new(LocalhostAgent::new())
         } else {
-            Box::new(EC2Agent::new())
+            Box::new(EC2Agent::new(config))
         }
     }
 
     fn new(env: &DiffusionEnv, config: SdkConfig) -> Self {
-        let regions: Vec<ComputeRegion> = vec![];
-        let ec2sdk = aws_sdk_ec2::Client::new(&config);
-        let engines = EC2MultiRegion::new(regions, ec2sdk.clone());
+        let engines = EC2MultiRegion::new(config.clone());
         let general_clients = Self {
             output_storage: S3Storage::new(
                 config.clone(),
@@ -62,7 +58,7 @@ impl EC2DiffusionClients {
                     .try_into()
                     .expect("env.output_region must be a valid region"),
                 env.output_bucket.clone(),
-                env.output_prefix.clone(),
+                env.output_rootdir.clone(),
                 env.workdir.clone(),
                 env.max_data_transfer,
                 Some(PublicRead),
@@ -79,7 +75,7 @@ impl EC2DiffusionClients {
                     .try_into()
                     .expect("env.model_region must be a valid region"),
                 env.model_bucket.clone(),
-                env.model_prefix.clone(),
+                env.model_rootdir.clone(),
                 env.workdir.clone(),
                 env.max_data_transfer,
                 None,
@@ -92,7 +88,7 @@ impl EC2DiffusionClients {
             diffusion: Box::new(A1111::new(String::new())),
             // TODO: not wired to Env yet, stub only
             engines,
-            agent: Self::agent(env),
+            agent: Self::agent(env, &config),
         };
         general_clients
     }

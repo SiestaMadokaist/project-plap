@@ -2,6 +2,11 @@ output "api_endpoint" {
   value = aws_apigatewayv2_api.http.api_endpoint
 }
 
+output "api_url" {
+  description = "Public API origin behind the custom domain — consumed by `make frontend-build`."
+  value       = "https://${var.api_domain}"
+}
+
 output "ws_endpoint" {
   value = "${aws_apigatewayv2_api.ws.api_endpoint}/${var.stage}"
 }

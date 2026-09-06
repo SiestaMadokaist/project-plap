@@ -6,9 +6,10 @@ S3_BIN_BUCKET := s3://secure-storage-ramadoka/bin
 
 TF_VARS := -var="stage=$(STAGE)"
 
-# Pulled from terraform outputs (empty until the frontend stack is applied).
+# Pulled from terraform outputs (empty until the stack is applied).
 FRONTEND_BUCKET          = $(shell cd terraform && terraform output -raw frontend_bucket 2>/dev/null)
 FRONTEND_DISTRIBUTION_ID = $(shell cd terraform && terraform output -raw frontend_distribution_id 2>/dev/null)
+API_URL                  = $(shell cd terraform && terraform output -raw api_url 2>/dev/null)
 
 .PHONY: all verify check lint fmt test typos build package plan deploy run \
         invoke-api invoke-ws invoke-cron tf-init clean deploy-bin \
@@ -58,11 +59,15 @@ coverage-lcov:
 build:
 	cargo lambda build -p backend --release --arm64 --bin api --bin ws --bin cron
 
+# Each function ships its own dotenv at the zip root, loaded via ENV_PATH (see lambda.tf).
+# api needs the auth/storage vars in .env.api; ws/cron run on .env.production.
 package: build
 	mkdir -p $(DIST_DIR)
 	@for fn in $(FUNCTIONS); do \
-		echo "unzipped size $$fn: $$(du -h target/lambda/$$fn/bootstrap | cut -f1)"; \
-		zip -j $(DIST_DIR)/$$fn.zip target/lambda/$$fn/bootstrap .env.production; \
+		case $$fn in api) env=.env.api ;; *) env=.env.production ;; esac; \
+		echo "unzipped size $$fn: $$(du -h target/lambda/$$fn/bootstrap | cut -f1) ($$env)"; \
+		rm -f $(DIST_DIR)/$$fn.zip; \
+		zip -j $(DIST_DIR)/$$fn.zip target/lambda/$$fn/bootstrap $$env; \
 	done
 
 # --- deploy just the api function (skips ws/cron, still WIP) ---
@@ -73,7 +78,8 @@ build-api:
 package-api: build-api
 	mkdir -p $(DIST_DIR)
 	@echo "unzipped size api: $$(du -h target/lambda/api/bootstrap | cut -f1)"
-	zip -j $(DIST_DIR)/api.zip target/lambda/api/bootstrap .env.production
+	rm -f $(DIST_DIR)/api.zip
+	zip -j $(DIST_DIR)/api.zip target/lambda/api/bootstrap .env.api
 
 deploy-api: package-api
 	cd terraform && terraform apply -target=aws_lambda_function.api -auto-approve $(TF_VARS)
@@ -91,12 +97,18 @@ deploy-bin:
 frontend-serve:
 	cd crates/frontend && trunk serve
 
+# Build-time config (API base, bucket names) comes from .env.frontend (or
+# .env.frontend.example when the former is absent, e.g. CI), read by
+# crates/frontend/build.rs and baked into the wasm. A process env var of
+# the same name overrides the file — here PLAP_API_BASE is set from terraform's
+# api_url output when the stack is applied, so a shipped bundle targets the deployed API.
 frontend-build:
-	cd crates/frontend && trunk build --release
+	cd crates/frontend && $(if $(strip $(API_URL)),PLAP_API_BASE="$(API_URL)" )trunk build --release
 
 # Upload dist/ to S3 and bust the CloudFront cache.
 # Hashed JS/WASM get a 1-year immutable cache; index.html is never cached.
 frontend-deploy: frontend-build
+	@test -n "$(strip $(API_URL))" || { echo "no api_url output — the bundle would target localhost; 'cd terraform && terraform apply $(TF_VARS)' first"; exit 1; }
 	@test -n "$(FRONTEND_BUCKET)" || { echo "no frontend_bucket output — run 'make tf-init && cd terraform && terraform apply $(TF_VARS)' first"; exit 1; }
 	aws s3 sync crates/frontend/dist/ s3://$(FRONTEND_BUCKET)/ --delete \
 		--exclude ".stage/*" --exclude "index.html" \

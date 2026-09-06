@@ -13,6 +13,9 @@ pub struct ApiEnv {
     stage: String,
     sanity_run: String,
 
+    pub sentry_dsn: Option<String>,
+    pub sentry_env: String,
+
     pub discord_username: String,
     pub discord_webhook_url: URL,
 
@@ -25,15 +28,15 @@ pub struct ApiEnv {
 
     pub output_region: String,
     pub output_bucket: String,
-    pub output_prefix: StoragePrefix,
+    pub output_rootdir: StoragePrefix,
 
     pub model_region: String,
     pub model_bucket: String,
-    pub model_prefix: StoragePrefix,
+    pub model_rootdir: StoragePrefix,
 
     pub template_region: ComputeRegion,
     pub template_bucket: String,
-    pub template_prefix: StoragePrefix,
+    pub template_rootdir: StoragePrefix,
 }
 
 impl ApiEnv {
@@ -41,6 +44,9 @@ impl ApiEnv {
         Self {
             sanity_run: var_or("SANITY_RUN", "false"),
             stage: env::var("STAGE").expect("stage must be set"),
+
+            sentry_dsn: env::var("SENTRY_DSN").ok().filter(|s| !s.is_empty()),
+            sentry_env: var_or("SENTRY_ENV", "unknown"),
             discord_username: var_or("DISCORD_USERNAME", "lambda-api"),
             discord_webhook_url: env::var("DISCORD_WEBHOOK_URL")
                 .map(URL)
@@ -61,22 +67,22 @@ impl ApiEnv {
             template_region: env::var("TEMPLATE_REGION")
                 .and_then(ComputeRegion::from_env)
                 .expect("TEMPLATE_REGION must be set"),
-            template_bucket: env::var("TEMPLATE_BUCKET").expect("OUTPUT_BUCKET must be set"),
-            template_prefix: env::var("TEMPLATE_PREFIX")
+            template_bucket: env::var("TEMPLATE_BUCKET").expect("TEMPLATE_BUCKET must be set"),
+            template_rootdir: env::var("TEMPLATE_ROOTDIR")
                 .map(StoragePrefix)
-                .expect("OUTPUT PREFIX must be set"),
+                .expect("TEMPLATE_ROOTDIR must be set"),
 
             output_region: var_or("OUTPUT_REGION", "ap-southeast-1"),
             output_bucket: env::var("OUTPUT_BUCKET").expect("OUTPUT_BUCKET must be set"),
-            output_prefix: env::var("OUTPUT_PREFIX")
+            output_rootdir: env::var("OUTPUT_ROOTDIR")
                 .map(StoragePrefix)
-                .expect("OUTPUT PREFIX must be set"),
+                .expect("OUTPUT_ROOTDIR must be set"),
 
             model_region: env::var("MODEL_REGION").expect("MODEL_REGION must be set"),
             model_bucket: env::var("MODEL_BUCKET").expect("MODEL_BUCKET must be set"),
-            model_prefix: env::var("MODEL_PREFIX")
+            model_rootdir: env::var("MODEL_ROOTDIR")
                 .map(StoragePrefix)
-                .expect("MODEL PREFIX must be set"),
+                .expect("MODEL_ROOTDIR must be set"),
         }
     }
 

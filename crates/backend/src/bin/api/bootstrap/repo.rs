@@ -39,7 +39,7 @@ impl ApiRepos {
             config.clone(),
             env.template_region,
             env.template_bucket.clone(),
-            env.template_prefix.clone(),
+            env.template_rootdir.clone(),
             "tmp/".into(),
             10 * 1024 * 1024,
             None,
@@ -51,7 +51,7 @@ impl ApiRepos {
             ),
             hotreload: DDBHotReloadRepository::new(
                 client.clone(),
-                DDBTable::AgentCommands.table_name(stage),
+                DDBTable::HotReloads.table_name(stage),
             ),
             user: DDBUserRepository::new(client.clone(), DDBTable::Users.table_name(stage)),
             story: S3StoryRepository::new(storage),

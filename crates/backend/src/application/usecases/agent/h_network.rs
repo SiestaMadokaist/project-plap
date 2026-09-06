@@ -63,9 +63,14 @@ impl<'a, C: HandleNetworkClients> HandleNetwork<'a, C> {
                         if fwd.is_empty() {
                             let msg = "local path must be defined first";
                             let err = DomainError::Prerequisite(msg.into());
+                            tracing::debug!("error: {}", err.to_string());
                             Err(err)
                         } else {
                             let abs_path = storage.abs_path(&d.path);
+                            tracing::debug!(
+                                "upload abs_path: {}",
+                                abs_path.to_str().unwrap_or_default()
+                            );
                             storage.upload(&abs_path, &StoragePath(fwd.into())).await?;
                             progress.increment();
                             Ok(progress)

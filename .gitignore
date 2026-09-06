@@ -2,7 +2,8 @@
 /dist
 crates/frontend/dist
 .env.*
-!.env.example
+# committed template the wasm build reads; real .env.frontend stays local
+!.env.frontend.example
 
 # terraform — .terraform.lock.hcl should be committed (like Cargo.lock)
 terraform/.terraform/

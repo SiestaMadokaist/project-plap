@@ -4,6 +4,8 @@ use domain::storage::StoragePrefix;
 use pkg::{enums::stage::Stage, types::strings::URL, utils::var_or};
 pub struct CronEnv {
     stage: String,
+    pub sentry_dsn: Option<String>,
+    pub sentry_env: String,
     pub openai_model: String,
     pub syosetu_host: String,
     pub proxy_host: Option<String>,
@@ -12,7 +14,7 @@ pub struct CronEnv {
     pub proxy_password: Option<String>,
     pub tl_region: String,
     pub tl_bucket: String,
-    pub tl_prefix: StoragePrefix,
+    pub tl_rootdir: StoragePrefix,
     pub discord_username: String,
     pub discord_webhook_url: URL,
     pub max_data_transfer: i64,
@@ -24,6 +26,8 @@ impl CronEnv {
     pub fn from_env() -> Self {
         Self {
             stage: var_or("STAGE", "production"),
+            sentry_dsn: env::var("SENTRY_DSN").ok().filter(|s| !s.is_empty()),
+            sentry_env: var_or("SENTRY_ENV", "unknown"),
             openai_model: var_or("OPENAI_MODEL", "gpt-4o"),
             syosetu_host: var_or("SYOSETU_HOST", "https://ncode.syosetu.com"),
             proxy_host: env::var("PROXY_HOST").ok(),
@@ -32,9 +36,9 @@ impl CronEnv {
             proxy_password: env::var("PROXY_PASSWORD").ok(),
             tl_region: env::var("TL_REGION").expect("TL_REGION must be set"),
             tl_bucket: env::var("TL_BUCKET").expect("TL_BUCKET must be set"),
-            tl_prefix: env::var("TL_PREFIX")
+            tl_rootdir: env::var("TL_ROOTDIR")
                 .map(StoragePrefix)
-                .expect("TL_PREFIX must be set"),
+                .expect("TL_ROOTDIR must be set"),
             discord_username: var_or("DISCORD_USERNAME", "lambda-cron"),
             discord_webhook_url: env::var("DISCORD_WEBHOOK_URL")
                 .map(URL)

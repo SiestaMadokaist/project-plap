@@ -9,7 +9,7 @@ use aws_sdk_s3::{
     types::ObjectCannedAcl::{self},
     Client,
 };
-use domain::storage::DirTree;
+use domain::storage::{DirTree, ItemVersion};
 #[cfg(feature = "datatransfer")]
 use tokio::process::Command;
 
@@ -29,21 +29,24 @@ pub struct S3Storage {
     // set none if bucket doesnt allow acl
     acl: Option<ObjectCannedAcl>,
     /*
-     * @desecription
-     * valid prefix = ""
+     * @description
+     * every remote path is taken relative to this; `key` prepends it and `ls`
+     * (via `unkey`) strips it back off, so callers never see it.
+     *
+     * valid rootdir = ""
      * this will generate:
      * "" + <remote_path> => "s3://<bucket>/remote_path/to/target/file";
-     * remote_path must not start with "/", so the "/", if needed should be added on the prefix
+     * remote_path must not start with "/", so the "/", if needed should be added on the rootdir
      *
-     * another valid prefix = "root/"
+     * another valid rootdir = "root/"
      * this will generate:
      * "root/" + <remote_path> => "s3://<bucket>/root/remote_path/to/target/file"
      *
-     * prefix = "/"
+     * rootdir = "/"
      * this make ugly remote_path
      * "/" + <remote_path> => "s3://<bucket>//remote_path/to/target/file" <- double "//" after <bucket>
      */
-    remote_prefix: StoragePrefix,
+    rootdir: StoragePrefix,
     // read only through the `datatransfer` cp helpers (`abs_path` / `assert_within_limit`)
     #[cfg_attr(not(feature = "datatransfer"), allow(dead_code))]
     local_workdir: StoragePrefix,
@@ -56,7 +59,7 @@ impl S3Storage {
         config: SdkConfig,
         region: ComputeRegion,
         bucket: String,
-        remote_prefix: StoragePrefix,
+        rootdir: StoragePrefix,
         local_workdir: StoragePrefix,
         max_size: i64,
         acl: Option<ObjectCannedAcl>,
@@ -72,7 +75,7 @@ impl S3Storage {
             bucket,
             #[cfg(feature = "datatransfer")]
             bucket_region: OnceCell::new(),
-            remote_prefix,
+            rootdir,
             local_workdir,
             max_size,
             acl,
@@ -119,7 +122,16 @@ impl S3Storage {
     }
 
     fn key(&self, path: &StoragePath) -> String {
-        format!("{}{}", self.remote_prefix, path.0)
+        format!("{}{}", self.rootdir, path.0)
+    }
+
+    /// Inverse of [`Self::key`]: strip the `rootdir` that an S3 listing echoes
+    /// back, so callers see keys in the same rootdir-relative space they pass
+    /// to every other method.
+    fn unkey(&self, key: &str) -> String {
+        key.strip_prefix(self.rootdir.0.as_str())
+            .unwrap_or(key)
+            .to_string()
     }
 
     #[cfg(feature = "datatransfer")]
@@ -232,9 +244,11 @@ impl S3Storage {
     ) -> Result<Vec<String>, DomainError> {
         let key = self.key(remote);
         let src = format!("s3://{}/{key}", self.bucket);
+        tracing::debug!("copying from {}", src);
         let dst = local
             .to_str()
             .ok_or_else(|| DomainError::Serialize("local path is not valid UTF-8".into()))?;
+        tracing::debug!("copying from {}", dst);
         let mut args = vec!["s3".into(), "cp".into(), src, dst.into()];
         if recursive {
             args.push("--recursive".into());
@@ -280,6 +294,7 @@ impl StorageClient for S3Storage {
 
     #[cfg(feature = "datatransfer")]
     async fn download(&self, remote: &StoragePath, local: &Path) -> Result<(), DomainError> {
+        tracing::debug!("starting download");
         let same_region = self.is_same_region().await?;
         if !same_region {
             let err = DomainError::BillOptimization(
@@ -355,7 +370,7 @@ impl StorageClient for S3Storage {
     }
 
     async fn ls(&self, prefix: &StoragePrefix, recursive: bool) -> Result<DirTree, DomainError> {
-        let fullprefix = self.remote_prefix.at(prefix);
+        let fullprefix = self.rootdir.at(prefix);
         let mut builder = self
             .client
             .list_objects()
@@ -374,14 +389,14 @@ impl StorageClient for S3Storage {
                         .iter()
                         .map(|x| x.key.as_ref())
                         .filter(|x| x.is_some())
-                        .map(|x| StoragePath(x.unwrap().clone()))
+                        .map(|x| StoragePath(self.unkey(x.unwrap())))
                         .collect();
                     let prefixes: Vec<StoragePrefix> = items
                         .common_prefixes()
                         .iter()
                         .map(|x| x.prefix.as_ref())
                         .filter(|x| x.is_some())
-                        .map(|x| StoragePrefix(x.unwrap().clone()))
+                        .map(|x| StoragePrefix(self.unkey(x.unwrap())))
                         .collect();
                     DirTree { paths, prefixes }
                 };
@@ -391,9 +406,8 @@ impl StorageClient for S3Storage {
         Ok(vs)
     }
 
-    #[cfg(feature = "future")]
-    async fn versions(&self, path: &StoragePath) -> Result<ItemVersion, DomainError> {
-        todo!();
+    async fn versions(&self, _path: &StoragePath) -> Result<ItemVersion, DomainError> {
+        Err(DomainError::NotImplemented)
     }
 
     async fn delete(&self, path: &StoragePath) -> Result<(), DomainError> {
@@ -511,5 +525,40 @@ mod tests {
         let actual = args.join(" ");
         assert_eq!(&actual, expected);
         Ok(())
+    }
+
+    #[test]
+    fn unkey_strips_rootdir() {
+        use aws_config::{BehaviorVersion, SdkConfig};
+        use domain::commands::compute::ComputeRegion;
+
+        let mk = |rootdir: &str| {
+            let config = SdkConfig::builder()
+                .behavior_version(BehaviorVersion::latest())
+                .build();
+            super::S3Storage::new(
+                config,
+                ComputeRegion::AWSUsEast1,
+                "test-bucket".into(),
+                rootdir.into(),
+                "models/".into(),
+                100,
+                None,
+            )
+        };
+
+        let s = mk("comfyui/");
+        // object keys an S3 listing echoes back carry the rootdir; `ls` hands
+        // callers the same rootdir-relative space they pass to `key`.
+        assert_eq!(
+            s.unkey("comfyui/diffusion_models/3188/foo.safetensors"),
+            "diffusion_models/3188/foo.safetensors",
+        );
+        // common-prefix ("directory") entries get the same treatment
+        assert_eq!(s.unkey("comfyui/loras/"), "loras/");
+        // a key that doesn't start with the rootdir is left as-is
+        assert_eq!(s.unkey("diffusion_models/x"), "diffusion_models/x");
+        // an empty rootdir is the identity
+        assert_eq!(mk("").unkey("comfyui/x"), "comfyui/x");
     }
 }

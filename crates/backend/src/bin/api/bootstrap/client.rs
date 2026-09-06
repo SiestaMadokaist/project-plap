@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use crate::env::ApiEnv;
 use aws_config::SdkConfig;
 use backend::{
     application::ports::clients::container::{
@@ -10,9 +11,6 @@ use backend::{
         storage::s3::S3Storage,
     },
 };
-use domain::commands::compute::ComputeRegion;
-
-use crate::env::ApiEnv;
 
 // #[derive(Debug)]
 pub struct ApiClients {
@@ -31,9 +29,7 @@ impl ApiClients {
     }
 
     pub fn new(env: &ApiEnv, config: &SdkConfig) -> Self {
-        let ec2sdk = aws_sdk_ec2::Client::new(config);
-        let regions = vec![ComputeRegion::AWSApSoutheast2, ComputeRegion::AWSUsEast1];
-        let engines = EC2MultiRegion::new(regions, ec2sdk.clone());
+        let engines = EC2MultiRegion::new(config.clone());
         Self {
             notification: Discord::new(
                 env.discord_username.clone(),
@@ -47,7 +43,7 @@ impl ApiClients {
                     .try_into()
                     .expect("env.output_region must be a valid region"),
                 env.output_bucket.clone(),
-                env.output_prefix.clone(),
+                env.output_rootdir.clone(),
                 "/tmp/".into(),
                 MAX_SIZE,
                 None,
@@ -59,7 +55,7 @@ impl ApiClients {
                     .try_into()
                     .expect("env.model_region must be a valid region"),
                 env.model_bucket.clone(),
-                env.model_prefix.clone(),
+                env.model_rootdir.clone(),
                 "/tmp/".into(),
                 MAX_SIZE,
                 None,
@@ -67,9 +63,9 @@ impl ApiClients {
             authorizer: EthAuth::new(
                 env.auth_secret.clone(),
                 env.auth_privkey.clone(),
-                env.auth_challenge_ttl.clone(),
-                env.auth_session_ttl.clone(),
-                env.auth_clock_skew.clone(),
+                env.auth_challenge_ttl,
+                env.auth_session_ttl,
+                env.auth_clock_skew,
                 env.auth_min_iat,
             )
             .expect("AUTH_PRIVKEY must be a valid secp256k1 scalar"),

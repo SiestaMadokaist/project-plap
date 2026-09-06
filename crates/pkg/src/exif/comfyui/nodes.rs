@@ -15,6 +15,8 @@ pub enum ComfyNode {
     Checkpoint(NodeData<Vec<String>>),
     #[serde(rename = "CLIPTextEncode")]
     Cliptext(NodeData<Vec<String>>),
+    #[serde(rename = "UNETLoader")]
+    UnetLoader(NodeData<Vec<String>>),
     #[serde(other)]
     Other,
 }
@@ -35,12 +37,10 @@ pub struct ComfyWorkflow {
 
 impl ComfyWorkflow {
     pub fn checkpoint(&self) -> Option<&str> {
-        let cp = self
-            .nodes
-            .iter()
-            .find(|x| matches!(x, ComfyNode::Checkpoint(_)))?;
+        let cp = self.nodes.iter().find(|x| x.is_checkpoint())?;
         match cp {
             ComfyNode::Checkpoint(x) => x.value(),
+            ComfyNode::UnetLoader(x) => x.value(),
             _ => None,
         }
     }
@@ -71,6 +71,16 @@ impl ComfyWorkflow {
 }
 
 impl ComfyNode {
+    pub fn is_checkpoint(&self) -> bool {
+        if matches!(self, ComfyNode::Checkpoint(_)) {
+            return true;
+        }
+        if matches!(self, ComfyNode::UnetLoader(_)) {
+            return true;
+        }
+        false
+    }
+
     fn negative_clip(&self) -> Option<&String> {
         match self {
             ComfyNode::Cliptext(data) => {

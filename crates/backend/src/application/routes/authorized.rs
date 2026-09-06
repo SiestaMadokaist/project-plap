@@ -17,8 +17,12 @@ pub enum AuthorizedRoute {
     // AgentCommandDelete,
     // #[serde(rename = "/agents/command/generate")]
     // AgentCommandGenerate,
-    // #[serde(rename = "/hq/instance/control")]
-    // HQInstanceControl,
+    #[serde(rename = "/hq/instance/launch")]
+    HQInstanceLaunch,
+    #[serde(rename = "/hq/instance/control")]
+    HQInstanceControl,
+    #[serde(rename = "/hq/instance/list")]
+    HQInstanceList,
     #[serde(rename = "/story/templates")]
     TemplateList,
     #[serde(rename = "/story/templates/create")]

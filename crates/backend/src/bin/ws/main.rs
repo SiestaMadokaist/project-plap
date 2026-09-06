@@ -2,6 +2,9 @@ use lambda_runtime::{run, service_fn, Error, LambdaEvent};
 use serde_json::{json, Value};
 
 mod bootstrap;
+mod env;
+
+use env::WsEnv;
 
 async fn handler(event: LambdaEvent<Value>) -> Result<Value, Error> {
     let route_key = event.payload["requestContext"]["routeKey"]
@@ -25,6 +28,8 @@ async fn handler(event: LambdaEvent<Value>) -> Result<Value, Error> {
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     backend::init_env();
+    let env = WsEnv::from_env();
+    let _sentry = backend::init_sentry(env.sentry_dsn.as_deref(), &env.sentry_env);
     backend::init_tracing();
     run(service_fn(handler)).await
 }

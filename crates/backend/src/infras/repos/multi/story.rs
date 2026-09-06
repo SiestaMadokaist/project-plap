@@ -22,7 +22,7 @@ impl S3StoryRepository {
     }
 
     /// stories are scoped to their owner: the object key (below the storage's
-    /// `remote_prefix`) is always `<username>/<story_id>`.
+    /// `rootdir`) is always `<username>/<story_id>`.
     fn key(owner: &Username, id: &StoryTemplateId) -> StoragePath {
         StoragePath(format!("{}/{}", owner.0, id.0))
     }
@@ -43,7 +43,7 @@ impl StoryTemplateRepository for S3StoryRepository {
     ) -> Result<Vec<StoryTemplateId>, DomainError> {
         let prefix = StoragePrefix(owner.0.clone());
         let items = self.storage.ls(&prefix, recursive).await?;
-        // `ls` yields full object keys (`<remote_prefix>/<username>/<story_id>`);
+        // `ls` yields prefix-relative keys (`<username>/<story_id>`);
         // the story id is just the last path segment.
         let ids = items
             .paths

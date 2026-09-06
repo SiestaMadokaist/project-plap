@@ -16,6 +16,11 @@ impl WebUI for ComfyUI {
     type Memo = ComfyMemo;
 }
 
+/**
+ * @todo
+ * for now this can only handle exif made in comfyui using Image Saver Simple
+ * image saver save in a different format.
+ */
 impl Exif<ComfyUI> {
     pub fn new(data: Vec<u8>) -> Self {
         Exif::<ComfyUI> {
@@ -139,6 +144,30 @@ mod tests {
         let negative = exif.negative()?;
         assert!(negative.starts_with("lowres, bad anatomy"));
         assert!(negative.ends_with("username, blurry"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn can_read() -> std::io::Result<()> {
+        let data = std::fs::read(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../samples/inputs/images/1788443071.png"
+        ))?;
+        let exif = Exif::<ComfyUI>::new(data);
+        let text = exif.text();
+        println!("checkpoint: {}", exif.checkpoint()?);
+        println!("text: {}", text);
+        // let checkpoint = exif.checkpoint()?;
+        // assert_eq!(checkpoint, "cosplayillustriousmi_v20.safetensors");
+
+        // let positive = exif.positive()?;
+        // assert!(positive.starts_with("photorealistic"));
+        // assert!(positive.ends_with("fate series."));
+
+        // let negative = exif.negative()?;
+        // assert!(negative.starts_with("lowres, bad anatomy"));
+        // assert!(negative.ends_with("username, blurry"));
 
         Ok(())
     }

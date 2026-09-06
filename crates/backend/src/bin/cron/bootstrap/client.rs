@@ -55,7 +55,7 @@ impl CronClients {
                     .try_into()
                     .expect("env.tl_region must be a valid REGION"),
                 env.tl_bucket.clone(),
-                env.tl_prefix.clone(),
+                env.tl_rootdir.clone(),
                 "/tmp/".into(),
                 env.max_data_transfer,
                 None,

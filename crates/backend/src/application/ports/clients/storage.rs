@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 
 use domain::{
     errors::DomainError,
-    storage::{DirTree, StorageBucket, StoragePath, StoragePrefix},
+    storage::{DirTree, ItemVersion, StorageBucket, StoragePath, StoragePrefix},
 };
 
 #[cfg_attr(test, mockall::automock)]
@@ -31,6 +31,5 @@ pub trait StorageClient {
     #[cfg(feature = "datatransfer")]
     fn abs_path(&self, path: &Path) -> PathBuf;
 
-    #[cfg(feature = "future")]
     async fn versions(&self, path: &StoragePath) -> Result<ItemVersion, DomainError>;
 }

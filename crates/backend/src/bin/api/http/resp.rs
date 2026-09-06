@@ -24,6 +24,17 @@ pub fn yes(
     Ok(response)
 }
 
+/// Empty `204`. Used to answer the CORS preflight — the `$default` route hands
+/// `OPTIONS` to this Lambda, and API Gateway's `cors_configuration` then decorates
+/// the response with the `Access-Control-*` headers.
+pub fn no_content() -> ServerResponse {
+    ServerResponse {
+        status_code: 204,
+        headers: HashMap::new(),
+        body: String::new(),
+    }
+}
+
 pub fn no(error: DomainError) -> ServerResponse {
     let mut headers = HashMap::new();
     headers.insert("content-type".into(), "application/json".into());

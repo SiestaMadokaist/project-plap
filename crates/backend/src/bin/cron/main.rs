@@ -53,9 +53,10 @@ async fn handler(
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Error> {
     backend::init_env();
+    let env = CronEnv::from_env();
+    let _sentry = backend::init_sentry(env.sentry_dsn.as_deref(), &env.sentry_env);
     backend::init_tracing();
 
-    let env = CronEnv::from_env();
     let config = aws_config::from_env().load().await;
 
     let repo = CronRepos::rc(&config, env.stage());
