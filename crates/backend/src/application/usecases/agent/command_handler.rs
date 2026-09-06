@@ -50,6 +50,8 @@ impl<'a, R: CommandHandlerRepos, C: CommandHandlerClients> CommandHandler<'a, R,
             .map_err(|x| DomainError::HttpConnectionFailed(x.to_string()))?;
         if updated.progress.is_done() {
             Ok(CommandStage::Completed)
+        } else if updated.progress.is_failed() {
+            Ok(CommandStage::Failed)
         } else {
             Ok(CommandStage::InProgress)
         }

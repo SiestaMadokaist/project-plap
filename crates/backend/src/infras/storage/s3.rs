@@ -285,6 +285,7 @@ impl StorageClient for S3Storage {
     fn abs_path(&self, path: &Path) -> PathBuf {
         let path_str = path.to_str().unwrap_or_default();
         let dst = format!("{}{}", self.local_workdir, path_str);
+        tracing::debug!("localhost path: {}", dst);
         PathBuf::from(dst)
     }
 
