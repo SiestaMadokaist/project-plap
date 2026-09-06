@@ -149,7 +149,7 @@ impl<'a, C: SaveOutputClient, R: SaveOutputRepos> SaveOutput<'a, C, R> {
         // `diffusion_models/<name>.image-<n>.png` (matched by the frontend).
         let stem = model.strip_suffix(".safetensors").unwrap_or(model);
         let path = format!(
-            "comfyui/diffusion_models/{}.image-{}{}",
+            "diffusion_models/{}.image-{}{}",
             stem, sample_number, FILE_EXT
         );
         Ok(StoragePath(path))

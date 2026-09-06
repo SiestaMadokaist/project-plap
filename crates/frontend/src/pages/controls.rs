@@ -24,8 +24,8 @@ const COMPUTE_REGIONS: [ComputeRegion; 1] = [
 
 /// The two prefixes the panels list. Trailing slash keeps the match tight
 /// (so `loras/` doesn't also pull in a sibling like `loras_xl/`).
-const DIFFUSION_MODELS: &str = "comfyui/diffusion_models/";
-const LORAS: &str = "comfyui/loras/";
+const DIFFUSION_MODELS: &str = "diffusion_models/";
+const LORAS: &str = "loras/";
 
 /// One clickable entry: every object that shares a path once the extension is
 /// stripped (e.g. `…/render_studio-v2.0.{safetensors,jpg,json}`).
@@ -131,7 +131,7 @@ fn pretty_json(raw: &str) -> String {
 }
 
 /// A flat, recursive listing of everything under `prefix`, collapsed by stem.
-/// Clicking an entry queues a `comfyui/… -> models/…` copy for every file in it;
+/// Clicking an entry queues a `<prefix>/… -> models/…` copy for every file in it;
 /// the eye button opens a preview of the image / json siblings.
 /// Reused for both columns — only `title` / `prefix` differ.
 #[component]
@@ -478,7 +478,7 @@ fn ModelList(
     }
 }
 
-/// Standalone action panel: queue the `comfyui/bootstraps/ -> models/` copy.
+/// Standalone action panel: queue the `bootstraps/ -> models/` copy.
 /// Sits above the "Diffusion models" list in its column.
 #[component]
 fn SyncBootstraps(api: PlapApi, bump_queue: WriteSignal<u32>) -> impl IntoView {
@@ -490,7 +490,7 @@ fn SyncBootstraps(api: PlapApi, bump_queue: WriteSignal<u32>) -> impl IntoView {
         spawn_local(async move {
             match api.cp_bootstraps().await {
                 Ok(_) => {
-                    set_status.set("Queued comfyui/bootstraps/ -> models/".to_string());
+                    set_status.set("Queued bootstraps/ -> models/".to_string());
                     bump_queue.update(|n| *n += 1);
                 }
                 Err(e) => set_status.set(format!("Bootstrap sync failed: {e}")),
@@ -502,7 +502,7 @@ fn SyncBootstraps(api: PlapApi, bump_queue: WriteSignal<u32>) -> impl IntoView {
         <section class="panel">
             <header class="panel-head">
                 <h2 class="panel-title">"Bootstraps"</h2>
-                <span class="panel-prefix">"comfyui/bootstraps/ -> models/"</span>
+                <span class="panel-prefix">"bootstraps/ -> models/"</span>
             </header>
 
             {move || {

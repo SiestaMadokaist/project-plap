@@ -39,7 +39,7 @@ impl ApiRepos {
             config.clone(),
             env.template_region,
             env.template_bucket.clone(),
-            env.template_prefix.clone(),
+            env.template_rootdir.clone(),
             "tmp/".into(),
             10 * 1024 * 1024,
             None,

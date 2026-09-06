@@ -1,3 +1,4 @@
+use chrono::Utc;
 use pkg::macros::id_type;
 use serde::{Deserialize, Serialize};
 
@@ -29,12 +30,11 @@ impl StoragePrefix {
     }
 }
 
-#[cfg(feature = "future")]
 #[derive(Serialize, Deserialize)]
 pub struct ItemVersion {
     pub key: Option<String>,
     pub version_id: Option<String>,
-    pub last_modified: Option<DateTime<Utc>>,
+    pub last_modified: Option<chrono::DateTime<Utc>>,
     pub size: Option<i64>,
     pub e_tag: Option<String>,
 }

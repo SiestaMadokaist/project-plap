@@ -26,11 +26,11 @@ pub struct DiffusionEnv {
 
     pub output_region: String,
     pub output_bucket: String,
-    pub output_prefix: StoragePrefix,
+    pub output_rootdir: StoragePrefix,
 
     pub model_region: String,
     pub model_bucket: String,
-    pub model_prefix: StoragePrefix,
+    pub model_rootdir: StoragePrefix,
 
     pub cache_ttl: Second,
 
@@ -67,15 +67,15 @@ impl DiffusionEnv {
 
             model_region: env::var("MODEL_REGION").expect("MODEL REGION must not be empty"),
             model_bucket: env::var("MODEL_BUCKET").expect("MODEL BUCKET must not be empty"),
-            model_prefix: env::var("MODEL_PREFIX")
+            model_rootdir: env::var("MODEL_ROOTDIR")
                 .map(StoragePrefix)
-                .expect("MODEL PREFIX must be set"),
+                .expect("MODEL_ROOTDIR must be set"),
 
             output_region: var_or("OUTPUT_REGION", "ap-southeast-1"),
             output_bucket: env::var("OUTPUT_BUCKET").expect("OUTPUT_BUCKET must be set"),
-            output_prefix: env::var("OUTPUT_PREFIX")
+            output_rootdir: env::var("OUTPUT_ROOTDIR")
                 .map(StoragePrefix)
-                .expect("OUTPUT PREFIX must be set"),
+                .expect("OUTPUT_ROOTDIR must be set"),
             blacklist_tags: env::var("BLACKLIST_TAGS").expect("BLACKLIST_TAGS must be set"),
             cache_ttl: var_second("CACHE_TTL"),
         }

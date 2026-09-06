@@ -43,7 +43,7 @@ impl ApiClients {
                     .try_into()
                     .expect("env.output_region must be a valid region"),
                 env.output_bucket.clone(),
-                env.output_prefix.clone(),
+                env.output_rootdir.clone(),
                 "/tmp/".into(),
                 MAX_SIZE,
                 None,
@@ -55,7 +55,7 @@ impl ApiClients {
                     .try_into()
                     .expect("env.model_region must be a valid region"),
                 env.model_bucket.clone(),
-                env.model_prefix.clone(),
+                env.model_rootdir.clone(),
                 "/tmp/".into(),
                 MAX_SIZE,
                 None,

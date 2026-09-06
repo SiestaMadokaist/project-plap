@@ -63,18 +63,10 @@ impl PlapApi {
         resp.get()
     }
 
-    /// Queue an s3 -> localhost copy of `src` into the same path with the leading
-    /// `comfyui/` segment rewritten to `models/`. Returns the queued command.
+    /// Queue an s3 -> localhost copy of `src` (a key relative to the model
+    /// storage prefix) into `models/<src>`. Returns the queued command.
     pub async fn cp_model(&self, src: StoragePath) -> Result<CommandDomain, DomainError> {
-        let dst = match src.0.strip_prefix("comfyui/") {
-            Some(rest) => format!("models/{rest}"),
-            None => {
-                return Err(DomainError::Prerequisite(format!(
-                    "expected a `comfyui/` path, got `{}`",
-                    src.0
-                )))
-            }
-        };
+        let dst = format!("models/{}", src.0);
 
         // deterministic id: re-queuing the same object overwrites its command
         // rather than piling up duplicates.
@@ -105,17 +97,17 @@ impl PlapApi {
         Ok(resp.command)
     }
 
-    /// Queue the fixed `comfyui/bootstraps/ -> models/` prefix copy — the comfyui
+    /// Queue the fixed `bootstraps/ -> models/` prefix copy — the comfyui
     /// runtime configs the agent needs alongside the models. Unlike [`Self::cp_model`]
     /// the destination stays flat at `models/` (not `models/bootstraps/`).
     pub async fn cp_bootstraps(&self) -> Result<CommandDomain, DomainError> {
         let payload = CpModelPayload {
-            action_id: ActionId("Network-comfyui/bootstraps/".into()),
+            action_id: ActionId("Network-bootstraps/".into()),
             priority: js_sys::Date::now() as u64,
             args: NetworkArgs::new(
                 ModelSrc::S3(S3Args {
                     bucket: self.model_bucket.clone(),
-                    path: StoragePath("comfyui/bootstraps/".into()),
+                    path: StoragePath("bootstraps/".into()),
                 }),
                 ModelDst::Local(LocalArgs {
                     forward: false,
