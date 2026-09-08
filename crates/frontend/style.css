@@ -534,6 +534,12 @@ body {
   gap: 14px;
 }
 
+/* model-file download link, styled as a ghost button */
+.preview-dl {
+  align-self: flex-start;
+  text-decoration: none;
+}
+
 /* fixed 3-up grid: a single sample still occupies one third, not the full width */
 .preview-images {
   display: grid;
