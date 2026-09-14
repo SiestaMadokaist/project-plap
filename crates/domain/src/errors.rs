@@ -8,6 +8,9 @@ pub enum DomainError {
     #[error("unknown error: {0}")]
     UnknownError(String),
 
+    #[error("validation error: {0}")]
+    ValidationError(String),
+
     #[error("prerequisite not satisfied")]
     Prerequisite(String),
 

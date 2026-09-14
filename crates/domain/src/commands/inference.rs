@@ -33,10 +33,11 @@ impl Inferrable for String {}
 pub struct InferenceConfig<S: Inferrable> {
     pub workflow_id: Option<StoragePath>,
     pub loras: Vec<StoragePath>,
-    positive: S,
+    pub checkpoint: String,
+    pub positive: S,
     negative: S,
-    width: unit::Px,
-    height: unit::Px,
+    pub width: unit::Px,
+    pub height: unit::Px,
     steps: unit::Index1,
     /// how many image generated per request
     #[serde(deserialize_with = "deserialize_n_iter")]

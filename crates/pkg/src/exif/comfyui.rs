@@ -1,8 +1,7 @@
 use std::cell::OnceCell;
-pub mod nodes;
-use crate::exif::{
-    comfyui::nodes::ComfyWorkflow,
-    traits::{Exif, ExifError, ExifTraits, WebUI},
+use crate::{
+    comfy::graph::ComfyWorkflow,
+    exif::traits::{Exif, ExifError, ExifTraits, WebUI},
 };
 
 #[derive(Default)]

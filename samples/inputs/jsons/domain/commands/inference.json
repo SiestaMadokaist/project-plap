@@ -1,14 +1,15 @@
 {
     "workflow_id": "test-wf-1",
+    "checkpoint": "diving-anima-v7.0.safetensors",
     "loras": [
         "lora1.safetensors",
         "lora2.safetensors"
     ],
-    "positive": "(( highly detailed, photograph, realistic, photorealistic, cosplay photoshoot, detailed skin texture real skin ))\non stage, piano, playing piano\n(( concert, vip, room interior, spotlight, wide screen ))\n1girl, solo\nbackview, facing away, from behind, pov from behind, dynamic angle, side-view, from side\nADDCOMM",
+    "positive": "(( highly detailed, photograph, realistic, photorealistic, cosplay photoshoot, detailed skin texture real skin ))\non stage, piano, playing piano\n(( concert, vip, room interior, spotlight, wide screen ))\n1girl, solo\nbackview, facing away, from behind, pov from behind, dynamic angle, side-view, from side\n Ganyu \\(Genshin Impact\\).\nshe is wearing Ganyu Costume, looking back at viewer with seductive smirk.",
     "negative": "some negatives string",
-    "width": 800,
-    "height": 1000,
-    "steps": 30,
+    "width": 720,
+    "height": 968,
+    "steps": 8,
     "n_iter": 1,
     "seed": 1038232,
     "references": []

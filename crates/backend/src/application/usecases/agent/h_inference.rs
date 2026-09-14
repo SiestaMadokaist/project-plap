@@ -6,7 +6,7 @@ use domain::{
     commands::{command::Progression, inference::InferenceConfig},
     errors::DomainError,
 };
-use pkg::{exif::comfyui::nodes::ComfyWorkflow, macros::trait_clients};
+use pkg::{comfy, macros::trait_clients};
 
 trait_clients!(HandleInferenceClient, HasDiffusion, HasModelStorage);
 
@@ -34,7 +34,7 @@ impl<'a, C: HandleInferenceClient> HandleInference<'a, C> {
             Some(path) => {
                 let storage = self.clients.model_storage();
                 let string = storage.read(path).await?;
-                let deserialized: ComfyWorkflow = serde_json::from_str(&string)?;
+                let deserialized: comfy::workflow::PostRequests = serde_json::from_str(&string)?;
                 Some(deserialized)
             }
         };
@@ -165,7 +165,7 @@ mod tests {
         let mut diffuser = MockDiffusionClient::new();
         diffuser
             .expect_generate()
-            .returning(|_, _| Err(DomainError::RateLimited.into()));
+            .returning(|_, _| Err(DomainError::RateLimited));
         let container = MockContainer::new(diffuser);
         let progress = Progression::new(Index0(2), Index0(1));
         let config = cfg();

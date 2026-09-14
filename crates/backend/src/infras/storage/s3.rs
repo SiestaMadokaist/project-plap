@@ -324,7 +324,6 @@ impl StorageClient for S3Storage {
         let recursive = local.is_dir();
         let args = self.upload_args(remote, local, recursive)?;
         self.spawn_cp(&args).await
-        // self.spawn_cp(src, &dst, recursive).await
     }
 
     async fn read(&self, path: &StoragePath) -> Result<String, DomainError> {
