@@ -54,7 +54,7 @@ impl CronEnv {
         match self.stage.as_str() {
             "development" => Stage::Development,
             "staging" => Stage::Staging,
-            "production" => Stage::Staging,
+            "production" => Stage::Production,
             _ => Stage::Development,
         }
     }

@@ -3,12 +3,12 @@ locals {
     translate_deathflag = {
       schedule    = "cron(30 * * * ? *)"
       description = "Translate deathflag every hour at :30"
-      input       = jsonencode({ pathParameters = { proxy = "cron/translate", novel_id = "n4449cj" } })
+      input       = jsonencode({ pathParameters = { proxy = "cron/translate", data = { novel_id = "n4449cj" } } })
     }
     translate_re0 = {
       schedule    = "cron(0 * * * ? *)"
       description = "Translate rezero every hour at :00"
-      input       = jsonencode({ pathParameters = { proxy = "cron/translate", novel_id = "n2267be" } })
+      input       = jsonencode({ pathParameters = { proxy = "cron/translate", data = { novel_id = "n2267be" } } })
     }
   }
 }

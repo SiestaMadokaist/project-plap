@@ -23,6 +23,10 @@ impl CronRepos {
 
     pub fn new(config: &SdkConfig, stage: Stage) -> Self {
         let client = aws_sdk_dynamodb::Client::new(config);
+        tracing::info!(
+            "connecting to region: {}",
+            config.region().map(|x| x.to_string()).unwrap_or("-".into())
+        );
         Self {
             translation: DDBTranslationRepository::new(
                 client.clone(),

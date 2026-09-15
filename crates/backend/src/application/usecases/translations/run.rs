@@ -1,3 +1,4 @@
+use aws_sdk_s3::error::DisplayErrorContext;
 use dto::response::Placeholder;
 use tokio::sync::OnceCell;
 
@@ -56,7 +57,8 @@ impl<'a, R: TLRepos, C: TLClients> Run<'a, R, C> {
             .repo
             .translation()
             .latest(&self.params.novel_id)
-            .await?;
+            .await
+            .map_err(sdk_err)?;
         Ok(result)
     }
 
@@ -124,9 +126,17 @@ impl<'a, R: TLRepos, C: TLClients> Run<'a, R, C> {
 impl<R: TLRepos, C: TLClients> UsecaseAPI<Placeholder> for Run<'_, R, C> {
     async fn exec(&self) -> Result<Placeholder, DomainError> {
         let latest = self.latest_translation().await?;
+        tracing::debug!("latest is none?: {}", &latest.is_none());
         match latest {
             None => Err(DomainError::Prerequisite("story not initialized".into())),
             Some(latest) => self.run_translation(&latest).await,
         }
     }
+}
+
+fn sdk_err<E>(e: E) -> DomainError
+where
+    E: std::error::Error,
+{
+    DomainError::ApiError(DisplayErrorContext(e).to_string())
 }

@@ -18,6 +18,7 @@ displayable!(DDBTable);
 impl DDBTable {
     pub fn table_name(&self, stage: Stage) -> String {
         let v: Vec<String> = vec![stage.into(), self.into()];
+        tracing::info!("connecting to table: {}", v.join("-"));
         v.join("-")
     }
 }

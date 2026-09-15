@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-use crate::comfy::nodes::inputs::EmptySD3LatentImage;
 pub mod inputs;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

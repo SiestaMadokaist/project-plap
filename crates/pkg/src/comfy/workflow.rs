@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     comfy::nodes::{
-        KnownNode::{self, ClipText, SD3Latent, UnetLoader},
+        KnownNode::{ClipText, SD3Latent, UnetLoader},
         PromptNode,
     },
     types::unit::Px,
