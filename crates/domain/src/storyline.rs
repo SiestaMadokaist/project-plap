@@ -9,10 +9,6 @@ use crate::{
 id_type!(StoryTemplateId);
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct RawTemplate(String);
-impl Inferrable for RawTemplate {}
-
-use std::collections::{HashMap, HashSet};
 
 /**
  * the original unevaluated string
@@ -31,11 +27,16 @@ use std::collections::{HashMap, HashSet};
  * data structure stored in S3 as file.
  * directly targeted by filename.
  */
+pub struct RawTemplate(pub String);
+impl Inferrable for RawTemplate {}
+
+use std::collections::{HashMap, HashSet};
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Storyline {
-    id: StoryTemplateId,
-    inferences: Vec<InferenceConfig<RawTemplate>>,
-    variables: HashMap<String, String>,
+    pub id: StoryTemplateId,
+    pub inferences: Vec<InferenceConfig<RawTemplate>>,
+    pub variables: HashMap<String, String>,
 }
 
 impl Storyline {

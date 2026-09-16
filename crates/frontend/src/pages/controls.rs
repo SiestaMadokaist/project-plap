@@ -988,6 +988,14 @@ pub fn Controls(jwt: JWT, set_session: WriteSignal<Option<JWT>>) -> impl IntoVie
                     <span class="brand-mark">"⬡"</span>
                     <span class="brand-name">"Project-Plap"</span>
                 </span>
+                <nav class="dash-nav">
+                    <a class="ghost-btn" href="/hq/controls">
+                        "Controls"
+                    </a>
+                    <a class="ghost-btn" href="/hq/templates">
+                        "Templates"
+                    </a>
+                </nav>
                 <button class="ghost-btn" on:click=logout>
                     "Log out"
                 </button>

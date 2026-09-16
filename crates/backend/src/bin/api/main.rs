@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{collections::HashMap, rc::Rc};
 
 use backend::application::{
     ports::clients::{authorizer::Authorizer, container::HasAuthValidator},
@@ -15,7 +15,8 @@ mod routes;
 
 use bootstrap::{client::ApiClients, repo::ApiRepos};
 use env::ApiEnv;
-use pkg::auth::claims::JWT;
+use pkg::{auth::claims::JWT, id::TraceId};
+use tracing::Instrument;
 
 use crate::{
     http::{
@@ -28,9 +29,13 @@ use crate::{
     },
 };
 
-async fn init_ctx(clients: &ApiClients, token: JWT) -> Result<ctx::Context, DomainError> {
+async fn init_ctx(
+    clients: &ApiClients,
+    token: JWT,
+    trace_id: Option<TraceId>,
+) -> Result<ctx::Context, DomainError> {
     let claims = clients.authorizer().validate(token).await?;
-    let ctx = ctx::Context::new(claims, None);
+    let ctx = ctx::Context::new(claims, trace_id);
     Ok(ctx)
 }
 
@@ -39,12 +44,16 @@ async fn init_ctx(clients: &ApiClients, token: JWT) -> Result<ctx::Context, Doma
 /// sees a ready `&Context`.
 async fn route_authorized(
     repos: Rc<ApiRepos>,
-    clients: Rc<ApiClients>,
+    clients: Rc<ApiClients<'_, ()>>,
     router: Rc<Router<AuthorizedRoute>>,
     event: HttpEvent,
 ) -> Result<ServerResponse, DomainError> {
-    let ctx = init_ctx(clients.as_ref(), event.authorization()?).await?;
-    handle_authorized(repos, clients, router, &ctx, event).await
+    let ctx = init_ctx(clients.as_ref(), event.authorization()?, event.trace_id()).await?;
+    let api_clients = clients.start(ctx);
+    let span = tracing::info_span!("request", trace_id = %ctx.trace_id());
+    handle_authorized(repos, api_clients, router, &ctx, event)
+        .instrument(span)
+        .await
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -59,7 +68,7 @@ async fn main() -> Result<(), Error> {
     }
     let config = aws_config::from_env().load().await;
     let repo = ApiRepos::rc(&env, &config);
-    let client = ApiClients::rc(&env, &config);
+    let client = ApiClients::rc((), &env, &config);
     let authorized_router = Rc::new(authorized_routes());
     let public_router = Rc::new(public_routes());
 

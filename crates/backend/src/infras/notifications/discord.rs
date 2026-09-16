@@ -19,10 +19,10 @@ pub struct Discord {
 }
 
 impl Discord {
-    pub fn new(username: String, webhook_url: URL) -> Self {
+    pub fn new(client: reqwest::Client, username: String, webhook_url: URL) -> Self {
         Self {
             username,
-            client: Client::new(),
+            client,
             webhook_url,
         }
     }
@@ -34,6 +34,7 @@ impl NotificationClient for Discord {
             username: &self.username,
             content: info,
         };
+        tracing::debug!("Discord.notify: {}", info);
         self.client
             .post(&self.webhook_url.0)
             .json(&payload)

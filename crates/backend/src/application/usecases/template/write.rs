@@ -7,7 +7,6 @@ use crate::application::ports::{
     usecase::UsecaseAPI,
 };
 
-// trait_clients!(TemplateWriteC)
 trait_repos!(TemplateWriteRepo, HasStoryTemplate);
 pub struct TemplateWriteSvc<'a, R: TemplateWriteRepo> {
     repos: &'a R,

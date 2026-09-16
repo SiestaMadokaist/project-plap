@@ -36,6 +36,7 @@ impl<'a, C: LaunchComputeClients, R: LaunchComputeRepos> UsecaseAPI<ComputeDTO>
     for LaunchCompute<'a, C, R>
 {
     async fn exec(&self) -> Result<ComputeDTO, DomainError> {
+        tracing::info!("launching new instance");
         let username = &self.ctx.auth().username;
         let region = self.payload.region;
         let config = self

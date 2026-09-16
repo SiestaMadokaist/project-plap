@@ -35,20 +35,20 @@ pub struct InferenceConfig<S: Inferrable> {
     pub loras: Vec<StoragePath>,
     pub checkpoint: String,
     pub positive: S,
-    negative: S,
+    pub negative: S,
     pub width: unit::Px,
     pub height: unit::Px,
-    steps: unit::Index1,
+    pub steps: unit::Index1,
     /// how many image generated per request
     #[serde(deserialize_with = "deserialize_n_iter")]
-    n_iter: unit::Index1,
+    pub n_iter: unit::Index1,
     pub seed: i32,
     /// workflow will iterate for each node
     /// if a node that consume reference, the next node
     /// that need reference will use the next reference
     /// eg: if node 3 use reference it use references[0]
     /// then if node 5 also need reference, it'll use references[1]
-    references: Vec<URL>,
+    pub references: Vec<URL>,
 }
 
 fn deserialize_n_iter<'de, D>(deserializer: D) -> Result<unit::Index1, D::Error>

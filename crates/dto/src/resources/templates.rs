@@ -19,12 +19,15 @@ json_type!(DeleteTemplatePayload);
 pub struct ReadTemplatePayload(pub StoryTemplateId);
 json_type!(ReadTemplatePayload);
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReadTemplateResponse(pub Storyline);
+
 pub type ListStoryTemplate = ListResponse<StoryTemplateId>;
 
 impl DTO for ListStoryTemplate {}
 impl DTO for WriteTemplatePayload {}
 impl DTO for DeleteTemplatePayload {}
 impl DTO for ReadTemplatePayload {}
+impl DTO for ReadTemplateResponse {}
 impl DTO for StoryTemplateId {}
 impl DTO for StoragePath {}
-impl DTO for Storyline {}

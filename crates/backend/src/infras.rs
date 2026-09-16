@@ -3,6 +3,7 @@ pub mod civitai;
 pub mod compute;
 pub mod compute_agent;
 pub mod diffusions;
+pub mod http;
 pub(crate) mod http_error;
 pub mod notifications;
 pub mod raws;

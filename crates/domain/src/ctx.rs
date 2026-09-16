@@ -10,12 +10,8 @@ pub struct Context {
 }
 
 impl Context {
-    fn new_trace_id() -> TraceId {
-        TraceId("todo".into())
-    }
-
     pub fn new(auth: AuthClaims, mtrace_id: Option<TraceId>) -> Self {
-        let trace_id = mtrace_id.unwrap_or_else(Context::new_trace_id);
+        let trace_id = mtrace_id.unwrap_or_default();
         let start_at = chrono::Utc::now();
         Self {
             auth,
