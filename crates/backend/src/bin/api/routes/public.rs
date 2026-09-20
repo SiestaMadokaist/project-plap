@@ -8,7 +8,7 @@ use backend::application::{
         users::{challenge::GetChallenge, submit_answer::SubmitAnswer},
     },
 };
-use domain::errors::DomainError;
+use domain::{ctx, errors::DomainError};
 use dto::response::ToResp;
 use matchit::Router;
 
@@ -43,7 +43,7 @@ pub fn public_routes() -> Router<PublicRoute> {
 
 pub async fn handle_public(
     repos: Rc<ApiRepos>,
-    clients: Rc<ApiClients>,
+    clients: &ApiClients<'_, ctx::Context>,
     router: Rc<Router<PublicRoute>>,
     event: HttpEvent,
 ) -> Result<ServerResponse, DomainError> {
@@ -54,13 +54,13 @@ pub async fn handle_public(
     let resp: Result<dto::response::Response<serde_json::Value>, DomainError> = match matched.value
     {
         PublicRoute::GetChallenge => {
-            GetChallenge::new(clients.as_ref(), repos.as_ref(), event.body()?.try_into()?)
+            GetChallenge::new(clients, repos.as_ref(), event.body()?.try_into()?)
                 .exec()
                 .await
                 .to_result()
         }
         PublicRoute::SubmitAnswer => {
-            SubmitAnswer::new(clients.as_ref(), repos.as_ref(), event.body()?.try_into()?)
+            SubmitAnswer::new(clients, repos.as_ref(), event.body()?.try_into()?)
                 .exec()
                 .await
                 .to_result()

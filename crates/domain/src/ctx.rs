@@ -3,6 +3,7 @@ use std::ops::Sub;
 use chrono::{DateTime, Utc};
 use pkg::{auth::claims::AuthClaims, id::TraceId, types::time::MilliSecond};
 
+#[derive(Debug, Clone)]
 pub struct Context {
     auth: AuthClaims,
     trace_id: TraceId,

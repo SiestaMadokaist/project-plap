@@ -20,6 +20,7 @@ use domain::{
     storage::{StorageBucket, StoragePath, StoragePrefix},
 };
 
+#[derive(Debug)]
 pub struct S3Storage {
     client: Client,
     region: ComputeRegion,

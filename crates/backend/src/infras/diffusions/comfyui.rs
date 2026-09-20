@@ -9,8 +9,7 @@ pub struct ComfyUI {
 }
 
 impl ComfyUI {
-    pub fn new(base_url: URL) -> Self {
-        let client = reqwest::Client::new();
+    pub fn new(client: reqwest::Client, base_url: URL) -> Self {
         Self { base_url, client }
     }
 }

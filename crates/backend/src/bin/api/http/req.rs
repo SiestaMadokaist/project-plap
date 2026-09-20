@@ -58,8 +58,8 @@ impl HttpEvent {
             .0
             .payload
             .header("x-trace-id")
-            .map(TraceId)
-            .or_else(|x| TraceId::default());
+            .map(TraceId::new)
+            .or_else(|| Some(TraceId::default()));
         id
     }
     /// Bearer token from the `Authorization` header (case-insensitive key, optional

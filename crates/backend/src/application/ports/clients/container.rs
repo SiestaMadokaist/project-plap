@@ -17,12 +17,12 @@ pub trait HasRaws {
 
 pub trait HasModelStorage {
     type ModelStorage: StorageClient;
-    fn model_storage(&self) -> Self::ModelStorage;
+    fn model_storage(&self) -> &Self::ModelStorage;
 }
 
 pub trait HasOutputStorage {
     type OutputStorage: StorageClient;
-    fn output_storage(&self) -> Self::OutputStorage;
+    fn output_storage(&self) -> &Self::OutputStorage;
 }
 
 pub trait HasNotification {
@@ -31,24 +31,26 @@ pub trait HasNotification {
 }
 pub trait HasEngines {
     type Engines: ComputeEngines;
-    fn engines(&self) -> Self::Engines;
+    fn engines(&self) -> &Self::Engines;
 }
 
 // Doesn't fit impl_has!: no associated type, returns a trait object instead
 // (see the "runtime-chosen A1111 vs ComfyUI" discussion).
 pub trait HasDiffusion {
-    fn diffusion(&self) -> &dyn DiffusionClient;
+    fn diffusion(&self) -> Box<dyn DiffusionClient>;
 }
 
 pub trait HasComputeAgent {
-    fn agent(&self) -> &dyn ComputeAgent;
+    fn agent(&self) -> Box<dyn ComputeAgent>;
 }
 
 pub trait HasInferenceModelProvider {
-    fn inference_model_provider(&self) -> &dyn InferenceModelProvider;
+    fn inference_model_provider(&self) -> Box<dyn InferenceModelProvider>;
 }
 
 pub trait HasAuthValidator {
     type Auth: Authorizer;
+    // for now we can use &Self::Auth bcs we dont need ctx to be passed
+    // for authorization client
     fn authorizer(&self) -> &Self::Auth;
 }

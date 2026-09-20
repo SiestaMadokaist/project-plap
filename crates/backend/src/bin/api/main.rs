@@ -1,8 +1,8 @@
-use std::{collections::HashMap, rc::Rc};
+use std::rc::Rc;
 
 use backend::application::{
     ports::clients::{authorizer::Authorizer, container::HasAuthValidator},
-    routes::authorized::AuthorizedRoute,
+    routes::{authorized::AuthorizedRoute, public::PublicRoute},
 };
 use domain::{ctx, errors::DomainError};
 use lambda_runtime::{run, service_fn, Error, LambdaEvent};
@@ -30,7 +30,7 @@ use crate::{
 };
 
 async fn init_ctx(
-    clients: &ApiClients,
+    clients: &ApiClients<'_, ()>,
     token: JWT,
     trace_id: Option<TraceId>,
 ) -> Result<ctx::Context, DomainError> {
@@ -49,9 +49,28 @@ async fn route_authorized(
     event: HttpEvent,
 ) -> Result<ServerResponse, DomainError> {
     let ctx = init_ctx(clients.as_ref(), event.authorization()?, event.trace_id()).await?;
-    let api_clients = clients.start(ctx);
-    let span = tracing::info_span!("request", trace_id = %ctx.trace_id());
-    handle_authorized(repos, api_clients, router, &ctx, event)
+    let api_clients = clients.start(ctx.clone());
+    let trace_id = ctx.trace_id();
+    let span = tracing::info_span!("request", trace_id = %trace_id);
+    handle_authorized(repos, &api_clients, router, &ctx, event)
+        .instrument(span)
+        .await
+}
+
+/// Resolves the caller's context from the `Authorization` header before dispatching
+/// to an authorized route. Keeping `init_ctx` here means the route handler only ever
+/// sees a ready `&Context`.
+async fn route_public(
+    repos: Rc<ApiRepos>,
+    clients: Rc<ApiClients<'_, ()>>,
+    router: Rc<Router<PublicRoute>>,
+    event: HttpEvent,
+) -> Result<ServerResponse, DomainError> {
+    let ctx = init_ctx(clients.as_ref(), event.authorization()?, event.trace_id()).await?;
+    let api_clients = clients.start(ctx.clone());
+    let trace_id = ctx.trace_id();
+    let span = tracing::info_span!("request", trace_id = %trace_id);
+    handle_public(repos, &api_clients, router, &ctx, event)
         .instrument(span)
         .await
 }
@@ -88,7 +107,7 @@ async fn main() -> Result<(), Error> {
             let path = http_event.path().to_string();
             // check public first because authorized might throw error if unauthorized
             let handled: Result<ServerResponse, DomainError> = if public_rt.at(&path).is_ok() {
-                handle_public(r, c, public_rt, http_event).await
+                route_public(r, c, public_rt, http_event).await
             } else {
                 route_authorized(r, c, authorized_rt, http_event).await
             };

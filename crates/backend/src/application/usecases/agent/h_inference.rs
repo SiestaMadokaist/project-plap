@@ -74,20 +74,19 @@ mod tests {
     use pkg::types::unit::{Index0, INDEX_ZERO};
 
     struct MockContainer {
-        diffuser: Box<dyn DiffusionClient>,
+        diffuser: Rc<MockDiffusionClient>,
         storage: MockStorageClient,
     }
 
     impl MockContainer {
         fn new(diffuser: MockDiffusionClient) -> Rc<Self> {
-            let boxed: Box<dyn DiffusionClient> = Box::new(diffuser);
             let mut storage = MockStorageClient::new();
             storage.expect_read().returning(|_| {
                 let text = r#"{"id": "xxx", "nodes": []}"#;
                 Ok(text.into())
             });
             let s = Self {
-                diffuser: boxed,
+                diffuser: Rc::new(diffuser),
                 storage,
             };
             Rc::new(s)
@@ -102,8 +101,10 @@ mod tests {
     }
 
     impl HasDiffusion for MockContainer {
-        fn diffusion(&self) -> &dyn DiffusionClient {
-            self.diffuser.as_ref()
+        fn diffusion(&self) -> Box<dyn DiffusionClient> {
+            let clone = self.diffuser.clone();
+            let d = clone.as_ref();
+            Box::new(*d)
         }
     }
 

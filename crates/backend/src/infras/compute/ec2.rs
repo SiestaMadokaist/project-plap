@@ -37,6 +37,7 @@ pub struct EC2 {
     client: Client,
 }
 
+#[derive(Debug)]
 pub struct EC2MultiRegion {
     config: SdkConfig,
 }
