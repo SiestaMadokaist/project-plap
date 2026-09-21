@@ -58,7 +58,7 @@ impl CronClients {
                 env.tl_rootdir.clone(),
                 "/tmp/".into(),
                 env.max_data_transfer,
-                None,
+                Some(aws_sdk_s3::types::ObjectCannedAcl::PublicRead),
             ),
             notification: Discord::new(env.discord_username, env.discord_webhook_url),
         };

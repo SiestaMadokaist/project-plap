@@ -274,6 +274,10 @@ impl S3Storage {
         }
         Ok(args)
     }
+
+    fn is_legacy(&self) -> bool {
+        self.bucket.contains(".")
+    }
 }
 
 impl StorageClient for S3Storage {
@@ -363,10 +367,24 @@ impl StorageClient for S3Storage {
     }
 
     fn public_url(&self, path: &StoragePath) -> String {
-        format!(
-            "https://{}.s3.{}.amazonaws.com/{}",
-            self.bucket, self.region, path.0,
-        )
+        // if the bucket has '.', we cannot use <bucket>.<region> public url because the . is subdomain.
+        if self.is_legacy() {
+            // e.g: https://s3.ap-southeast-3.amazonaws.com/<bucket>/<rootdir>/<?path>
+            format!(
+                "https://s3.{}.amazonaws.com/{}/{}",
+                self.region,
+                self.bucket,
+                self.key(path),
+            )
+        } else {
+            // https://<bucket>.s3.ap-southeast-3.amazonaws.com/<rootdir>/<?path>
+            format!(
+                "https://{}.s3.{}.amazonaws.com/{}",
+                self.bucket,
+                self.region,
+                self.key(path),
+            )
+        }
     }
 
     async fn ls(&self, prefix: &StoragePrefix, recursive: bool) -> Result<DirTree, DomainError> {
