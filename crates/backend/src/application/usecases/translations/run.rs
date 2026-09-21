@@ -112,9 +112,9 @@ impl<'a, R: TLRepos, C: TLClients> Run<'a, R, C> {
                 .await?;
             let public_url = storage.public_url(&inserted.filepath());
             let message = format!(
-                "chapter {} of {:?} has just been translated here: {}",
-                inserted.title(),
+                "chapter {:?} of {} has just been translated here: {}",
                 inserted.chapter_id(),
+                inserted.title(),
                 public_url,
             );
             notification.notify(&message).await?;

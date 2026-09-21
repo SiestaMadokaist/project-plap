@@ -117,7 +117,10 @@ impl TranslationDomain {
     }
 
     pub fn filepath(&self) -> StoragePath {
-        let str = format!("{}/{}.txt", self.novel_id.0, self.chapter_id.0);
+        let str = format!(
+            "{}/{}-{}.txt",
+            self.novel_id.0, self.title, self.chapter_id.0
+        );
         StoragePath(str)
     }
 }

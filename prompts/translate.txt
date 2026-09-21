@@ -5,3 +5,5 @@ Translate naturally and accurately while preserving the original nuance, tone, c
 Do not add information that is not present in the source text.
 Avoid overly literal word-for-word translation unless necessary for clarity.
 If a phrase is ambiguous, preserve the ambiguity instead of inventing details.
+
+Use an easy to understand english word that deliver the meaning.
