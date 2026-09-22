@@ -52,12 +52,12 @@ impl<'de> Deserialize<'de> for AddressETH {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PubKey(VerifyingKey);
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PrivKey(SigningKey);
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Challenge(String);
 impl Challenge {
     pub fn new(s: String) -> Self {

@@ -1,7 +1,9 @@
 {
   "pathParameters": {
     "proxy": "cron/translate",
-    "novel_id": "n2267be"
+    "data": {
+      "novel_id": "n2267be"
+    }
   },
   "requestContext": {
     "http": {

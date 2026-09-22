@@ -1,3 +1,5 @@
+use domain::ctx;
+
 use crate::application::ports::{
     clients::container as client_container, repository::container as repo_container,
 };
@@ -20,3 +22,7 @@ impl<
     > TLClients for T
 {
 }
+
+pub trait ClientCtx {}
+impl ClientCtx for () {}
+impl ClientCtx for ctx::Context {}

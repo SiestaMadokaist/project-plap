@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use backend::application::{
     ports::clients::{authorizer::Authorizer, container::HasAuthValidator},
-    routes::authorized::AuthorizedRoute,
+    routes::{authorized::AuthorizedRoute, public::PublicRoute},
 };
 use domain::{ctx, errors::DomainError};
 use lambda_runtime::{run, service_fn, Error, LambdaEvent};
@@ -15,7 +15,8 @@ mod routes;
 
 use bootstrap::{client::ApiClients, repo::ApiRepos};
 use env::ApiEnv;
-use pkg::auth::claims::JWT;
+use pkg::{auth::claims::JWT, id::TraceId};
+use tracing::Instrument;
 
 use crate::{
     http::{
@@ -28,9 +29,13 @@ use crate::{
     },
 };
 
-async fn init_ctx(clients: &ApiClients, token: JWT) -> Result<ctx::Context, DomainError> {
+async fn init_ctx(
+    clients: &ApiClients<'_, ()>,
+    token: JWT,
+    trace_id: Option<TraceId>,
+) -> Result<ctx::Context, DomainError> {
     let claims = clients.authorizer().validate(token).await?;
-    let ctx = ctx::Context::new(claims, None);
+    let ctx = ctx::Context::new(claims, trace_id);
     Ok(ctx)
 }
 
@@ -39,12 +44,35 @@ async fn init_ctx(clients: &ApiClients, token: JWT) -> Result<ctx::Context, Doma
 /// sees a ready `&Context`.
 async fn route_authorized(
     repos: Rc<ApiRepos>,
-    clients: Rc<ApiClients>,
+    clients: &ApiClients<'_, ()>,
     router: Rc<Router<AuthorizedRoute>>,
     event: HttpEvent,
 ) -> Result<ServerResponse, DomainError> {
-    let ctx = init_ctx(clients.as_ref(), event.authorization()?).await?;
-    handle_authorized(repos, clients, router, &ctx, event).await
+    let ctx = init_ctx(clients, event.authorization()?, event.trace_id()).await?;
+    let api_clients = clients.start(&ctx);
+    let trace_id = ctx.trace_id();
+    let span = tracing::info_span!("request", trace_id = %trace_id);
+    handle_authorized(repos, &api_clients, router, &ctx, event)
+        .instrument(span)
+        .await
+}
+
+/// Resolves the caller's context from the `Authorization` header before dispatching
+/// to an authorized route. Keeping `init_ctx` here means the route handler only ever
+/// sees a ready `&Context`.
+async fn route_public(
+    repos: Rc<ApiRepos>,
+    clients: &ApiClients<'_, ()>,
+    router: Rc<Router<PublicRoute>>,
+    event: HttpEvent,
+) -> Result<ServerResponse, DomainError> {
+    let ctx = ctx::Context::guest(event.trace_id());
+    let api_clients = clients.start(&ctx);
+    let trace_id = ctx.trace_id();
+    let span = tracing::info_span!("request", trace_id = %trace_id);
+    handle_public(repos, &api_clients, router, event)
+        .instrument(span)
+        .await
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -79,9 +107,9 @@ async fn main() -> Result<(), Error> {
             let path = http_event.path().to_string();
             // check public first because authorized might throw error if unauthorized
             let handled: Result<ServerResponse, DomainError> = if public_rt.at(&path).is_ok() {
-                handle_public(r, c, public_rt, http_event).await
+                route_public(r, &c, public_rt, http_event).await
             } else {
-                route_authorized(r, c, authorized_rt, http_event).await
+                route_authorized(r, &c, authorized_rt, http_event).await
             };
             let converted: ServerResponse = match handled {
                 Ok(x) => x,

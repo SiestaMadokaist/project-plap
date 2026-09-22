@@ -10,11 +10,6 @@ pub trait HasTranslator {
     fn translator(&self) -> &Self::Translator;
 }
 
-pub trait HasRaws {
-    type Raws: RawsClient;
-    fn raws(&self) -> &Self::Raws;
-}
-
 pub trait HasModelStorage {
     type ModelStorage: StorageClient;
     fn model_storage(&self) -> &Self::ModelStorage;
@@ -25,9 +20,14 @@ pub trait HasOutputStorage {
     fn output_storage(&self) -> &Self::OutputStorage;
 }
 
+pub trait HasRaws {
+    type Raws: RawsClient;
+    fn raws(&self) -> Self::Raws;
+}
+
 pub trait HasNotification {
     type Notification: NotificationClient;
-    fn notification(&self) -> &Self::Notification;
+    fn notification(&self) -> Self::Notification;
 }
 pub trait HasEngines {
     type Engines: ComputeEngines;
@@ -37,18 +37,20 @@ pub trait HasEngines {
 // Doesn't fit impl_has!: no associated type, returns a trait object instead
 // (see the "runtime-chosen A1111 vs ComfyUI" discussion).
 pub trait HasDiffusion {
-    fn diffusion(&self) -> &dyn DiffusionClient;
+    fn diffusion(&self) -> Box<dyn DiffusionClient>;
 }
 
 pub trait HasComputeAgent {
-    fn agent(&self) -> &dyn ComputeAgent;
+    fn agent(&self) -> Box<dyn ComputeAgent>;
 }
 
-pub trait HasInferenceModelProvider {
-    fn inference_model_provider(&self) -> &dyn InferenceModelProvider;
+pub trait HasCivitai {
+    fn civitai(&self) -> Box<dyn InferenceModelProvider>;
 }
 
 pub trait HasAuthValidator {
     type Auth: Authorizer;
+    // for now we can use &Self::Auth bcs we dont need ctx to be passed
+    // for authorization client
     fn authorizer(&self) -> &Self::Auth;
 }

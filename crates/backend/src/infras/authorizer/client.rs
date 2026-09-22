@@ -24,6 +24,7 @@ use crate::application::ports::clients::authorizer::Authorizer;
 /// - `answer` verifies that signature, recovers the wallet from the client's answer, and
 ///   issues an HS256 JWT keyed by `secret`.
 /// - `validate` checks that JWT.
+#[derive(Debug)]
 pub struct EthAuth {
     /// HS256 key for session tokens.
     secret: String,

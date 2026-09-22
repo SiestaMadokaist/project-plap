@@ -112,7 +112,7 @@ pub fn authorized_routes() -> Router<AuthorizedRoute> {
 
 pub async fn handle_authorized(
     repos: Rc<ApiRepos>,
-    clients: Rc<ApiClients>,
+    clients: &ApiClients<'_, ctx::Context>,
     router: Rc<Router<AuthorizedRoute>>,
     ctx: &ctx::Context,
     event: HttpEvent,
@@ -124,11 +124,11 @@ pub async fn handle_authorized(
         Err(x) => Err(DomainError::Prerequisite(x.to_string())),
         Ok(matched) => match matched.value {
             AuthorizedRoute::ListModels => {
-                let svc = GetListSvc::new(clients.as_ref(), payload.try_into()?);
+                let svc = GetListSvc::new(clients, payload.try_into()?);
                 svc.exec().await.to_result()
             }
             AuthorizedRoute::ModelPreview => {
-                let svc = PreviewSvc::new(clients.as_ref(), payload.try_into()?);
+                let svc = PreviewSvc::new(clients, payload.try_into()?);
                 svc.exec().await.to_result()
             }
             AuthorizedRoute::AgentModelCP => {
@@ -160,16 +160,15 @@ pub async fn handle_authorized(
                 svc.exec().await.to_result()
             }
             AuthorizedRoute::HQInstanceLaunch => {
-                let svc =
-                    LaunchCompute::new(clients.as_ref(), repos.as_ref(), ctx, payload.try_into()?);
+                let svc = LaunchCompute::new(clients, repos.as_ref(), ctx, payload.try_into()?);
                 svc.exec().await.to_result()
             }
             AuthorizedRoute::HQInstanceControl => {
-                let svc = ManageCompute::new(clients.as_ref(), payload.try_into()?);
+                let svc = ManageCompute::new(clients, payload.try_into()?);
                 svc.exec().await.to_result()
             }
             AuthorizedRoute::HQInstanceList => {
-                let svc = ListCompute::new(clients.as_ref(), payload.try_into()?);
+                let svc = ListCompute::new(clients, payload.try_into()?);
                 svc.exec().await.to_result()
             }
         },

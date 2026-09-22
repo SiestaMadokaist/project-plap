@@ -235,6 +235,12 @@ resource "aws_iam_role_policy" "cron" {
         Action   = ["dynamodb:GetItem", "dynamodb:PutItem"]
         Resource = ["arn:aws:dynamodb:${var.region}:${local.account_id}:table/${var.stage}-hot_reloads"]
       },
+      {
+        Sid      = "OutputBucketWrite"
+        Effect   = "Allow"
+        Action   = ["s3:PutObject", "s3:PutObjectAcl"]
+        Resource = ["arn:aws:s3:::ap3.ramadoka.com/*"]
+      },
     ]
   })
 }

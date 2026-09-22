@@ -9,6 +9,7 @@ use pkg::{
 };
 use std::env;
 
+#[derive(Debug)]
 pub struct ApiEnv {
     stage: String,
     sanity_run: String,

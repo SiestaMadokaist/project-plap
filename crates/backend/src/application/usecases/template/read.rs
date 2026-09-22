@@ -1,5 +1,5 @@
-use domain::{ctx::Context, storyline::Storyline};
-use dto::resources::templates::ReadTemplatePayload;
+use domain::{ctx::Context, errors::DomainError};
+use dto::resources::templates::{ReadTemplatePayload, ReadTemplateResponse};
 use pkg::trait_repos;
 
 use crate::application::ports::{
@@ -24,10 +24,14 @@ impl<'a, R: TemplateReadRepo> TemplateReadSvc<'a, R> {
     }
 }
 
-impl<'a, R: TemplateReadRepo> UsecaseAPI<Storyline> for TemplateReadSvc<'a, R> {
-    async fn exec(&self) -> Result<Storyline, domain::errors::DomainError> {
+impl<'a, R: TemplateReadRepo> UsecaseAPI<ReadTemplateResponse> for TemplateReadSvc<'a, R> {
+    async fn exec(&self) -> Result<ReadTemplateResponse, domain::errors::DomainError> {
         let repo = self.repos.story_template();
-        let auth = self.ctx.auth();
-        repo.get(&auth.username, &self.payload.0).await
+        let auth = self
+            .ctx
+            .auth()
+            .ok_or(DomainError::NotAllowed("unauthorized".into()))?;
+        let storyline = repo.get(&auth.username, &self.payload.0).await?;
+        Ok(ReadTemplateResponse(storyline))
     }
 }

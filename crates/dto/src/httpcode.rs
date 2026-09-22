@@ -6,6 +6,7 @@ pub(crate) fn code(e: &DomainError) -> u16 {
         DomainError::MissingPayload => 400,
         DomainError::NotFound => 404,
         DomainError::NotAllowed(_) => 403,
+        DomainError::ValidationError(_) => 403,
         DomainError::Prerequisite(_) => 412,
         DomainError::RateLimited => 429,
 

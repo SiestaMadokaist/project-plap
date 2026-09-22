@@ -1,4 +1,4 @@
-use reqwest::{header, Client};
+use reqwest::Client;
 use scraper::error::SelectorErrorKind;
 
 use crate::application::ports::clients::raws::RawsClient;
@@ -22,22 +22,8 @@ pub struct Syosetu {
 
 static SELECTOR: &str = ".p-novel__body";
 impl Syosetu {
-    pub fn new(host: String, proxy: Option<ProxyConfig>) -> Self {
-        let mut headers = header::HeaderMap::new();
-        headers.insert(header::USER_AGENT, header::HeaderValue::from_static("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"));
-        let mut builder = Client::builder().default_headers(headers);
-        if let Some(p) = proxy {
-            let proxy_url = format!("http://{}:{}", p.host, p.port);
-            let proxy = reqwest::Proxy::all(&proxy_url)
-                .expect("invalid proxy url")
-                .basic_auth(&p.username, &p.password);
-            tracing::info!("proxy_url: {}, username: {}", proxy_url, p.username);
-            builder = builder.proxy(proxy);
-        }
-        Syosetu {
-            host,
-            client: builder.build().expect("failed to build reqwest client"),
-        }
+    pub fn new(client: reqwest::Client, host: String) -> Self {
+        Syosetu { host, client }
     }
 
     pub async fn fetch(

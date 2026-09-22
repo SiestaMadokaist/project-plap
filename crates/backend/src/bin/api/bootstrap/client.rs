@@ -3,27 +3,38 @@ use std::rc::Rc;
 use crate::env::ApiEnv;
 use aws_config::SdkConfig;
 use backend::{
-    application::ports::clients::container::{
-        HasAuthValidator, HasEngines, HasModelStorage, HasNotification, HasOutputStorage,
+    application::{
+        ports::clients::container::{
+            HasAuthValidator, HasEngines, HasModelStorage, HasNotification, HasOutputStorage,
+        },
+        usecases::translations::traits::ClientCtx,
     },
     infras::{
-        authorizer::client::EthAuth, compute::ec2::EC2MultiRegion, notifications::discord::Discord,
-        storage::s3::S3Storage,
+        authorizer::client::EthAuth, compute::ec2::EC2MultiRegion, http::internal_builder,
+        notifications::discord::Discord, storage::s3::S3Storage,
     },
 };
+use domain::ctx;
+use reqwest::header::HeaderMap;
 
-// #[derive(Debug)]
-pub struct ApiClients {
-    notification: Discord,
+#[derive(Debug)]
+struct StaticClients {
     engines: EC2MultiRegion,
     output_storage: S3Storage,
     model_storage: S3Storage,
     authorizer: EthAuth,
 }
 
+pub struct ApiClients<'a, C: ClientCtx> {
+    ctx: &'a C,
+    env: &'a ApiEnv,
+    config: &'a SdkConfig,
+    statics: Rc<StaticClients>,
+}
+
 const MAX_SIZE: i64 = 100 * 1024 * 1024;
 
-impl ApiClients {
+impl StaticClients {
     pub fn rc(env: &ApiEnv, config: &SdkConfig) -> Rc<Self> {
         Rc::new(Self::new(env, config))
     }
@@ -31,10 +42,6 @@ impl ApiClients {
     pub fn new(env: &ApiEnv, config: &SdkConfig) -> Self {
         let engines = EC2MultiRegion::new(config.clone());
         Self {
-            notification: Discord::new(
-                env.discord_username.clone(),
-                env.discord_webhook_url.clone(),
-            ),
             engines,
             output_storage: S3Storage::new(
                 config.clone(),
@@ -73,37 +80,70 @@ impl ApiClients {
     }
 }
 
-impl HasNotification for ApiClients {
-    type Notification = Discord;
-    fn notification(&self) -> &Self::Notification {
-        &self.notification
+impl<'a> ApiClients<'a, ()> {
+    pub fn rc(env: &'a ApiEnv, config: &'a SdkConfig) -> Rc<Self> {
+        Rc::new(Self::new(env, config))
+    }
+    pub fn new(env: &'a ApiEnv, config: &'a SdkConfig) -> Self {
+        let statics = StaticClients::rc(env, config);
+        Self {
+            ctx: &(),
+            env,
+            config,
+            statics,
+        }
     }
 }
 
-impl HasEngines for ApiClients {
+impl<'a> ApiClients<'a, ()> {
+    pub fn start(&self, ctx: &'a ctx::Context) -> ApiClients<'a, ctx::Context> {
+        ApiClients {
+            ctx,
+            env: self.env,
+            config: self.config,
+            statics: self.statics.clone(),
+        }
+    }
+}
+
+impl<'a> HasNotification for ApiClients<'a, ctx::Context> {
+    type Notification = Discord;
+    fn notification(&self) -> Self::Notification {
+        let header = HeaderMap::default();
+        let builder = internal_builder(self.ctx, header);
+        let client = builder.build().expect("build notification cannot fail");
+        Discord::new(
+            client,
+            self.env.discord_username.clone(),
+            self.env.discord_webhook_url.clone(),
+        )
+    }
+}
+
+impl<A: ClientCtx> HasEngines for ApiClients<'_, A> {
     type Engines = EC2MultiRegion;
     fn engines(&self) -> &Self::Engines {
-        &self.engines
+        &self.statics.engines
     }
 }
 
-impl HasOutputStorage for ApiClients {
+impl<A: ClientCtx> HasOutputStorage for ApiClients<'_, A> {
     type OutputStorage = S3Storage;
     fn output_storage(&self) -> &Self::OutputStorage {
-        &self.output_storage
+        &self.statics.output_storage
     }
 }
 
-impl HasModelStorage for ApiClients {
+impl<A: ClientCtx> HasModelStorage for ApiClients<'_, A> {
     type ModelStorage = S3Storage;
     fn model_storage(&self) -> &Self::ModelStorage {
-        &self.model_storage
+        &self.statics.model_storage
     }
 }
 
-impl HasAuthValidator for ApiClients {
+impl<A: ClientCtx> HasAuthValidator for ApiClients<'_, A> {
     type Auth = EthAuth;
     fn authorizer(&self) -> &Self::Auth {
-        &self.authorizer
+        &self.statics.authorizer
     }
 }

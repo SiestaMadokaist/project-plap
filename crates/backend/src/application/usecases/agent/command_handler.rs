@@ -20,7 +20,7 @@ trait_clients!(
     CommandHandlerClients,
     clients::container::HasDiffusion,
     clients::container::HasModelStorage,
-    clients::container::HasInferenceModelProvider,
+    clients::container::HasCivitai,
     clients::container::HasNotification
 );
 trait_repos!(CommandHandlerRepos, repository::container::HasAgentCommand);

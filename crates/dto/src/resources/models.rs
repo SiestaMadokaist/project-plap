@@ -1,5 +1,5 @@
 use domain::storage::{DirTree, StorageBucket, StoragePath, StoragePrefix};
-use pkg::json_type;
+use pkg::{json_type, types::time::Second};
 use serde::{Deserialize, Serialize};
 
 use crate::response::DTO;
@@ -19,13 +19,21 @@ pub struct GetListResponse {
 json_type!(GetListResponse);
 impl DTO for GetListResponse {}
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PreviewTarget {
+    pub path: StoragePath,
+    pub ttl: Second,
+}
+
 /// Preview request for one collapsed entry. Any part may be empty/absent; at most
 /// a handful of image samples are requested at once.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PreviewPayload {
     #[serde(default)]
-    pub images: Vec<StoragePath>,
-    pub json: Option<StoragePath>,
+    pub images: Vec<PreviewTarget>,
+    pub json: Option<PreviewTarget>,
+    /// the model file itself — presigned so the modal can offer a direct download
+    pub safetensors: Option<PreviewTarget>,
 }
 json_type!(PreviewPayload);
 
@@ -36,6 +44,8 @@ pub struct PreviewResponse {
     pub image_urls: Vec<String>,
     /// raw text of the json sibling, if one was requested
     pub json: Option<String>,
+    /// presigned GET url for the model file, if one was requested
+    pub safetensors_url: Option<String>,
 }
 json_type!(PreviewResponse);
 impl DTO for PreviewResponse {}

@@ -20,7 +20,11 @@ use dto::{
     response::Response,
 };
 use gloo_net::http::Request;
-use pkg::{auth::claims::JWT, id::InferenceModelId, types::strings::URL};
+use pkg::{
+    auth::claims::JWT,
+    id::InferenceModelId,
+    types::{strings::URL, time::Second},
+};
 
 #[derive(Clone)]
 pub struct PlapApi {
@@ -181,13 +185,25 @@ impl PlapApi {
     }
 
     /// Fetch a preview for one collapsed entry: presigned urls for its image
-    /// sample siblings and/or the raw text of its json sibling. Any part may be empty.
+    /// sample siblings, the raw text of its json sibling, and a presigned
+    /// download url for the model file. Any part may be empty.
+    ///
+    /// Image / json links are short-lived (just long enough to open the modal);
+    /// the model download link lasts a day.
     pub async fn preview(
         &self,
         images: Vec<StoragePath>,
         json: Option<StoragePath>,
+        safetensors: Option<StoragePath>,
     ) -> Result<models::PreviewResponse, DomainError> {
-        let payload = models::PreviewPayload { images, json };
+        const PREVIEW_TTL: Second = Second(300);
+        const MODEL_TTL: Second = Second(86_400);
+        let target = |ttl: Second| move |path| models::PreviewTarget { path, ttl };
+        let payload = models::PreviewPayload {
+            images: images.into_iter().map(target(PREVIEW_TTL)).collect(),
+            json: json.map(target(PREVIEW_TTL)),
+            safetensors: safetensors.map(target(MODEL_TTL)),
+        };
         let url = self.host.e("/models/preview");
         let builder = Request::post(&url.0)
             .json(&payload)

@@ -3,29 +3,46 @@ use std::ops::Sub;
 use chrono::{DateTime, Utc};
 use pkg::{auth::claims::AuthClaims, id::TraceId, types::time::MilliSecond};
 
+use crate::ctx::CtxAuth::{Authorized, Guest};
+
+#[derive(Debug, Clone)]
+pub enum CtxAuth {
+    Authorized(AuthClaims),
+    Guest,
+}
+
+#[derive(Debug, Clone)]
 pub struct Context {
-    auth: AuthClaims,
+    auth: CtxAuth,
     trace_id: TraceId,
     start_at: DateTime<Utc>,
 }
 
 impl Context {
-    fn new_trace_id() -> TraceId {
-        TraceId("todo".into())
-    }
-
-    pub fn new(auth: AuthClaims, mtrace_id: Option<TraceId>) -> Self {
-        let trace_id = mtrace_id.unwrap_or_else(Context::new_trace_id);
+    pub fn guest(mtrace: Option<TraceId>) -> Self {
+        let trace_id = mtrace.unwrap_or_default();
         let start_at = chrono::Utc::now();
         Self {
-            auth,
+            auth: Guest,
+            trace_id,
+            start_at,
+        }
+    }
+    pub fn new(auth: AuthClaims, mtrace: Option<TraceId>) -> Self {
+        let trace_id = mtrace.unwrap_or_default();
+        let start_at = chrono::Utc::now();
+        Self {
+            auth: Authorized(auth),
             trace_id,
             start_at,
         }
     }
 
-    pub fn auth(&self) -> &AuthClaims {
-        &self.auth
+    pub fn auth(&self) -> Option<&AuthClaims> {
+        match &self.auth {
+            Authorized(x) => Some(x),
+            Guest => None,
+        }
     }
 
     pub fn trace_id(&self) -> &TraceId {

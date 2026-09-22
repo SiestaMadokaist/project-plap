@@ -385,6 +385,185 @@ body {
   margin-bottom: 32px;
 }
 
+.dash-nav {
+  display: flex;
+  gap: 8px;
+  margin-right: auto;
+  margin-left: 24px;
+}
+
+/* ---------- templates ---------- */
+
+.tpl-select {
+  max-width: 360px;
+  margin-bottom: 24px;
+}
+
+.template-panel {
+  margin-bottom: 32px;
+}
+
+.tpl-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 16px;
+}
+
+.tpl-subtitle {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tpl-inference-list {
+  display: flex;
+  flex-direction: column;
+  grid-template-columns: none;
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+  gap: 14px;
+}
+
+.inference-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.inference-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.inference-idx {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.field-label {
+  font-size: 11px;
+  color: var(--text-mute);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tpl-textarea {
+  min-height: 88px;
+  resize: vertical;
+  font-family: "SFMono-Regular", ui-monospace, "JetBrains Mono", Menlo, Consolas,
+    monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.tpl-compiled {
+  max-height: 160px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.variable-row .cmd-main {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.variable-row .cmd-id {
+  flex: none;
+  min-width: 120px;
+}
+
+.variable-row input.panel-input {
+  flex: 1;
+}
+
+.variable-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.variable-add .panel-input {
+  flex: 1;
+  min-width: 160px;
+  width: auto;
+}
+
+.tpl-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.tpl-picker .tpl-select {
+  margin-bottom: 0;
+}
+
+.new-template {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.new-template .panel-input {
+  width: auto;
+  min-width: 200px;
+}
+
+.field-error {
+  color: var(--danger-text);
+  font-size: 12px;
+}
+
+.tpl-inferences-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.inference-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.inference-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tpl-textarea.small {
+  min-height: 52px;
+}
+
 .cmd-id {
   font-family: "SFMono-Regular", ui-monospace, "JetBrains Mono", Menlo, Consolas,
     monospace;
@@ -532,6 +711,12 @@ body {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+/* model-file download link, styled as a ghost button */
+.preview-dl {
+  align-self: flex-start;
+  text-decoration: none;
 }
 
 /* fixed 3-up grid: a single sample still occupies one third, not the full width */

@@ -33,21 +33,22 @@ impl Inferrable for String {}
 pub struct InferenceConfig<S: Inferrable> {
     pub workflow_id: Option<StoragePath>,
     pub loras: Vec<StoragePath>,
-    positive: S,
-    negative: S,
-    width: unit::Px,
-    height: unit::Px,
-    steps: unit::Index1,
+    pub checkpoint: String,
+    pub positive: S,
+    pub negative: S,
+    pub width: unit::Px,
+    pub height: unit::Px,
+    pub steps: unit::Index1,
     /// how many image generated per request
     #[serde(deserialize_with = "deserialize_n_iter")]
-    n_iter: unit::Index1,
+    pub n_iter: unit::Index1,
     pub seed: i32,
     /// workflow will iterate for each node
     /// if a node that consume reference, the next node
     /// that need reference will use the next reference
     /// eg: if node 3 use reference it use references[0]
     /// then if node 5 also need reference, it'll use references[1]
-    references: Vec<URL>,
+    pub references: Vec<URL>,
 }
 
 fn deserialize_n_iter<'de, D>(deserializer: D) -> Result<unit::Index1, D::Error>
@@ -82,8 +83,8 @@ mod tests {
         .expect("cannot find inference.json");
         let cfg: InferenceConfig<String> = serde_json::from_slice(&buffer)
             .expect("cannot deserialize buffer to InferenceConfig<String>");
-        assert_eq!(cfg.height.0, 1000);
-        assert_eq!(cfg.width.0, 800);
+        assert_eq!(cfg.height.0, 968);
+        assert_eq!(cfg.width.0, 720);
         assert!(cfg.positive.starts_with("(( highly detailed, photograph"));
         assert!(cfg.positive.ends_with("\nADDCOMM"));
         assert_eq!(cfg.loras.len(), 2);

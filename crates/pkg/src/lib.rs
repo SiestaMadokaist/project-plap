@@ -1,5 +1,6 @@
 pub mod auth;
 pub mod civitai;
+pub mod comfy;
 pub mod enums;
 pub mod exif;
 pub mod id;

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use domain::errors::DomainError;
 use lambda_runtime::LambdaEvent;
-use pkg::auth::claims::JWT;
+use pkg::{auth::claims::JWT, id::TraceId};
 use serde::Deserialize;
 
 /// API Gateway HTTP API proxy event, payload format **2.0** only. A v1/REST event
@@ -53,6 +53,15 @@ impl ApiEvent {
 pub struct HttpEvent(pub LambdaEvent<ApiEvent>);
 
 impl HttpEvent {
+    pub fn trace_id(&self) -> Option<TraceId> {
+        let id = self
+            .0
+            .payload
+            .header("x-trace-id")
+            .map(TraceId::new)
+            .or_else(|| Some(TraceId::default()));
+        id
+    }
     /// Bearer token from the `Authorization` header (case-insensitive key, optional
     /// `Bearer ` prefix). Only the authorized-route path calls this.
     pub fn authorization(&self) -> Result<JWT, DomainError> {

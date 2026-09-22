@@ -1,14 +1,13 @@
-use std::cell::OnceCell;
-pub mod nodes;
-use crate::exif::{
-    comfyui::nodes::ComfyWorkflow,
-    traits::{Exif, ExifError, ExifTraits, WebUI},
+use crate::{
+    comfy::workflow::web::ExportWeb,
+    exif::traits::{Exif, ExifError, ExifTraits, WebUI},
 };
+use std::cell::OnceCell;
 
 #[derive(Default)]
 pub struct ComfyMemo {
     range: OnceCell<(usize, usize)>,
-    workflow: OnceCell<Result<ComfyWorkflow, ExifError>>,
+    workflow: OnceCell<Result<ExportWeb, ExifError>>,
 }
 
 pub struct ComfyUI {}
@@ -33,10 +32,10 @@ impl Exif<ComfyUI> {
         }
     }
 
-    pub fn workflow(&self) -> &Result<ComfyWorkflow, ExifError> {
+    pub fn workflow(&self) -> &Result<ExportWeb, ExifError> {
         let memoized = self.memo.workflow.get_or_init(|| {
             let string = self.text();
-            let wf: Result<ComfyWorkflow, ExifError> = serde_json::from_str(&string).map_err(|e| {
+            let wf: Result<ExportWeb, ExifError> = serde_json::from_str(&string).map_err(|e| {
                 tracing::error!("Parsing Failed: {}", e);
                 ExifError::ParsingFailed
             });

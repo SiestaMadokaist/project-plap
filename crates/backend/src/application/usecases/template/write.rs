@@ -1,4 +1,4 @@
-use domain::ctx::Context;
+use domain::{ctx::Context, errors::DomainError};
 use dto::{resources::templates::WriteTemplatePayload, response::Placeholder};
 use pkg::trait_repos;
 
@@ -7,7 +7,6 @@ use crate::application::ports::{
     usecase::UsecaseAPI,
 };
 
-// trait_clients!(TemplateWriteC)
 trait_repos!(TemplateWriteRepo, HasStoryTemplate);
 pub struct TemplateWriteSvc<'a, R: TemplateWriteRepo> {
     repos: &'a R,
@@ -28,7 +27,10 @@ impl<'a, R: TemplateWriteRepo> TemplateWriteSvc<'a, R> {
 impl<'a, R: TemplateWriteRepo> UsecaseAPI<Placeholder> for TemplateWriteSvc<'a, R> {
     async fn exec(&self) -> Result<Placeholder, domain::errors::DomainError> {
         let repo = self.repos.story_template();
-        let auth = self.ctx.auth();
+        let auth = self
+            .ctx
+            .auth()
+            .ok_or(DomainError::NotAllowed("unauthorized".into()))?;
         repo.write(&auth.username, &self.payload.0).await?;
         Ok(Placeholder(200))
     }

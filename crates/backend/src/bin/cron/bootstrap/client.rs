@@ -4,50 +4,39 @@ use async_openai::{config::OpenAIConfig, Client as OpenAIClient};
 use aws_config::SdkConfig;
 
 use backend::{
-    application::ports::clients::container::{
-        HasNotification, HasOutputStorage, HasRaws, HasTranslator,
+    application::{
+        ports::clients::container::{HasNotification, HasOutputStorage, HasRaws, HasTranslator},
+        usecases::translations::traits::ClientCtx,
     },
     infras::{
-        notifications::discord::Discord,
-        raws::syosetu::{ProxyConfig, Syosetu},
-        storage::s3::S3Storage,
-        translators::chatgpt::ChatGPT,
+        http::internal_builder, notifications::discord::Discord, raws::syosetu::Syosetu,
+        storage::s3::S3Storage, translators::chatgpt::ChatGPT,
     },
 };
+use domain::ctx;
+use reqwest::header::HeaderMap;
 
 use crate::env::CronEnv;
 
-pub struct CronClients {
-    translator: ChatGPT,
-    raws: Syosetu,
+struct StaticClients {
     output_storage: S3Storage,
-    notification: Discord,
+    translator: ChatGPT,
+}
+pub struct CronClients<'a, C: ClientCtx> {
+    ctx: &'a C,
+    env: &'a CronEnv,
+    config: &'a SdkConfig,
+    static_clients: Rc<StaticClients>,
 }
 
-impl CronClients {
-    pub fn rc(env: CronEnv, config: SdkConfig) -> Rc<Self> {
+impl<'a> CronClients<'a, ()> {
+    pub fn rc(env: &'a CronEnv, config: &'a SdkConfig) -> Rc<Self> {
         Rc::new(Self::new(env, config))
     }
-
-    fn new(env: CronEnv, config: SdkConfig) -> Self {
+    pub fn new(env: &'a CronEnv, config: &'a SdkConfig) -> Self {
         let openai = OpenAIClient::<OpenAIConfig>::new();
-        let proxy = match (
-            env.proxy_host,
-            env.proxy_port,
-            env.proxy_username,
-            env.proxy_password,
-        ) {
-            (Some(host), Some(port), Some(username), Some(password)) => Some(ProxyConfig {
-                host,
-                port: port.parse().expect("PROXY_PORT must be a number"),
-                username,
-                password,
-            }),
-            _ => None,
-        };
-        let general_clients = Self {
+        let static_clients: StaticClients = StaticClients {
             translator: ChatGPT::new(openai, &env.openai_model),
-            raws: Syosetu::new(env.syosetu_host, proxy),
             output_storage: S3Storage::new(
                 config.clone(),
                 env.tl_region
@@ -58,38 +47,74 @@ impl CronClients {
                 env.tl_rootdir.clone(),
                 "/tmp/".into(),
                 env.max_data_transfer,
-                None,
+                Some(aws_sdk_s3::types::ObjectCannedAcl::PublicRead),
             ),
-            notification: Discord::new(env.discord_username, env.discord_webhook_url),
         };
-        general_clients
+        Self {
+            ctx: &(),
+            env,
+            config,
+            static_clients: Rc::new(static_clients),
+        }
+    }
+
+    pub fn start<'c: 'a>(&self, context: &'c ctx::Context) -> CronClients<'a, ctx::Context> {
+        CronClients::<'a, ctx::Context> {
+            ctx: context,
+            env: self.env,
+            config: self.config,
+            static_clients: self.static_clients.clone(),
+        }
     }
 }
 
-impl HasTranslator for CronClients {
+impl<'a, C: ClientCtx> HasTranslator for CronClients<'a, C> {
     type Translator = ChatGPT;
     fn translator(&self) -> &Self::Translator {
-        &self.translator
+        &self.static_clients.translator
     }
 }
 
-impl HasRaws for CronClients {
-    type Raws = Syosetu;
-    fn raws(&self) -> &Self::Raws {
-        &self.raws
-    }
-}
-
-impl HasOutputStorage for CronClients {
+impl<C: ClientCtx> HasOutputStorage for CronClients<'_, C> {
     type OutputStorage = S3Storage;
     fn output_storage(&self) -> &Self::OutputStorage {
-        &self.output_storage
+        &self.static_clients.output_storage
     }
 }
 
-impl HasNotification for CronClients {
+impl<'a> HasNotification for CronClients<'a, ctx::Context> {
     type Notification = Discord;
-    fn notification(&self) -> &Self::Notification {
-        &self.notification
+    fn notification(&self) -> Self::Notification {
+        let additional = HeaderMap::new();
+        let builder = internal_builder(self.ctx, additional);
+        let client = builder.build().expect("must not fail");
+        let env = self.env;
+        Discord::new(
+            client,
+            env.discord_username.clone(),
+            env.discord_webhook_url.clone(),
+        )
+    }
+}
+impl<'a> HasRaws for CronClients<'a, ctx::Context> {
+    type Raws = Syosetu;
+    fn raws(&self) -> Self::Raws {
+        let mut headers = reqwest::header::HeaderMap::new();
+        headers.insert(reqwest::header::USER_AGENT, reqwest::header::HeaderValue::from_static("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36"));
+        let mut builder = internal_builder(self.ctx, headers);
+        // if let Some(p) = proxy {
+        let env = self.env;
+        let proxy_url = format!("http://{}:{}", env.proxy_host, env.proxy_port);
+        let proxy = reqwest::Proxy::all(&proxy_url)
+            .expect("invalid proxy url")
+            .basic_auth(&env.proxy_username, &env.proxy_password);
+        tracing::info!(
+            "proxy_url: {}, username: {}",
+            proxy_url,
+            &env.proxy_username
+        );
+        builder = builder.proxy(proxy);
+        let client = builder.build().expect("should not fail");
+        Syosetu::new(client, env.syosetu_host.clone())
     }
 }

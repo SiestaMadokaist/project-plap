@@ -1,6 +1,6 @@
 #[cfg(feature = "datatransfer")]
 use crate::application::ports::clients::{
-    container::{HasInferenceModelProvider, HasModelStorage},
+    container::{HasCivitai, HasModelStorage},
     storage::StorageClient,
 };
 #[cfg(feature = "datatransfer")]
@@ -16,11 +16,7 @@ use pkg::{
     macros::trait_clients,
 };
 #[cfg(feature = "datatransfer")]
-trait_clients!(
-    HandleNetworkClients,
-    HasModelStorage,
-    HasInferenceModelProvider
-);
+trait_clients!(HandleNetworkClients, HasModelStorage, HasCivitai);
 
 #[cfg(feature = "datatransfer")]
 pub struct HandleNetwork<'a, C: HandleNetworkClients> {
@@ -93,7 +89,7 @@ impl<'a, C: HandleNetworkClients> HandleNetwork<'a, C> {
                     Err(err)
                 }
                 ModelDst::Local(args) => {
-                    let api = self.clients.inference_model_provider();
+                    let api = self.clients.civitai();
                     let mv = api
                         .get_detail(id)
                         .await
@@ -158,7 +154,7 @@ mod tests {
 
     struct MockContainer {
         storage: MockStorageClient,
-        civitai: MockInferenceModelProvider,
+        civitai: Rc<MockInferenceModelProvider>,
     }
 
     fn civitai() -> MockInferenceModelProvider {
@@ -190,7 +186,10 @@ mod tests {
 
     impl MockContainer {
         fn new(storage: MockStorageClient, civitai: MockInferenceModelProvider) -> Rc<Self> {
-            let s = Self { storage, civitai };
+            let s = Self {
+                storage,
+                civitai: Rc::new(civitai),
+            };
             Rc::new(s)
         }
     }
@@ -202,9 +201,9 @@ mod tests {
         }
     }
 
-    impl HasInferenceModelProvider for MockContainer {
-        fn inference_model_provider(&self) -> &dyn InferenceModelProvider {
-            &self.civitai
+    impl HasCivitai for MockContainer {
+        fn civitai(&self) -> Box<dyn InferenceModelProvider> {
+            Box::new(self.civitai.clone())
         }
     }
 

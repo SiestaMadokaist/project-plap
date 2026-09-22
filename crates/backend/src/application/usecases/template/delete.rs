@@ -1,4 +1,4 @@
-use domain::ctx::Context;
+use domain::{ctx::Context, errors::DomainError};
 use dto::resources::{
     list::ListResponse,
     templates::{DeleteTemplatePayload, ListStoryTemplate},
@@ -30,8 +30,11 @@ impl<'a, R: TemplateListRepo> TemplateDeleteSvc<'a, R> {
 impl<'a, R: TemplateListRepo> UsecaseAPI<ListStoryTemplate> for TemplateDeleteSvc<'a, R> {
     async fn exec(&self) -> Result<ListStoryTemplate, domain::errors::DomainError> {
         let repo = self.repos.story_template();
-        let auth = self.ctx.auth();
-        let username = &auth.username;
+        let claims = self
+            .ctx
+            .auth()
+            .ok_or(DomainError::NotAllowed("unauthorized".into()))?;
+        let username = &claims.username;
         repo.delete(username, &self.payload.0).await?;
         Ok(ListResponse::simple(vec![]))
     }

@@ -45,6 +45,8 @@ struct PreviewReq {
     /// image sample siblings, capped at [`MAX_PREVIEW_IMAGES`]
     images: Vec<StoragePath>,
     json: Option<StoragePath>,
+    /// the `.safetensors` model file, offered as a download link
+    safetensors: Option<StoragePath>,
 }
 
 /// How many image samples the preview modal shows for one entry.
@@ -165,7 +167,9 @@ fn ModelList(
             async move {
                 match req {
                     None => Ok::<_, DomainError>(None),
-                    Some(r) => api.preview(r.images, r.json).await.map(Some),
+                    Some(r) => {
+                        api.preview(r.images, r.json, r.safetensors).await.map(Some)
+                    }
                 }
             }
         }
@@ -238,8 +242,15 @@ fn ModelList(
                                                     })
                                                 })
                                                 .cloned();
-                                            let has_preview =
-                                                !img_keys.is_empty() || json_key.is_some();
+                                            let safetensors_key = keys
+                                                .iter()
+                                                .find(|k| {
+                                                    split_ext(k).1.as_deref() == Some("safetensors")
+                                                })
+                                                .cloned();
+                                            let has_preview = !img_keys.is_empty()
+                                                || json_key.is_some()
+                                                || safetensors_key.is_some();
 
                                             let q_label = name.clone();
                                             let on_click = {
@@ -293,6 +304,9 @@ fn ModelList(
                                                             .map(StoragePath)
                                                             .collect(),
                                                         json: json_key.clone().map(StoragePath),
+                                                        safetensors: safetensors_key
+                                                            .clone()
+                                                            .map(StoragePath),
                                                     }));
                                             };
 
@@ -394,6 +408,21 @@ fn ModelList(
                                                     Ok(Some(p)) => {
                                                         let has_img = !p.image_urls.is_empty();
                                                         let has_json = p.json.is_some();
+                                                        let has_dl = p.safetensors_url.is_some();
+                                                        // direct-download link for the model file
+                                                        // (presigned for a day, unlike the samples)
+                                                        let dl = p.safetensors_url.map(|u| {
+                                                            view! {
+                                                                <a
+                                                                    class="ghost-btn preview-dl"
+                                                                    href=u
+                                                                    target="_blank"
+                                                                    rel="noopener"
+                                                                >
+                                                                    "⬇ Download .safetensors"
+                                                                </a>
+                                                            }
+                                                        });
                                                         // one <figure> per sample, laid out in a
                                                         // fixed 3-col grid (a lone image stays 1/3 wide)
                                                         let imgs = has_img.then(|| {
@@ -435,9 +464,10 @@ fn ModelList(
                                                             });
                                                         view! {
                                                             <div class="preview-stack">
+                                                                {dl}
                                                                 {imgs}
                                                                 {js}
-                                                                {(!has_img && !has_json)
+                                                                {(!has_img && !has_json && !has_dl)
                                                                     .then(|| {
                                                                         view! {
                                                                             <p class="muted">
@@ -958,6 +988,14 @@ pub fn Controls(jwt: JWT, set_session: WriteSignal<Option<JWT>>) -> impl IntoVie
                     <span class="brand-mark">"⬡"</span>
                     <span class="brand-name">"Project-Plap"</span>
                 </span>
+                <nav class="dash-nav">
+                    <a class="ghost-btn" href="/hq/controls">
+                        "Controls"
+                    </a>
+                    <a class="ghost-btn" href="/hq/templates">
+                        "Templates"
+                    </a>
+                </nav>
                 <button class="ghost-btn" on:click=logout>
                     "Log out"
                 </button>

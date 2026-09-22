@@ -6,7 +6,7 @@ use leptos_router::{
 use pkg::auth::claims::JWT;
 
 use crate::{
-    pages::{controls::Controls, login::Login},
+    pages::{controls::Controls, login::Login, templates::Templates},
     session,
 };
 
@@ -25,7 +25,8 @@ pub fn App() -> impl IntoView {
     }
 }
 
-/// Authenticated shell. Only real page today is `/hq/controls`; `/` redirects to it.
+/// Authenticated shell. Pages: `/hq/controls` and `/hq/templates`; `/` redirects
+/// to controls.
 #[component]
 fn Routed(jwt: JWT, set_session: WriteSignal<Option<JWT>>) -> impl IntoView {
     view! {
@@ -33,7 +34,14 @@ fn Routed(jwt: JWT, set_session: WriteSignal<Option<JWT>>) -> impl IntoView {
             <Routes fallback=|| view! { <p class="muted">"Not found"</p> }>
                 <Route
                     path=path!("/hq/controls")
-                    view=move || view! { <Controls jwt=jwt.clone() set_session /> }
+                    view={
+                        let jwt = jwt.clone();
+                        move || view! { <Controls jwt=jwt.clone() set_session /> }
+                    }
+                />
+                <Route
+                    path=path!("/hq/templates")
+                    view=move || view! { <Templates jwt=jwt.clone() set_session /> }
                 />
                 <Route path=path!("/") view=|| view! { <Redirect path="/hq/controls" /> } />
             </Routes>

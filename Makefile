@@ -131,6 +131,9 @@ invoke-api:
 invoke-ws:
 	@cargo lambda invoke ws --invoke-address 127.0.0.1 --data-file events/ws.json
 
+run-cron:
+	cargo lambda watch --invoke-address 127.0.0.1 --env-file .env.production
+
 invoke-cron:
 	@cargo lambda invoke cron --invoke-address 127.0.0.1 --data-file events/cron.json
 
