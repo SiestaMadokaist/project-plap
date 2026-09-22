@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
-pub mod inputs;
+
+use crate::comfy::workflow::api::inputs;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Meta {

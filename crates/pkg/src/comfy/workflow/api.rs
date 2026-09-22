@@ -10,6 +10,7 @@ use crate::{
     types::unit::Px,
 };
 
+pub mod inputs;
 pub mod nodes;
 
 #[derive(Debug, Serialize, Clone, Deserialize)]
