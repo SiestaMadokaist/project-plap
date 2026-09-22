@@ -1,4 +1,4 @@
-use domain::ctx::Context;
+use domain::{ctx::Context, errors::DomainError};
 use dto::resources::{list::ListResponse, templates::ListStoryTemplate};
 use pkg::trait_repos;
 
@@ -22,8 +22,10 @@ impl<'a, R: TemplateListRepo> TemplateListSvc<'a, R> {
 impl<'a, R: TemplateListRepo> UsecaseAPI<ListStoryTemplate> for TemplateListSvc<'a, R> {
     async fn exec(&self) -> Result<ListStoryTemplate, domain::errors::DomainError> {
         let repo = self.repos.story_template();
-        let auth = self.ctx.auth();
-        // story template structure is flat single level under auth.username
+        let auth = self
+            .ctx
+            .auth()
+            .ok_or(DomainError::NotAllowed("unauthorized".into()))?;
         let stories = repo.list(&auth.username, false).await?;
         Ok(ListResponse::simple(stories))
     }

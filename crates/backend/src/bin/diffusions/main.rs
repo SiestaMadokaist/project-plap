@@ -26,7 +26,9 @@ async fn main() -> anyhow::Result<()> {
     let dynamo = aws_sdk_dynamodb::Client::new(&config);
     let watch_dir = env.watch_dir.clone();
     let repos = EC2DiffusionRepo::rc(&dynamo, env.stage());
-    let clients = EC2DiffusionClients::rc(&env, config);
+    let base_clients = EC2DiffusionClients::new(&env, &config);
+    let context = domain::ctx::Context::guest(None);
+    let clients = Rc::new(base_clients.start(&context));
     let start_at = Timestamp::now();
     let rc_start_at = Rc::new(Cell::new(start_at));
     let rc_start_peek = Peek::new(rc_start_at.clone());

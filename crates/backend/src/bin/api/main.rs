@@ -44,12 +44,12 @@ async fn init_ctx(
 /// sees a ready `&Context`.
 async fn route_authorized(
     repos: Rc<ApiRepos>,
-    clients: Rc<ApiClients<'_, ()>>,
+    clients: &ApiClients<'_, ()>,
     router: Rc<Router<AuthorizedRoute>>,
     event: HttpEvent,
 ) -> Result<ServerResponse, DomainError> {
-    let ctx = init_ctx(clients.as_ref(), event.authorization()?, event.trace_id()).await?;
-    let api_clients = clients.start(ctx.clone());
+    let ctx = init_ctx(clients, event.authorization()?, event.trace_id()).await?;
+    let api_clients = clients.start(&ctx);
     let trace_id = ctx.trace_id();
     let span = tracing::info_span!("request", trace_id = %trace_id);
     handle_authorized(repos, &api_clients, router, &ctx, event)
@@ -62,15 +62,15 @@ async fn route_authorized(
 /// sees a ready `&Context`.
 async fn route_public(
     repos: Rc<ApiRepos>,
-    clients: Rc<ApiClients<'_, ()>>,
+    clients: &ApiClients<'_, ()>,
     router: Rc<Router<PublicRoute>>,
     event: HttpEvent,
 ) -> Result<ServerResponse, DomainError> {
-    let ctx = init_ctx(clients.as_ref(), event.authorization()?, event.trace_id()).await?;
-    let api_clients = clients.start(ctx.clone());
+    let ctx = ctx::Context::guest(event.trace_id());
+    let api_clients = clients.start(&ctx);
     let trace_id = ctx.trace_id();
     let span = tracing::info_span!("request", trace_id = %trace_id);
-    handle_public(repos, &api_clients, router, &ctx, event)
+    handle_public(repos, &api_clients, router, event)
         .instrument(span)
         .await
 }
@@ -87,7 +87,7 @@ async fn main() -> Result<(), Error> {
     }
     let config = aws_config::from_env().load().await;
     let repo = ApiRepos::rc(&env, &config);
-    let client = ApiClients::rc((), &env, &config);
+    let client = ApiClients::rc(&env, &config);
     let authorized_router = Rc::new(authorized_routes());
     let public_router = Rc::new(public_routes());
 
@@ -107,9 +107,9 @@ async fn main() -> Result<(), Error> {
             let path = http_event.path().to_string();
             // check public first because authorized might throw error if unauthorized
             let handled: Result<ServerResponse, DomainError> = if public_rt.at(&path).is_ok() {
-                route_public(r, c, public_rt, http_event).await
+                route_public(r, &c, public_rt, http_event).await
             } else {
-                route_authorized(r, c, authorized_rt, http_event).await
+                route_authorized(r, &c, authorized_rt, http_event).await
             };
             let converted: ServerResponse = match handled {
                 Ok(x) => x,

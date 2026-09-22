@@ -102,9 +102,7 @@ mod tests {
 
     impl HasDiffusion for MockContainer {
         fn diffusion(&self) -> Box<dyn DiffusionClient> {
-            let clone = self.diffuser.clone();
-            let d = clone.as_ref();
-            Box::new(*d)
+            Box::new(self.diffuser.clone())
         }
     }
 

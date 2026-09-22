@@ -4,6 +4,7 @@ use backend::application::{
     ports::usecase::UsecaseAPI,
     usecases::translations::{init, run},
 };
+use domain::ctx;
 use lambda_runtime::{run, service_fn, Error, LambdaEvent};
 use serde::Deserialize;
 
@@ -27,22 +28,25 @@ struct PathParameters {
 
 async fn handler(
     repo: Rc<CronRepos>,
-    client: Rc<CronClients>,
+    client: &CronClients<'_, ()>,
     event: LambdaEvent<CronEvent>,
 ) -> Result<(), Error> {
     let path_params = &event.payload.path_parameters;
     let proxy = &path_params.proxy;
+    let context = &ctx::Context::guest(None);
+    let ctx_client = client.start(context);
     match proxy.as_str() {
         "cron/translate" => {
             let params: dto::resources::translations::RunPayload =
                 serde_json::from_value(path_params.data.clone())?;
-            let action = run::Run::new(repo.as_ref(), client.as_ref(), params);
+
+            let action = run::Run::new(repo.as_ref(), &ctx_client, params);
             action.exec().await?;
         }
         "cron/init" => {
             let params: dto::resources::translations::InitPayload =
                 serde_json::from_value(path_params.data.clone())?;
-            let action = init::Init::new(repo.as_ref(), client.as_ref(), params);
+            let action = init::Init::new(repo.as_ref(), &ctx_client, params);
             action.exec().await?;
         }
         _ => tracing::warn!(proxy = proxy.as_str(), "unknown cron route"),
@@ -60,12 +64,12 @@ async fn main() -> Result<(), Error> {
     let config = aws_config::from_env().load().await;
 
     let repo = CronRepos::rc(&config, env.stage());
-    let client = CronClients::rc(env, config);
+    let client = CronClients::rc(&env, &config);
 
     run(service_fn(move |event| {
         let r = repo.clone();
         let c = client.clone();
-        async move { handler(r, c, event).await }
+        async move { handler(r, &c, event).await }
     }))
     .await
 }
