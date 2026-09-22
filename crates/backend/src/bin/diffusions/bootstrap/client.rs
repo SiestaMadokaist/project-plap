@@ -1,56 +1,45 @@
 use std::rc::Rc;
 
-// use async_openai::{config::OpenAIConfig, Client as OpenAIClient};
 use aws_config::SdkConfig;
+use aws_sdk_s3::types::ObjectCannedAcl::PublicRead;
+use domain::ctx;
+use reqwest::header::{HeaderMap, HeaderValue};
 
 use crate::env::DiffusionEnv;
-use aws_sdk_s3::types::ObjectCannedAcl::PublicRead;
 use backend::{
-    application::ports::clients::{
-        compute_agent::ComputeAgent,
-        container::{
-            HasComputeAgent, HasDiffusion, HasEngines, HasInferenceModelProvider, HasModelStorage,
-            HasNotification, HasOutputStorage,
+    application::{
+        ports::clients::{
+            compute_agent::ComputeAgent,
+            container::{
+                HasCivitai, HasComputeAgent, HasDiffusion, HasEngines, HasModelStorage,
+                HasNotification, HasOutputStorage,
+            },
+            diffusions::DiffusionClient,
+            inference_model_provider::InferenceModelProvider,
         },
-        diffusions::DiffusionClient,
-        inference_model_provider::InferenceModelProvider,
+        usecases::translations::traits::ClientCtx,
     },
     infras::{
         civitai::client::CivitaiAPI,
         compute::ec2::EC2MultiRegion,
         compute_agent::{ec2::EC2Agent, localhost::LocalhostAgent},
-        diffusions::a1111::A1111,
+        diffusions::comfyui::ComfyUI,
+        http::internal_builder,
         notifications::discord::Discord,
         storage::s3::S3Storage,
     },
 };
 
-pub struct EC2DiffusionClients {
+/// Clients that don't depend on the request's `ctx::Context`, built once and shared.
+struct StaticClients {
     output_storage: S3Storage,
     model_storage: S3Storage,
-    notification: Discord,
-    diffusion: Box<dyn DiffusionClient>,
     engines: EC2MultiRegion,
-    agent: Box<dyn ComputeAgent>,
-    civitai: CivitaiAPI,
 }
 
-impl EC2DiffusionClients {
-    pub fn rc(env: &DiffusionEnv, config: SdkConfig) -> Rc<Self> {
-        Rc::new(Self::new(env, config))
-    }
-
-    fn agent(env: &DiffusionEnv, config: &SdkConfig) -> Box<dyn ComputeAgent> {
-        if env.localhost {
-            Box::new(LocalhostAgent::new())
-        } else {
-            Box::new(EC2Agent::new(config))
-        }
-    }
-
-    fn new(env: &DiffusionEnv, config: SdkConfig) -> Self {
-        let engines = EC2MultiRegion::new(config.clone());
-        let general_clients = Self {
+impl StaticClients {
+    fn new(env: &DiffusionEnv, config: &SdkConfig) -> Self {
+        Self {
             output_storage: S3Storage::new(
                 config.clone(),
                 env.output_region
@@ -62,11 +51,6 @@ impl EC2DiffusionClients {
                 env.workdir.clone(),
                 env.max_data_transfer,
                 Some(PublicRead),
-            ),
-            civitai: CivitaiAPI::new(
-                env.civitai_host(),
-                env.civitai_apikey.clone(),
-                env.workdir.clone(),
             ),
             model_storage: S3Storage::new(
                 config.clone(),
@@ -80,61 +64,110 @@ impl EC2DiffusionClients {
                 env.max_data_transfer,
                 None,
             ),
-            notification: Discord::new(
-                env.discord_username.clone(),
-                env.discord_webhook_url.clone(),
-            ),
-            // TODO: pick A1111 vs ComfyUI at runtime (e.g. from Env), not wired yet
-            diffusion: Box::new(A1111::new(String::new())),
-            // TODO: not wired to Env yet, stub only
-            engines,
-            agent: Self::agent(env, &config),
-        };
-        general_clients
+            engines: EC2MultiRegion::new(config.clone()),
+        }
     }
 }
 
-impl HasInferenceModelProvider for EC2DiffusionClients {
-    fn inference_model_provider(&self) -> &dyn InferenceModelProvider {
-        &self.civitai
+pub struct EC2DiffusionClients<'a, C: ClientCtx> {
+    ctx: &'a C,
+    env: &'a DiffusionEnv,
+    config: &'a SdkConfig,
+    static_clients: Rc<StaticClients>,
+}
+
+impl<'a> EC2DiffusionClients<'a, ()> {
+    pub fn new(env: &'a DiffusionEnv, config: &'a SdkConfig) -> Self {
+        Self {
+            ctx: &(),
+            env,
+            config,
+            static_clients: Rc::new(StaticClients::new(env, config)),
+        }
+    }
+
+    pub fn start(&self, context: &'a ctx::Context) -> EC2DiffusionClients<'a, ctx::Context> {
+        EC2DiffusionClients::<'a, ctx::Context> {
+            ctx: context,
+            env: self.env,
+            config: self.config,
+            static_clients: self.static_clients.clone(),
+        }
     }
 }
 
-impl HasNotification for EC2DiffusionClients {
-    type Notification = Discord;
-    fn notification(&self) -> &Self::Notification {
-        &self.notification
+fn agent(env: &DiffusionEnv, config: &SdkConfig) -> Box<dyn ComputeAgent> {
+    if env.localhost {
+        Box::new(LocalhostAgent::new())
+    } else {
+        Box::new(EC2Agent::new(config))
     }
 }
-impl HasEngines for EC2DiffusionClients {
+
+impl<C: ClientCtx> HasEngines for EC2DiffusionClients<'_, C> {
     type Engines = EC2MultiRegion;
     fn engines(&self) -> &Self::Engines {
-        &self.engines
+        &self.static_clients.engines
     }
 }
 
-impl HasDiffusion for EC2DiffusionClients {
-    fn diffusion(&self) -> &dyn DiffusionClient {
-        self.diffusion.as_ref()
-    }
-}
-
-impl HasModelStorage for EC2DiffusionClients {
+impl<C: ClientCtx> HasModelStorage for EC2DiffusionClients<'_, C> {
     type ModelStorage = S3Storage;
     fn model_storage(&self) -> &Self::ModelStorage {
-        &self.model_storage
+        &self.static_clients.model_storage
     }
 }
 
-impl HasOutputStorage for EC2DiffusionClients {
+impl<C: ClientCtx> HasOutputStorage for EC2DiffusionClients<'_, C> {
     type OutputStorage = S3Storage;
     fn output_storage(&self) -> &Self::OutputStorage {
-        &self.output_storage
+        &self.static_clients.output_storage
     }
 }
 
-impl HasComputeAgent for EC2DiffusionClients {
-    fn agent(&self) -> &dyn ComputeAgent {
-        self.agent.as_ref()
+impl<C: ClientCtx> HasComputeAgent for EC2DiffusionClients<'_, C> {
+    fn agent(&self) -> Box<dyn ComputeAgent> {
+        agent(self.env, self.config)
+    }
+}
+
+impl HasDiffusion for EC2DiffusionClients<'_, ctx::Context> {
+    fn diffusion(&self) -> Box<dyn DiffusionClient> {
+        let additional = HeaderMap::new();
+        let builder = internal_builder(self.ctx, additional);
+        let client = builder.build().expect("client build must not fail");
+        let comfyui = ComfyUI::new(client, self.env.inference_host.clone());
+        Box::new(comfyui)
+    }
+}
+
+impl HasNotification for EC2DiffusionClients<'_, ctx::Context> {
+    type Notification = Discord;
+    fn notification(&self) -> Self::Notification {
+        let additional = HeaderMap::new();
+        let builder = internal_builder(self.ctx, additional);
+        let client = builder.build().expect("client build must not fail");
+        Discord::new(
+            client,
+            self.env.discord_username.clone(),
+            self.env.discord_webhook_url.clone(),
+        )
+    }
+}
+
+impl HasCivitai for EC2DiffusionClients<'_, ctx::Context> {
+    fn civitai(&self) -> Box<dyn InferenceModelProvider> {
+        let mut additional = HeaderMap::new();
+        let bearer = format!("Bearer {}", self.env.civitai_apikey);
+        if let Ok(value) = HeaderValue::from_str(&bearer) {
+            additional.insert(reqwest::header::AUTHORIZATION, value);
+        }
+        let builder = internal_builder(self.ctx, additional);
+        let client = builder.build().expect("client build must not fail");
+        Box::new(CivitaiAPI::new(
+            client,
+            self.env.civitai_host(),
+            self.env.workdir.clone(),
+        ))
     }
 }

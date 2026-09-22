@@ -1,4 +1,4 @@
-use domain::ctx::Context;
+use domain::{ctx::Context, errors::DomainError};
 use dto::resources::templates::{ReadTemplatePayload, ReadTemplateResponse};
 use pkg::trait_repos;
 
@@ -27,7 +27,10 @@ impl<'a, R: TemplateReadRepo> TemplateReadSvc<'a, R> {
 impl<'a, R: TemplateReadRepo> UsecaseAPI<ReadTemplateResponse> for TemplateReadSvc<'a, R> {
     async fn exec(&self) -> Result<ReadTemplateResponse, domain::errors::DomainError> {
         let repo = self.repos.story_template();
-        let auth = self.ctx.auth();
+        let auth = self
+            .ctx
+            .auth()
+            .ok_or(DomainError::NotAllowed("unauthorized".into()))?;
         let storyline = repo.get(&auth.username, &self.payload.0).await?;
         Ok(ReadTemplateResponse(storyline))
     }

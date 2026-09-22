@@ -33,6 +33,7 @@ pub struct DiffusionEnv {
     pub model_rootdir: StoragePrefix,
 
     pub cache_ttl: Second,
+    pub inference_host: URL,
 
     blacklist_tags: String,
 }
@@ -70,6 +71,10 @@ impl DiffusionEnv {
             model_rootdir: env::var("MODEL_ROOTDIR")
                 .map(StoragePrefix)
                 .expect("MODEL_ROOTDIR must be set"),
+
+            inference_host: env::var("INFERENCE_HOST")
+                .map(URL)
+                .expect("INFERENCE_HOST must be set"),
 
             output_region: var_or("OUTPUT_REGION", "ap-southeast-1"),
             output_bucket: env::var("OUTPUT_BUCKET").expect("OUTPUT_BUCKET must be set"),

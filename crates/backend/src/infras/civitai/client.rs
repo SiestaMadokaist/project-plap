@@ -12,25 +12,24 @@ use pkg::{
 
 pub struct CivitaiAPI {
     host: URL,
-    api_key: String,
     client: reqwest::Client,
     workdir: StoragePrefix,
 }
 
 impl CivitaiAPI {
-    pub fn new(host: URL, api_key: String, workdir: StoragePrefix) -> Self {
-        let client = reqwest::Client::new();
+    pub fn new(client: reqwest::Client, host: URL, workdir: StoragePrefix) -> Self {
         Self {
             host,
-            api_key,
             client,
             workdir,
         }
     }
 
     async fn send(&self, b: reqwest::RequestBuilder) -> anyhow::Result<reqwest::Response> {
-        let authorization = format!("Bearer {}", self.api_key);
-        let res = b.header("Authorization", authorization).send().await?;
+        // let authorization = format!("Bearer {}", self.api_key);
+        // attach the api-key when building the client.
+        let res = b.send().await?;
+        // let res = b.header("Authorization", authorization).send().await?;
         Ok(res)
     }
 

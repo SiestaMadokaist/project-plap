@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use domain::{commands::inference::InferenceConfig, errors::DomainError};
 use pkg::comfy;
 
@@ -9,4 +11,18 @@ pub trait DiffusionClient {
         params: &InferenceConfig<String>,
         workflow: Option<comfy::workflow::PostRequests>,
     ) -> Result<(), DomainError>;
+}
+
+// Lets a `Box<dyn DiffusionClient>` be built from an `Rc<T>` without cloning `T`
+// itself — needed when the same client instance is shared (e.g. a mock with
+// expectations set once, boxed on every `diffusion()` call).
+#[async_trait::async_trait(?Send)]
+impl<T: DiffusionClient> DiffusionClient for Rc<T> {
+    async fn generate(
+        &self,
+        params: &InferenceConfig<String>,
+        workflow: Option<comfy::workflow::PostRequests>,
+    ) -> Result<(), DomainError> {
+        self.as_ref().generate(params, workflow).await
+    }
 }

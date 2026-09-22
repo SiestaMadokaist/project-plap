@@ -21,7 +21,9 @@ async fn generate_against_live_server() {
     let v = 1;
     tracing::debug!("{}", v);
     let comfy_url = URL("http://127.0.0.1:8188".into());
-    let client = ComfyUI::new(comfy_url);
+    let builder = reqwest::ClientBuilder::default();
+    let api = builder.build().expect("cannot error");
+    let client = ComfyUI::new(api, comfy_url);
     let config = testhelper::read_json::<InferenceConfig<String>>(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../samples/inputs/jsons/domain/commands/inference.json"

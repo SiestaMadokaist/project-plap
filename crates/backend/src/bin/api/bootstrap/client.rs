@@ -10,14 +10,15 @@ use backend::{
         usecases::translations::traits::ClientCtx,
     },
     infras::{
-        authorizer::client::EthAuth, compute::ec2::EC2MultiRegion, http::internal_api,
+        authorizer::client::EthAuth, compute::ec2::EC2MultiRegion, http::internal_builder,
         notifications::discord::Discord, storage::s3::S3Storage,
     },
 };
 use domain::ctx;
+use reqwest::header::HeaderMap;
 
 #[derive(Debug)]
-struct InternalClients {
+struct StaticClients {
     engines: EC2MultiRegion,
     output_storage: S3Storage,
     model_storage: S3Storage,
@@ -28,12 +29,12 @@ pub struct ApiClients<'a, C: ClientCtx> {
     ctx: &'a C,
     env: &'a ApiEnv,
     config: &'a SdkConfig,
-    internal: Rc<InternalClients>,
+    statics: Rc<StaticClients>,
 }
 
 const MAX_SIZE: i64 = 100 * 1024 * 1024;
 
-impl InternalClients {
+impl StaticClients {
     pub fn rc(env: &ApiEnv, config: &SdkConfig) -> Rc<Self> {
         Rc::new(Self::new(env, config))
     }
@@ -79,18 +80,17 @@ impl InternalClients {
     }
 }
 
-impl<'a, C: ClientCtx> ApiClients<'a, C> {
-    pub fn rc(ctx: &'a C, env: &'a ApiEnv, config: &'a SdkConfig) -> Rc<Self> {
-        Rc::new(Self::new(ctx, env, config))
+impl<'a> ApiClients<'a, ()> {
+    pub fn rc(env: &'a ApiEnv, config: &'a SdkConfig) -> Rc<Self> {
+        Rc::new(Self::new(env, config))
     }
-
-    pub fn new(ctx: &'a C, env: &'a ApiEnv, config: &'a SdkConfig) -> Self {
-        let internal = InternalClients::rc(env, config);
+    pub fn new(env: &'a ApiEnv, config: &'a SdkConfig) -> Self {
+        let statics = StaticClients::rc(env, config);
         Self {
-            ctx,
+            ctx: &(),
             env,
             config,
-            internal,
+            statics,
         }
     }
 }
@@ -101,7 +101,7 @@ impl<'a> ApiClients<'a, ()> {
             ctx,
             env: self.env,
             config: self.config,
-            internal: self.internal.clone(),
+            statics: self.statics.clone(),
         }
     }
 }
@@ -109,7 +109,9 @@ impl<'a> ApiClients<'a, ()> {
 impl<'a> HasNotification for ApiClients<'a, ctx::Context> {
     type Notification = Discord;
     fn notification(&self) -> Self::Notification {
-        let client = internal_api(&self.ctx);
+        let header = HeaderMap::default();
+        let builder = internal_builder(self.ctx, header);
+        let client = builder.build().expect("build notification cannot fail");
         Discord::new(
             client,
             self.env.discord_username.clone(),
@@ -121,27 +123,27 @@ impl<'a> HasNotification for ApiClients<'a, ctx::Context> {
 impl<A: ClientCtx> HasEngines for ApiClients<'_, A> {
     type Engines = EC2MultiRegion;
     fn engines(&self) -> &Self::Engines {
-        &self.internal.engines
+        &self.statics.engines
     }
 }
 
 impl<A: ClientCtx> HasOutputStorage for ApiClients<'_, A> {
     type OutputStorage = S3Storage;
     fn output_storage(&self) -> &Self::OutputStorage {
-        &self.internal.output_storage
+        &self.statics.output_storage
     }
 }
 
 impl<A: ClientCtx> HasModelStorage for ApiClients<'_, A> {
     type ModelStorage = S3Storage;
     fn model_storage(&self) -> &Self::ModelStorage {
-        &self.internal.model_storage
+        &self.statics.model_storage
     }
 }
 
 impl<A: ClientCtx> HasAuthValidator for ApiClients<'_, A> {
     type Auth = EthAuth;
     fn authorizer(&self) -> &Self::Auth {
-        &self.internal.authorizer
+        &self.statics.authorizer
     }
 }

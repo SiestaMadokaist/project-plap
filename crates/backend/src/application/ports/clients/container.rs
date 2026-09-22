@@ -7,12 +7,7 @@ use crate::application::ports::clients::{
 
 pub trait HasTranslator {
     type Translator: TranslatorClient;
-    fn translator(&self) -> Self::Translator;
-}
-
-pub trait HasRaws {
-    type Raws: RawsClient;
-    fn raws(&self) -> Self::Raws;
+    fn translator(&self) -> &Self::Translator;
 }
 
 pub trait HasModelStorage {
@@ -23,6 +18,11 @@ pub trait HasModelStorage {
 pub trait HasOutputStorage {
     type OutputStorage: StorageClient;
     fn output_storage(&self) -> &Self::OutputStorage;
+}
+
+pub trait HasRaws {
+    type Raws: RawsClient;
+    fn raws(&self) -> Self::Raws;
 }
 
 pub trait HasNotification {
@@ -44,8 +44,8 @@ pub trait HasComputeAgent {
     fn agent(&self) -> Box<dyn ComputeAgent>;
 }
 
-pub trait HasInferenceModelProvider {
-    fn inference_model_provider(&self) -> Box<dyn InferenceModelProvider>;
+pub trait HasCivitai {
+    fn civitai(&self) -> Box<dyn InferenceModelProvider>;
 }
 
 pub trait HasAuthValidator {
