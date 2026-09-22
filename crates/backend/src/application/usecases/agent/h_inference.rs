@@ -82,8 +82,13 @@ mod tests {
         fn new(diffuser: MockDiffusionClient) -> Rc<Self> {
             let mut storage = MockStorageClient::new();
             storage.expect_read().returning(|_| {
-                let text = r#"{"id": "xxx", "nodes": []}"#;
-                Ok(text.into())
+                let buffer = std::fs::read(concat!(
+                    env!("CARGO_MANIFEST_DIR"),
+                    "/../../samples/inputs/jsons/infras/comfyui/post-request.json"
+                ))
+                .expect("hardcoded must not fail");
+                let text = String::from_utf8(buffer).expect("should not fail");
+                Ok(text)
             });
             let s = Self {
                 diffuser: Rc::new(diffuser),
@@ -115,6 +120,18 @@ mod tests {
         let config: InferenceConfig<String> = serde_json::from_slice(&buffer)
             .expect("cannot deserialize buffer to InferenceConfig<String>");
         config
+    }
+
+    #[tokio::test]
+    async fn test_ok() {
+        let mut diffuser = MockDiffusionClient::new();
+        diffuser.expect_generate().returning(|_, _| Ok(()));
+        let container = MockContainer::new(diffuser);
+        let progress = Progression::new(Index0(2), INDEX_ZERO);
+        let config = cfg();
+        let mut inference = HandleInference::new(container.as_ref(), progress, &config);
+        let result = inference.generate().await;
+        assert!(result.is_ok());
     }
 
     #[tokio::test]
