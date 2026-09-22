@@ -19,7 +19,7 @@ impl DiffusionClient for ComfyUI {
     async fn generate(
         &self,
         params: &InferenceConfig<String>,
-        workflow: Option<comfy::workflow::PostRequests>,
+        workflow: Option<comfy::workflow::api::ExportApi>,
     ) -> Result<(), DomainError> {
         if workflow.is_none() {
             return Err(DomainError::ValidationError(
