@@ -83,8 +83,8 @@ mod tests {
         .expect("cannot find inference.json");
         let cfg: InferenceConfig<String> = serde_json::from_slice(&buffer)
             .expect("cannot deserialize buffer to InferenceConfig<String>");
-        assert_eq!(cfg.height.0, 1000);
-        assert_eq!(cfg.width.0, 800);
+        assert_eq!(cfg.height.0, 968);
+        assert_eq!(cfg.width.0, 720);
         assert!(cfg.positive.starts_with("(( highly detailed, photograph"));
         assert!(cfg.positive.ends_with("\nADDCOMM"));
         assert_eq!(cfg.loras.len(), 2);
