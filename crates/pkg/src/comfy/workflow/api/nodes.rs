@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-
 pub mod inputs;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -16,7 +15,7 @@ pub struct NodeInput<I> {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "class_type")]
-pub enum KnownNode {
+pub enum Known {
     #[serde(rename = "UNETLoader")]
     UnetLoader(NodeInput<inputs::UnetLoader>),
     #[serde(rename = "CLIPLoader")]
@@ -29,8 +28,8 @@ pub enum KnownNode {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
-pub enum PromptNode {
-    Known(KnownNode),
+pub enum ApiNode {
+    Known(Known),
     Unknown(serde_json::Value),
 }
 
@@ -50,8 +49,8 @@ mod tests {
             "_meta": { "title": "Load Diffusion Model" }
         });
 
-        let node: PromptNode = serde_json::from_value(original.clone()).unwrap();
-        assert!(matches!(node, PromptNode::Known(KnownNode::UnetLoader(_))));
+        let node: ApiNode = serde_json::from_value(original.clone()).unwrap();
+        assert!(matches!(node, ApiNode::Known(Known::UnetLoader(_))));
 
         let written = serde_json::to_value(&node).unwrap();
         assert_eq!(written, original);
@@ -65,8 +64,8 @@ mod tests {
             "_meta": { "title": "Load VAE" }
         });
 
-        let node: PromptNode = serde_json::from_value(original.clone()).unwrap();
-        assert!(matches!(node, PromptNode::Unknown(_)));
+        let node: ApiNode = serde_json::from_value(original.clone()).unwrap();
+        assert!(matches!(node, ApiNode::Unknown(_)));
 
         let written = serde_json::to_value(&node).unwrap();
         assert_eq!(written, original);

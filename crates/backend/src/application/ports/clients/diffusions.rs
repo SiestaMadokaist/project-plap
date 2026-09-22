@@ -9,7 +9,7 @@ pub trait DiffusionClient {
     async fn generate(
         &self,
         params: &InferenceConfig<String>,
-        workflow: Option<comfy::workflow::PostRequests>,
+        workflow: Option<comfy::workflow::api::ExportApi>,
     ) -> Result<(), DomainError>;
 }
 
@@ -21,7 +21,7 @@ impl<T: DiffusionClient> DiffusionClient for Rc<T> {
     async fn generate(
         &self,
         params: &InferenceConfig<String>,
-        workflow: Option<comfy::workflow::PostRequests>,
+        workflow: Option<comfy::workflow::api::ExportApi>,
     ) -> Result<(), DomainError> {
         self.as_ref().generate(params, workflow).await
     }

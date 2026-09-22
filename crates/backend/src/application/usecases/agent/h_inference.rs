@@ -34,7 +34,7 @@ impl<'a, C: HandleInferenceClient> HandleInference<'a, C> {
             Some(path) => {
                 let storage = self.clients.model_storage();
                 let string = storage.read(path).await?;
-                let deserialized: comfy::workflow::PostRequests = serde_json::from_str(&string)?;
+                let deserialized: comfy::workflow::api::ExportApi = serde_json::from_str(&string)?;
                 Some(deserialized)
             }
         };
@@ -84,7 +84,7 @@ mod tests {
             storage.expect_read().returning(|_| {
                 let buffer = std::fs::read(concat!(
                     env!("CARGO_MANIFEST_DIR"),
-                    "/../../samples/inputs/jsons/infras/comfyui/post-request.json"
+                    "/../../samples/inputs/jsons/infras/comfyui/workflow-api.json"
                 ))
                 .expect("hardcoded must not fail");
                 let text = String::from_utf8(buffer).expect("should not fail");

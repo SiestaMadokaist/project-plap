@@ -17,7 +17,7 @@ impl DiffusionClient for A1111 {
     async fn generate(
         &self,
         _params: &InferenceConfig<String>,
-        _workflow: Option<comfy::workflow::PostRequests>,
+        _workflow: Option<comfy::workflow::api::ExportApi>,
     ) -> Result<(), DomainError> {
         let _ = &self.base_url;
         Err(DomainError::NotImplemented)

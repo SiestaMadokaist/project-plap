@@ -29,9 +29,9 @@ async fn generate_against_live_server() {
         "/../../samples/inputs/jsons/domain/commands/inference.json"
     ))
     .expect("should not error");
-    let workflow = testhelper::read_json::<comfy::workflow::PostRequests>(concat!(
+    let workflow = testhelper::read_json::<comfy::workflow::api::ExportApi>(concat!(
         env!("CARGO_MANIFEST_DIR"),
-        "/../../samples/inputs/jsons/infras/comfyui/post-request.json"
+        "/../../samples/inputs/jsons/infras/comfyui/workflow-api.json"
     ))
     .expect("should not error");
 
