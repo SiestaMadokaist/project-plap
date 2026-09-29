@@ -3,9 +3,12 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    comfy::workflow::api::nodes::{
-        ApiNode,
-        Known::{ClipText, SD3Latent, UnetLoader},
+    comfy::workflow::{
+        api::nodes::{
+            ApiNode,
+            Known::{ClipText, SD3Latent, UnetLoader},
+        },
+        info::ExtraInfo,
     },
     types::unit::Px,
 };
@@ -17,7 +20,7 @@ pub mod nodes;
 pub struct ExportApi {
     client_id: String,
     prompt: HashMap<String, ApiNode>,
-    extra_data: serde_json::Value,
+    extra_data: ExtraInfo,
 }
 
 impl ExportApi {
