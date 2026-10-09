@@ -10,7 +10,7 @@ use backend::{
         usecases::translations::traits::ClientCtx,
     },
     infras::{
-        authorizer::client::EthAuth, compute::ec2::EC2MultiRegion, http::internal_builder,
+        authorizer::client::EthAuth, compute::DefaultEngines, http::internal_builder,
         notifications::discord::Discord, storage::s3::S3Storage,
     },
 };
@@ -19,7 +19,7 @@ use reqwest::header::HeaderMap;
 
 #[derive(Debug)]
 struct StaticClients {
-    engines: EC2MultiRegion,
+    engines: DefaultEngines,
     output_storage: S3Storage,
     model_storage: S3Storage,
     authorizer: EthAuth,
@@ -40,7 +40,7 @@ impl StaticClients {
     }
 
     pub fn new(env: &ApiEnv, config: &SdkConfig) -> Self {
-        let engines = EC2MultiRegion::new(config.clone());
+        let engines = DefaultEngines::new(config.clone());
         Self {
             engines,
             output_storage: S3Storage::new(
@@ -121,7 +121,7 @@ impl<'a> HasNotification for ApiClients<'a, ctx::Context> {
 }
 
 impl<A: ClientCtx> HasEngines for ApiClients<'_, A> {
-    type Engines = EC2MultiRegion;
+    type Engines = DefaultEngines;
     fn engines(&self) -> &Self::Engines {
         &self.statics.engines
     }

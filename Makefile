@@ -87,7 +87,7 @@ deploy-api: package-api
 # --- standalone binary deploy (e.g. diffusion-agent on EC2) ---
 
 deploy-bin:
-	cargo build -p backend --release --features datatransfer --bin diffusion-agent
+	cargo build -p backend --release --features datatransfer,remote-ec2 --bin diffusion-agent
 	SANITY_RUN=true ENV_PATH="./.env.diffusion" ./target/release/diffusion-agent
 	aws s3 cp .env.diffusion $(S3_BIN_BUCKET)/.env.diffusion
 	aws s3 cp target/release/diffusion-agent $(S3_BIN_BUCKET)/diffusion-agent
