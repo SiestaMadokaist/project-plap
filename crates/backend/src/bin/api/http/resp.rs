@@ -1,3 +1,7 @@
+use axum::{
+    http::{HeaderName, HeaderValue, StatusCode},
+    response::{IntoResponse, Response},
+};
 use domain::errors::DomainError;
 use dto::response::{Placeholder, ToResp};
 use serde::{Deserialize, Serialize};
@@ -24,17 +28,6 @@ pub fn yes(
     Ok(response)
 }
 
-/// Empty `204`. Used to answer the CORS preflight — the `$default` route hands
-/// `OPTIONS` to this Lambda, and API Gateway's `cors_configuration` then decorates
-/// the response with the `Access-Control-*` headers.
-pub fn no_content() -> ServerResponse {
-    ServerResponse {
-        status_code: 204,
-        headers: HashMap::new(),
-        body: String::new(),
-    }
-}
-
 pub fn no(error: DomainError) -> ServerResponse {
     let mut headers = HashMap::new();
     headers.insert("content-type".into(), "application/json".into());
@@ -46,4 +39,18 @@ pub fn no(error: DomainError) -> ServerResponse {
         body: resp.to_body(),
     };
     response
+}
+
+impl IntoResponse for ServerResponse {
+    fn into_response(self) -> Response {
+        let status =
+            StatusCode::from_u16(self.status_code).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+        let mut resp = (status, self.body).into_response();
+        for (k, v) in self.headers {
+            if let (Ok(k), Ok(v)) = (HeaderName::try_from(k), HeaderValue::try_from(v)) {
+                resp.headers_mut().insert(k, v);
+            }
+        }
+        resp
+    }
 }

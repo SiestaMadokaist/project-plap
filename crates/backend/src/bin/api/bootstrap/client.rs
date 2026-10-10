@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::env::ApiEnv;
 use aws_config::SdkConfig;
@@ -29,14 +29,14 @@ pub struct ApiClients<'a, C: ClientCtx> {
     ctx: &'a C,
     env: &'a ApiEnv,
     config: &'a SdkConfig,
-    statics: Rc<StaticClients>,
+    statics: Arc<StaticClients>,
 }
 
 const MAX_SIZE: i64 = 100 * 1024 * 1024;
 
 impl StaticClients {
-    pub fn rc(env: &ApiEnv, config: &SdkConfig) -> Rc<Self> {
-        Rc::new(Self::new(env, config))
+    pub fn arc(env: &ApiEnv, config: &SdkConfig) -> Arc<Self> {
+        Arc::new(Self::new(env, config))
     }
 
     pub fn new(env: &ApiEnv, config: &SdkConfig) -> Self {
@@ -81,11 +81,11 @@ impl StaticClients {
 }
 
 impl<'a> ApiClients<'a, ()> {
-    pub fn rc(env: &'a ApiEnv, config: &'a SdkConfig) -> Rc<Self> {
-        Rc::new(Self::new(env, config))
+    pub fn arc(env: &'a ApiEnv, config: &'a SdkConfig) -> Arc<Self> {
+        Arc::new(Self::new(env, config))
     }
     pub fn new(env: &'a ApiEnv, config: &'a SdkConfig) -> Self {
-        let statics = StaticClients::rc(env, config);
+        let statics = StaticClients::arc(env, config);
         Self {
             ctx: &(),
             env,

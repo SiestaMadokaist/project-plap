@@ -1,7 +1,7 @@
 #[cfg(feature = "datatransfer")]
 use std::path::PathBuf;
 #[cfg(feature = "datatransfer")]
-use std::{cell::OnceCell, path::Path, process::Stdio};
+use std::{path::Path, process::Stdio};
 
 use aws_config::SdkConfig;
 use aws_sdk_s3::{
@@ -12,6 +12,8 @@ use aws_sdk_s3::{
 use domain::storage::{DirTree, ItemVersion};
 #[cfg(feature = "datatransfer")]
 use tokio::process::Command;
+#[cfg(feature = "datatransfer")]
+use tokio::sync::OnceCell;
 
 use crate::application::ports::clients::storage::StorageClient;
 use domain::{

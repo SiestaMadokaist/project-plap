@@ -14,6 +14,11 @@ pub struct ApiEnv {
     stage: String,
     sanity_run: String,
 
+    /// `host:port` the HTTP server binds to.
+    pub bind_addr: String,
+    /// Allowed browser origin for CORS (the frontend). Unset = any origin (local dev).
+    pub cors_origin: Option<String>,
+
     pub sentry_dsn: Option<String>,
     pub sentry_env: String,
 
@@ -45,6 +50,9 @@ impl ApiEnv {
         Self {
             sanity_run: var_or("SANITY_RUN", "false"),
             stage: env::var("STAGE").expect("stage must be set"),
+
+            bind_addr: var_or("BIND_ADDR", "0.0.0.0:3000"),
+            cors_origin: env::var("CORS_ORIGIN").ok().filter(|s| !s.is_empty()),
 
             sentry_dsn: env::var("SENTRY_DSN").ok().filter(|s| !s.is_empty()),
             sentry_env: var_or("SENTRY_ENV", "unknown"),

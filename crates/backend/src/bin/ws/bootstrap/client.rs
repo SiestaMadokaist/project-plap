@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Default)]
 #[allow(dead_code)]
@@ -11,7 +11,7 @@ impl WsClients {
     }
 
     #[allow(dead_code)]
-    pub fn rc() -> Rc<Self> {
-        Rc::new(Self::new())
+    pub fn arc() -> Arc<Self> {
+        Arc::new(Self::new())
     }
 }

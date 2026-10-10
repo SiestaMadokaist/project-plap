@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use aws_config::SdkConfig;
 use aws_sdk_s3::types::ObjectCannedAcl::PublicRead;
@@ -73,7 +73,7 @@ pub struct EC2DiffusionClients<'a, C: ClientCtx> {
     ctx: &'a C,
     env: &'a DiffusionEnv,
     config: &'a SdkConfig,
-    static_clients: Rc<StaticClients>,
+    static_clients: Arc<StaticClients>,
 }
 
 impl<'a> EC2DiffusionClients<'a, ()> {
@@ -82,7 +82,7 @@ impl<'a> EC2DiffusionClients<'a, ()> {
             ctx: &(),
             env,
             config,
-            static_clients: Rc::new(StaticClients::new(env, config)),
+            static_clients: Arc::new(StaticClients::new(env, config)),
         }
     }
 

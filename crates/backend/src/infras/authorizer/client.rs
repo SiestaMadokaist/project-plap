@@ -71,7 +71,7 @@ fn deny(e: impl ToString) -> DomainError {
     DomainError::NotAllowed(e.to_string())
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl Authorizer for EthAuth {
     async fn challenge(&self, req: ReqChallenge) -> Result<ServerChallenge, DomainError> {
         let now = Timestamp::now().utc().expect("should be a valid utc");

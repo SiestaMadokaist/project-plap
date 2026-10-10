@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use aws_config::SdkConfig;
 
@@ -17,8 +17,8 @@ pub struct CronRepos {
 }
 
 impl CronRepos {
-    pub fn rc(config: &SdkConfig, stage: Stage) -> Rc<Self> {
-        Rc::new(Self::new(config, stage))
+    pub fn arc(config: &SdkConfig, stage: Stage) -> Arc<Self> {
+        Arc::new(Self::new(config, stage))
     }
 
     pub fn new(config: &SdkConfig, stage: Stage) -> Self {

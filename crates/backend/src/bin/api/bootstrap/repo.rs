@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use aws_config::SdkConfig;
 use backend::{
@@ -28,8 +28,8 @@ pub struct ApiRepos {
 }
 
 impl ApiRepos {
-    pub fn rc(env: &ApiEnv, config: &SdkConfig) -> Rc<Self> {
-        Rc::new(Self::new(env, config))
+    pub fn arc(env: &ApiEnv, config: &SdkConfig) -> Arc<Self> {
+        Arc::new(Self::new(env, config))
     }
 
     pub fn new(env: &ApiEnv, config: &SdkConfig) -> Self {

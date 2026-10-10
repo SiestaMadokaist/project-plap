@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use backend::application::{
     ports::usecase::UsecaseAPI,
@@ -42,9 +42,9 @@ pub fn public_routes() -> Router<PublicRoute> {
 }
 
 pub async fn handle_public(
-    repos: Rc<ApiRepos>,
+    repos: Arc<ApiRepos>,
     clients: &ApiClients<'_, ctx::Context>,
-    router: Rc<Router<PublicRoute>>,
+    router: Arc<Router<PublicRoute>>,
     event: HttpEvent,
 ) -> Result<ServerResponse, DomainError> {
     let path = event.path().to_string();

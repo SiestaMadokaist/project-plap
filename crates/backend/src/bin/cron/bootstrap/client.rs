@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use async_openai::{config::OpenAIConfig, Client as OpenAIClient};
 use aws_config::SdkConfig;
@@ -26,13 +26,14 @@ pub struct CronClients<'a, C: ClientCtx> {
     ctx: &'a C,
     env: &'a CronEnv,
     config: &'a SdkConfig,
-    static_clients: Rc<StaticClients>,
+    static_clients: Arc<StaticClients>,
 }
 
 impl<'a> CronClients<'a, ()> {
-    pub fn rc(env: &'a CronEnv, config: &'a SdkConfig) -> Rc<Self> {
-        Rc::new(Self::new(env, config))
+    pub fn arc(env: &'a CronEnv, config: &'a SdkConfig) -> Arc<Self> {
+        Arc::new(Self::new(env, config))
     }
+
     pub fn new(env: &'a CronEnv, config: &'a SdkConfig) -> Self {
         let openai = OpenAIClient::<OpenAIConfig>::new();
         let static_clients: StaticClients = StaticClients {
@@ -54,7 +55,7 @@ impl<'a> CronClients<'a, ()> {
             ctx: &(),
             env,
             config,
-            static_clients: Rc::new(static_clients),
+            static_clients: Arc::new(static_clients),
         }
     }
 

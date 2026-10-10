@@ -1,12 +1,20 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
+use axum::{
+    body::Bytes,
+    extract::State,
+    http::{HeaderMap, Method, Uri},
+    Router as AxumRouter,
+};
 use backend::application::{
     ports::clients::{authorizer::Authorizer, container::HasAuthValidator},
     routes::{authorized::AuthorizedRoute, public::PublicRoute},
 };
 use domain::{ctx, errors::DomainError};
-use lambda_runtime::{run, service_fn, Error, LambdaEvent};
 use matchit::Router;
+use tower_http::cors::{AllowOrigin, Any, CorsLayer};
+
+type Error = Box<dyn std::error::Error + Send + Sync>;
 
 mod bootstrap;
 mod env;
@@ -20,8 +28,8 @@ use tracing::Instrument;
 
 use crate::{
     http::{
-        req::{ApiEvent, HttpEvent},
-        resp::{no, no_content, ServerResponse},
+        req::HttpEvent,
+        resp::{no, ServerResponse},
     },
     routes::{
         authorized::{authorized_routes, handle_authorized},
@@ -43,9 +51,9 @@ async fn init_ctx(
 /// to an authorized route. Keeping `init_ctx` here means the route handler only ever
 /// sees a ready `&Context`.
 async fn route_authorized(
-    repos: Rc<ApiRepos>,
+    repos: Arc<ApiRepos>,
     clients: &ApiClients<'_, ()>,
-    router: Rc<Router<AuthorizedRoute>>,
+    router: Arc<Router<AuthorizedRoute>>,
     event: HttpEvent,
 ) -> Result<ServerResponse, DomainError> {
     let ctx = init_ctx(clients, event.authorization()?, event.trace_id()).await?;
@@ -61,9 +69,9 @@ async fn route_authorized(
 /// to an authorized route. Keeping `init_ctx` here means the route handler only ever
 /// sees a ready `&Context`.
 async fn route_public(
-    repos: Rc<ApiRepos>,
+    repos: Arc<ApiRepos>,
     clients: &ApiClients<'_, ()>,
-    router: Rc<Router<PublicRoute>>,
+    router: Arc<Router<PublicRoute>>,
     event: HttpEvent,
 ) -> Result<ServerResponse, DomainError> {
     let ctx = ctx::Context::guest(event.trace_id());
@@ -75,51 +83,82 @@ async fn route_public(
         .await
 }
 
-#[tokio::main(flavor = "current_thread")]
+/// Everything a request handler needs, cloned (cheaply, it is all `Arc`) per request.
+#[derive(Clone)]
+struct AppState {
+    repos: Arc<ApiRepos>,
+    clients: Arc<ApiClients<'static, ()>>,
+    public_router: Arc<Router<PublicRoute>>,
+    authorized_router: Arc<Router<AuthorizedRoute>>,
+}
+
+/// Single catch-all handler: axum does the HTTP, the `matchit` routers keep doing
+/// the path -> usecase dispatch exactly as before.
+#[axum::debug_handler]
+async fn dispatch(
+    State(app): State<AppState>,
+    method: Method,
+    uri: Uri,
+    headers: HeaderMap,
+    body: Bytes,
+) -> ServerResponse {
+    let path = uri.path().to_string();
+    let http_event = HttpEvent::new(method, path.clone(), headers, body);
+    // check public first because authorized might throw error if unauthorized
+    let handled: Result<ServerResponse, DomainError> = if app.public_router.at(&path).is_ok() {
+        route_public(app.repos, &app.clients, app.public_router, http_event).await
+    } else {
+        route_authorized(app.repos, &app.clients, app.authorized_router, http_event).await
+    };
+    match handled {
+        Ok(x) => x,
+        Err(e) => {
+            tracing::error!("unhandled exception: {}", e);
+            no(e)
+        }
+    }
+}
+
+fn cors(env: &ApiEnv) -> Result<CorsLayer, Error> {
+    let origin = match &env.cors_origin {
+        Some(o) => AllowOrigin::exact(o.parse()?),
+        None => AllowOrigin::any(),
+    };
+    Ok(CorsLayer::new()
+        .allow_origin(origin)
+        .allow_methods(Any)
+        .allow_headers([
+            axum::http::header::AUTHORIZATION,
+            axum::http::header::CONTENT_TYPE,
+        ])
+        .max_age(std::time::Duration::from_secs(86400)))
+}
+
+#[tokio::main]
 async fn main() -> Result<(), Error> {
     backend::init_env();
-    let env = ApiEnv::from_env();
+    // leaked on purpose: they live for the whole process, and axum's state must be 'static
+    let env: &'static ApiEnv = Box::leak(Box::new(ApiEnv::from_env()));
     let _sentry = backend::init_sentry(env.sentry_dsn.as_deref(), &env.sentry_env);
     backend::init_tracing();
 
     if env.sanity_run() {
         return Ok(());
     }
-    let config = aws_config::from_env().load().await;
-    let repo = ApiRepos::rc(&env, &config);
-    let client = ApiClients::rc(&env, &config);
-    let authorized_router = Rc::new(authorized_routes());
-    let public_router = Rc::new(public_routes());
+    let config: &'static _ = Box::leak(Box::new(aws_config::from_env().load().await));
+    let state = AppState {
+        repos: ApiRepos::arc(env, config),
+        clients: ApiClients::arc(env, config),
+        public_router: Arc::new(public_routes()),
+        authorized_router: Arc::new(authorized_routes()),
+    };
 
-    run(service_fn(move |event: LambdaEvent<ApiEvent>| {
-        let r = repo.clone();
-        let c = client.clone();
-        let public_rt = public_router.clone();
-        let authorized_rt = authorized_router.clone();
-        let http_event = HttpEvent(event);
-        async move {
-            // CORS preflight: the $default route hands OPTIONS to us; answer 204 and
-            // let API Gateway's cors_configuration attach the Access-Control-* headers.
-            if http_event.method().eq_ignore_ascii_case("OPTIONS") {
-                return Ok::<ServerResponse, Error>(no_content());
-            }
-
-            let path = http_event.path().to_string();
-            // check public first because authorized might throw error if unauthorized
-            let handled: Result<ServerResponse, DomainError> = if public_rt.at(&path).is_ok() {
-                route_public(r, &c, public_rt, http_event).await
-            } else {
-                route_authorized(r, &c, authorized_rt, http_event).await
-            };
-            let converted: ServerResponse = match handled {
-                Ok(x) => x,
-                Err(e) => {
-                    tracing::error!("unhandled exception: {}", e);
-                    no(e)
-                }
-            };
-            Ok::<ServerResponse, Error>(converted)
-        }
-    }))
-    .await
+    let app = AxumRouter::new()
+        .fallback(dispatch)
+        .layer(cors(env)?)
+        .with_state(state);
+    let listener = tokio::net::TcpListener::bind(&env.bind_addr).await?;
+    tracing::info!("listening on {}", env.bind_addr);
+    axum::serve(listener, app).await?;
+    Ok(())
 }

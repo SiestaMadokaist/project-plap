@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use backend::application::{
     ports::usecase::UsecaseAPI,
@@ -27,7 +27,7 @@ struct PathParameters {
 }
 
 async fn handler(
-    repo: Rc<CronRepos>,
+    repo: Arc<CronRepos>,
     client: &CronClients<'_, ()>,
     event: LambdaEvent<CronEvent>,
 ) -> Result<(), Error> {
@@ -63,13 +63,13 @@ async fn main() -> Result<(), Error> {
 
     let config = aws_config::from_env().load().await;
 
-    let repo = CronRepos::rc(&config, env.stage());
-    let client = CronClients::rc(&env, &config);
+    let repo = CronRepos::arc(&config, env.stage());
+    let client = CronClients::arc(&env, &config);
 
     run(service_fn(move |event| {
         let r = repo.clone();
         let c = client.clone();
-        async move { handler(r, &c, event).await }
+        async move { handler(r.clone(), &c, event).await }
     }))
     .await
 }

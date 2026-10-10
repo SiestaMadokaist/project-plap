@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use backend::application::{
     ports::usecase::UsecaseAPI,
@@ -111,9 +111,9 @@ pub fn authorized_routes() -> Router<AuthorizedRoute> {
 }
 
 pub async fn handle_authorized(
-    repos: Rc<ApiRepos>,
+    repos: Arc<ApiRepos>,
     clients: &ApiClients<'_, ctx::Context>,
-    router: Rc<Router<AuthorizedRoute>>,
+    router: Arc<Router<AuthorizedRoute>>,
     ctx: &ctx::Context,
     event: HttpEvent,
 ) -> Result<ServerResponse, DomainError> {

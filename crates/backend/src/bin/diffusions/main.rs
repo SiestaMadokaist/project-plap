@@ -25,7 +25,7 @@ async fn main() -> anyhow::Result<()> {
     let config = aws_config::from_env().load().await;
     let dynamo = aws_sdk_dynamodb::Client::new(&config);
     let watch_dir = env.watch_dir.clone();
-    let repos = EC2DiffusionRepo::rc(&dynamo, env.stage());
+    let repos = EC2DiffusionRepo::arc(&dynamo, env.stage());
     let base_clients = EC2DiffusionClients::new(&env, &config);
     let context = domain::ctx::Context::guest(None);
     let clients = Rc::new(base_clients.start(&context));

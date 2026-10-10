@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use aws_sdk_dynamodb::Client;
 
@@ -19,8 +19,8 @@ pub struct EC2DiffusionRepo {
 }
 
 impl EC2DiffusionRepo {
-    pub fn rc(client: &Client, stage: Stage) -> Rc<Self> {
-        Rc::new(Self::new(client, stage))
+    pub fn arc(client: &Client, stage: Stage) -> Arc<Self> {
+        Arc::new(Self::new(client, stage))
     }
 
     pub fn new(client: &Client, stage: Stage) -> Self {
