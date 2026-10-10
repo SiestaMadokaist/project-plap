@@ -33,7 +33,10 @@ impl<'a, C: HandleInferenceClient> HandleInference<'a, C> {
             None => None,
             Some(path) => {
                 let storage = self.clients.model_storage();
-                let string = storage.read(path).await?;
+                let string = storage
+                    .read(path)
+                    .await
+                    .inspect_err(|_| tracing::error!("failed to read {}", path))?;
                 let deserialized: comfy::workflow::api::ExportApi = serde_json::from_str(&string)?;
                 Some(deserialized)
             }
@@ -53,8 +56,8 @@ impl<'a, C: HandleInferenceClient> HandleInference<'a, C> {
                 self.progress.increment();
                 self.progress.clone()
             }
-            Err(_) => {
-                self.progress.fail();
+            Err(e) => {
+                self.progress.fail(&e);
                 self.progress.clone()
             }
         }
@@ -71,25 +74,32 @@ mod tests {
         diffusions::{DiffusionClient, MockDiffusionClient},
         storage::MockStorageClient,
     };
-    use pkg::types::unit::{Index0, INDEX_ZERO};
+    use pkg::{
+        types::unit::{Index0, INDEX_ZERO},
+        utils::testhelper,
+    };
 
     struct MockContainer {
         diffuser: Rc<MockDiffusionClient>,
         storage: MockStorageClient,
     }
 
+    fn mocked_storage() -> MockStorageClient {
+        let mut storage = MockStorageClient::new();
+        storage.expect_read().returning(|_| {
+            let buffer = std::fs::read(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/../../samples/inputs/jsons/infras/comfyui/workflow-api.json"
+            ))
+            .expect("hardcoded must not fail");
+            let text = String::from_utf8(buffer).expect("should not fail");
+            Ok(text)
+        });
+        storage
+    }
+
     impl MockContainer {
-        fn new(diffuser: MockDiffusionClient) -> Rc<Self> {
-            let mut storage = MockStorageClient::new();
-            storage.expect_read().returning(|_| {
-                let buffer = std::fs::read(concat!(
-                    env!("CARGO_MANIFEST_DIR"),
-                    "/../../samples/inputs/jsons/infras/comfyui/workflow-api.json"
-                ))
-                .expect("hardcoded must not fail");
-                let text = String::from_utf8(buffer).expect("should not fail");
-                Ok(text)
-            });
+        fn new(diffuser: MockDiffusionClient, storage: MockStorageClient) -> Rc<Self> {
             let s = Self {
                 diffuser: Rc::new(diffuser),
                 storage,
@@ -126,19 +136,21 @@ mod tests {
     async fn test_ok() {
         let mut diffuser = MockDiffusionClient::new();
         diffuser.expect_generate().returning(|_, _| Ok(()));
-        let container = MockContainer::new(diffuser);
+        let storage = mocked_storage();
+        let container = MockContainer::new(diffuser, storage);
         let progress = Progression::new(Index0(2), INDEX_ZERO);
         let config = cfg();
         let mut inference = HandleInference::new(container.as_ref(), progress, &config);
         let result = inference.generate().await;
-        assert!(result.is_ok());
+        testhelper::assert_ok(result);
     }
 
     #[tokio::test]
     async fn test_partial_ok() {
         let mut diffuser = MockDiffusionClient::new();
         diffuser.expect_generate().returning(|_, _| Ok(()));
-        let container = MockContainer::new(diffuser);
+        let storage = mocked_storage();
+        let container = MockContainer::new(diffuser, storage);
         let progress = Progression::new(Index0(2), INDEX_ZERO);
         let config = cfg();
         let mut inference = HandleInference::new(container.as_ref(), progress, &config);
@@ -152,7 +164,8 @@ mod tests {
     async fn test_partial_done1() {
         let mut diffuser = MockDiffusionClient::new();
         diffuser.expect_generate().returning(|_, _| Ok(()));
-        let container = MockContainer::new(diffuser);
+        let storage = mocked_storage();
+        let container = MockContainer::new(diffuser, storage);
         let progress = Progression::new(Index0(1), INDEX_ZERO);
         let config = cfg();
         let mut inference = HandleInference::new(container.as_ref(), progress, &config);
@@ -166,7 +179,8 @@ mod tests {
     async fn test_partial_done2() {
         let mut diffuser = MockDiffusionClient::new();
         diffuser.expect_generate().returning(|_, _| Ok(()));
-        let container = MockContainer::new(diffuser);
+        let storage = mocked_storage();
+        let container = MockContainer::new(diffuser, storage);
         let progress = Progression::new(Index0(2), Index0(1));
         let config = cfg();
         let mut inference = HandleInference::new(container.as_ref(), progress, &config);
@@ -182,7 +196,8 @@ mod tests {
         diffuser
             .expect_generate()
             .returning(|_, _| Err(DomainError::RateLimited));
-        let container = MockContainer::new(diffuser);
+        let storage = mocked_storage();
+        let container = MockContainer::new(diffuser, storage);
         let progress = Progression::new(Index0(2), Index0(1));
         let config = cfg();
         let mut inference = HandleInference::new(container.as_ref(), progress, &config);

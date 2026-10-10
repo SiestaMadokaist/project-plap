@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
+pub struct ErrCtx {}
+
 #[derive(Debug, thiserror::Error, Serialize, Deserialize, Clone)]
+
 pub enum DomainError {
     #[error("failed")]
     Unhandled,

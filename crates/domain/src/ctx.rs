@@ -3,8 +3,6 @@ use std::ops::Sub;
 use chrono::{DateTime, Utc};
 use pkg::{auth::claims::AuthClaims, id::TraceId, types::time::MilliSecond};
 
-use crate::ctx::CtxAuth::{Authorized, Guest};
-
 #[derive(Debug, Clone)]
 pub enum CtxAuth {
     Authorized(AuthClaims),
@@ -23,7 +21,7 @@ impl Context {
         let trace_id = mtrace.unwrap_or_default();
         let start_at = chrono::Utc::now();
         Self {
-            auth: Guest,
+            auth: CtxAuth::Guest,
             trace_id,
             start_at,
         }
@@ -32,7 +30,7 @@ impl Context {
         let trace_id = mtrace.unwrap_or_default();
         let start_at = chrono::Utc::now();
         Self {
-            auth: Authorized(auth),
+            auth: CtxAuth::Authorized(auth),
             trace_id,
             start_at,
         }
@@ -40,8 +38,8 @@ impl Context {
 
     pub fn auth(&self) -> Option<&AuthClaims> {
         match &self.auth {
-            Authorized(x) => Some(x),
-            Guest => None,
+            CtxAuth::Authorized(x) => Some(x),
+            CtxAuth::Guest => None,
         }
     }
 

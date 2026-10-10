@@ -133,7 +133,7 @@ impl<'a, C: HandleNetworkClients> HandleNetwork<'a, C> {
                     args
                 );
                 let mut updated = self.progress.clone();
-                updated.fail();
+                updated.fail(&e);
                 updated
             }
         }

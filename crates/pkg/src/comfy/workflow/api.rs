@@ -8,7 +8,7 @@ use crate::{
             ApiNode,
             Known::{ClipText, SD3Latent, UnetLoader},
         },
-        info::ExtraInfo,
+        info::ExtraData,
     },
     types::unit::Px,
 };
@@ -20,7 +20,7 @@ pub mod nodes;
 pub struct ExportApi {
     client_id: String,
     prompt: HashMap<String, ApiNode>,
-    extra_data: ExtraInfo,
+    extra_data: ExtraData,
 }
 
 impl ExportApi {

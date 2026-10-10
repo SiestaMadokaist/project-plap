@@ -16,11 +16,20 @@ pub fn var_second(key: &str) -> Second {
 
 #[cfg(any(test, feature = "test-util"))]
 pub mod testhelper {
+
     #[derive(Debug)]
     pub enum Error {
         OpenFile(String),
         Serialize(String),
     }
+
+    pub fn assert_ok<T, E: std::fmt::Debug>(result: Result<T, E>) {
+        if let Err(e) = &result {
+            panic!("expected ok, got Err: {e:#?}")
+        }
+        assert!(result.is_ok())
+    }
+
     pub fn read_json<X: serde::de::DeserializeOwned>(path: &str) -> Result<X, Error> {
         let buffer = std::fs::read(path).map_err(|x| Error::OpenFile(x.to_string()))?;
         let command: X =

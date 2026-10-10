@@ -22,13 +22,18 @@ pub struct Workflow {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ExtraInfo {
+pub struct PngInfo {
     pub workflow: Workflow,
 }
 
-impl ExtraInfo {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExtraData {
+    pub extra_pnginfo: PngInfo,
+}
+
+impl ExtraData {
     pub fn nodes(&self) -> &Vec<workflow::info::nodes::ExifNode> {
-        &self.workflow.nodes
+        &self.extra_pnginfo.workflow.nodes
     }
 }
 #[cfg(test)]
@@ -38,7 +43,7 @@ mod tests {
             ExifNode::{self},
             Known,
         },
-        ExtraInfo,
+        ExtraData,
     };
 
     #[test]
@@ -48,12 +53,13 @@ mod tests {
             "/../../samples/inputs/jsons/infras/comfyui/pnginfo.json"
         ))
         .expect("must succeed");
-        let pnginfo: ExtraInfo = serde_json::from_slice(&buffer).expect("must success parse");
+        let extradata: ExtraData = serde_json::from_slice(&buffer).expect("must success parse");
+        let pnginfo = &extradata.extra_pnginfo;
         assert_eq!(
             pnginfo.workflow.id.to_string(),
             "e334c90f-7c39-4b78-80fd-6cd040e30265"
         );
-        let nodes = pnginfo.nodes();
+        let nodes = extradata.nodes();
         let mut mprompt: Option<&Known> = None;
         {
             for node in nodes {

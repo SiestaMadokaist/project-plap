@@ -2,8 +2,12 @@ use std::ops::Add;
 
 use serde::{Deserialize, Deserializer, Serialize};
 
-use crate::commands::{
-    command::Action::Network, compute::ComputeArgs, inference::InferenceArgs, network::NetworkArgs,
+use crate::{
+    commands::{
+        command::Action::Network, compute::ComputeArgs, inference::InferenceArgs,
+        network::NetworkArgs,
+    },
+    errors::DomainError,
 };
 use pkg::{
     macros::{displayable, id_type},
@@ -35,6 +39,7 @@ pub struct Progression {
     progress: unit::Index0,
     finished_at: Option<Timestamp>,
     failed_at: Option<Timestamp>,
+    err: Option<DomainError>,
 }
 
 impl Progression {
@@ -44,13 +49,15 @@ impl Progression {
             progress,
             finished_at: None,
             failed_at: None,
+            err: None,
         }
     }
 
     pub fn start(&mut self) {}
 
-    pub fn fail(&mut self) {
+    pub fn fail(&mut self, err: &DomainError) {
         self.failed_at = Some(Timestamp::now());
+        self.err = Some(err.clone());
     }
 
     pub fn increment(&mut self) {
@@ -116,6 +123,7 @@ impl CommandDomain {
                 progress: Index0(0),
                 finished_at: None,
                 failed_at: None,
+                err: None,
             },
             priority,
             stage: CommandStage::InProgress,
