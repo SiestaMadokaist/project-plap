@@ -1,0 +1,28 @@
+info:
+  name: Control instance
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/hq/instance/control"
+  body:
+    type: json
+    data: |-
+      {
+        "instance_id": "i-0123456789abcdef0",
+        "command": "stop",
+        "region": "ap-southeast-1"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  command: start | stop | reboot | terminate.

@@ -51,7 +51,7 @@ make build-api    # build/package/deploy just api, skipping ws/cron (still WIP p
 make package-api
 make deploy-api
 
-make run-api      # local Lambda server for api on http://localhost:9000 (cargo lambda watch)
+make run-api      # axum server for api on http://localhost:3000 (BIND_ADDR to change)
 make invoke-api   # invoke api locally with /tmp/api.json
 make invoke-ws    # invoke ws locally with events/ws.json
 make invoke-cron  # invoke cron locally with events/cron.json

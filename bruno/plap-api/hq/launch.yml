@@ -1,0 +1,27 @@
+info:
+  name: Launch instance
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/hq/instance/launch"
+  body:
+    type: json
+    data: |-
+      {
+        "spot": true,
+        "region": "ap-southeast-1"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Launch a compute instance (spot or on-demand).

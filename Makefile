@@ -123,7 +123,7 @@ frontend-deploy: frontend-build
 # Then use make invoke-* or curl/wscat to test
 
 run-api:
-	cargo lambda watch --invoke-address 127.0.0.1 --env-file .env.api
+	ENV_PATH=.env.api cargo run -p backend --bin api
 
 invoke-api:
 	@cargo lambda invoke api --invoke-address 127.0.0.1 --data-file /tmp/api.json

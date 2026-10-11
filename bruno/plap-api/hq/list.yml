@@ -1,0 +1,26 @@
+info:
+  name: List instances
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/hq/instance/list"
+  body:
+    type: json
+    data: |-
+      {
+        "region": "ap-southeast-1"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  List compute instances in a region.

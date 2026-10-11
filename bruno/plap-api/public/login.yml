@@ -1,0 +1,30 @@
+info:
+  name: Login
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/users/login"
+  body:
+    type: json
+    data: |-
+      {
+        "challenge": {
+          "address": "0x0000000000000000000000000000000000000000",
+          "iat": 1760000000,
+          "exp": 1760000060,
+          "code": "<code from challenge>",
+          "server_sign": "<server_sign from challenge>"
+        },
+        "client_sign": "0x<wallet signature of the challenge>"
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Submit the signed challenge. Copy the returned token into the environment's token variable.

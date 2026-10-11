@@ -1,0 +1,39 @@
+info:
+  name: Preview model
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/models/preview"
+  body:
+    type: json
+    data: |-
+      {
+        "images": [
+          {
+            "path": "loras/a/sample1.png",
+            "ttl": 300
+          }
+        ],
+        "json": {
+          "path": "loras/a.json",
+          "ttl": 300
+        },
+        "safetensors": {
+          "path": "loras/a.safetensors",
+          "ttl": 300
+        }
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Presigned preview urls. ttl is seconds; every part is optional.

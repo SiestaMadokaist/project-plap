@@ -1,0 +1,26 @@
+info:
+  name: Delete command
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/agents/command/delete"
+  body:
+    type: json
+    data: |-
+      {
+        "action_id": "Network-loras/a.safetensors"
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Delete a queued command.

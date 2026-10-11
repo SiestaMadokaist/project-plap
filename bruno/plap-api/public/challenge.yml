@@ -1,0 +1,32 @@
+info:
+  name: Get challenge
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/users/challenge"
+  body:
+    type: json
+    data: |-
+      {
+        "address": "0x1234",
+        "iat": {{iat}},
+        "exp": {{exp}}
+      }
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const now = Math.floor(Date.now() / 1000); // unix seconds
+        bru.setVar("iat", now - 5);
+        bru.setVar("exp", now + 3600);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: Request a login challenge. iat/exp are unix seconds, set by the before-request script (iat = now - 5s, exp = now + 1h). The server rejects clock drift and sessions longer than AUTH_SESSION_TTL.

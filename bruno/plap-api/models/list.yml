@@ -1,0 +1,27 @@
+info:
+  name: List models
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/models/list"
+  body:
+    type: json
+    data: |-
+      {
+        "prefix": "",
+        "recursive": false
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  List the model bucket under a prefix.

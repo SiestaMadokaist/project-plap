@@ -1,0 +1,43 @@
+info:
+  name: Queue model copy
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/agents/command/cp"
+  body:
+    type: json
+    data: |-
+      {
+        "action_id": "Network-loras/a.safetensors",
+        "priority": 1760000000000,
+        "args": {
+          "src": {
+            "provider": "s3",
+            "data": {
+              "bucket": "test-bucket",
+              "path": "loras/a.safetensors"
+            }
+          },
+          "dst": {
+            "provider": "localhost",
+            "data": {
+              "forward": false,
+              "path": "models/loras/a.safetensors"
+            }
+          }
+        }
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  Queue an s3 to localhost model copy.

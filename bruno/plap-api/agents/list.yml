@@ -1,0 +1,27 @@
+info:
+  name: List commands
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/agents/command/list"
+  body:
+    type: json
+    data: |-
+      {
+        "stage": "in_progress",
+        "limit": 20
+      }
+  auth:
+    type: bearer
+    token: "{{token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  stage: in_progress | completed | cancelled | failed.
