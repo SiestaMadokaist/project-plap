@@ -1,5 +1,4 @@
-use std::sync::Arc;
-
+use axum::{routing::post, Router};
 use backend::application::{
     ports::usecase::UsecaseAPI,
     routes::public::PublicRoute,
@@ -8,64 +7,35 @@ use backend::application::{
         users::{challenge::GetChallenge, submit_answer::SubmitAnswer},
     },
 };
-use domain::{ctx, errors::DomainError};
-use dto::response::ToResp;
-use matchit::Router;
 
-use crate::{
-    bootstrap::{client::ApiClients, repo::ApiRepos},
-    http::{
-        req::HttpEvent,
-        resp::{yes, ServerResponse},
-    },
-};
+use crate::http::app::{reply, AppState, Ctx, Payload, Reply};
+use axum::extract::State;
 
-pub fn public_routes() -> Router<PublicRoute> {
-    let mut router = Router::new();
-    let expectation = "must be valid route";
-    router
-        .insert(
-            PublicRoute::GetChallenge.to_string(),
-            PublicRoute::GetChallenge,
-        )
-        .expect(expectation);
-    router
-        .insert(
-            PublicRoute::SubmitAnswer.to_string(),
-            PublicRoute::SubmitAnswer,
-        )
-        .expect(expectation);
-    router
-        .insert(PublicRoute::Health.to_string(), PublicRoute::Health)
-        .expect(expectation);
-    router
+pub fn router() -> Router<AppState> {
+    Router::new()
+        .route(&PublicRoute::GetChallenge.to_string(), post(get_challenge))
+        .route(&PublicRoute::SubmitAnswer.to_string(), post(submit_answer))
+        .route(&PublicRoute::Health.to_string(), post(health).get(health))
 }
 
-pub async fn handle_public(
-    repos: Arc<ApiRepos>,
-    clients: &ApiClients<'_, ctx::Context>,
-    router: Arc<Router<PublicRoute>>,
-    event: HttpEvent,
-) -> Result<ServerResponse, DomainError> {
-    let path = event.path().to_string();
-    let matched = router
-        .at(&path)
-        .map_err(|e| DomainError::Prerequisite(e.to_string()))?;
-    let resp: Result<dto::response::Response<serde_json::Value>, DomainError> = match matched.value
-    {
-        PublicRoute::GetChallenge => {
-            GetChallenge::new(clients, repos.as_ref(), event.body()?.try_into()?)
-                .exec()
-                .await
-                .to_result()
-        }
-        PublicRoute::SubmitAnswer => {
-            SubmitAnswer::new(clients, repos.as_ref(), event.body()?.try_into()?)
-                .exec()
-                .await
-                .to_result()
-        }
-        PublicRoute::Health => Healthcheck::default().exec().await.to_result(),
-    };
-    resp.and_then(yes)
+async fn get_challenge(State(app): State<AppState>, Ctx(ctx): Ctx, Payload(p): Payload) -> Reply {
+    let clients = app.clients.start(&ctx);
+    reply(
+        GetChallenge::new(&clients, app.repos.as_ref(), p.try_into()?)
+            .exec()
+            .await,
+    )
+}
+
+async fn submit_answer(State(app): State<AppState>, Ctx(ctx): Ctx, Payload(p): Payload) -> Reply {
+    let clients = app.clients.start(&ctx);
+    reply(
+        SubmitAnswer::new(&clients, app.repos.as_ref(), p.try_into()?)
+            .exec()
+            .await,
+    )
+}
+
+async fn health() -> Reply {
+    reply(Healthcheck::default().exec().await)
 }

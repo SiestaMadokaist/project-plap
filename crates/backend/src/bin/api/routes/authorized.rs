@@ -1,5 +1,4 @@
-use std::sync::Arc;
-
+use axum::{extract::State, routing::post, Router};
 use backend::application::{
     ports::usecase::UsecaseAPI,
     routes::authorized::AuthorizedRoute,
@@ -20,158 +19,107 @@ use backend::application::{
         },
     },
 };
-use domain::{ctx, errors::DomainError};
-use dto::response::ToResp;
-use matchit::Router;
 
-use crate::{
-    bootstrap::{client::ApiClients, repo::ApiRepos},
-    http::{
-        req::HttpEvent,
-        resp::{yes, ServerResponse},
-    },
-};
+use crate::http::app::{reply, AppState, Ctx, Payload, Reply};
 
-pub fn authorized_routes() -> Router<AuthorizedRoute> {
-    let mut router = Router::new();
-    let expectation = "must be valid route";
-    router
-        .insert(
-            AuthorizedRoute::ListModels.to_string(),
-            AuthorizedRoute::ListModels,
-        )
-        .expect(expectation);
-    router
-        .insert(
-            AuthorizedRoute::ModelPreview.to_string(),
-            AuthorizedRoute::ModelPreview,
-        )
-        .expect(expectation);
-    router
-        .insert(
-            AuthorizedRoute::AgentModelCP.to_string(),
-            AuthorizedRoute::AgentModelCP,
-        )
-        .expect(expectation);
-    router
-        .insert(
-            AuthorizedRoute::CommandList.to_string(),
-            AuthorizedRoute::CommandList,
-        )
-        .expect(expectation);
-    router
-        .insert(
-            AuthorizedRoute::CommandDelete.to_string(),
-            AuthorizedRoute::CommandDelete,
-        )
-        .expect(expectation);
-    router
-        .insert(
-            AuthorizedRoute::TemplateList.to_string(),
-            AuthorizedRoute::TemplateList,
-        )
-        .expect(expectation);
-    router
-        .insert(
-            AuthorizedRoute::TemplateWrite.to_string(),
-            AuthorizedRoute::TemplateWrite,
-        )
-        .expect(expectation);
-    router
-        .insert(
-            AuthorizedRoute::TemplateDelete.to_string(),
-            AuthorizedRoute::TemplateDelete,
-        )
-        .expect(expectation);
-    router
-        .insert(
-            AuthorizedRoute::TemplateRead.to_string(),
-            AuthorizedRoute::TemplateRead,
-        )
-        .expect(expectation);
-    router
-        .insert(
-            AuthorizedRoute::HQInstanceLaunch.to_string(),
-            AuthorizedRoute::HQInstanceLaunch,
-        )
-        .expect(expectation);
-    router
-        .insert(
-            AuthorizedRoute::HQInstanceControl.to_string(),
-            AuthorizedRoute::HQInstanceControl,
-        )
-        .expect(expectation);
-    router
-        .insert(
-            AuthorizedRoute::HQInstanceList.to_string(),
-            AuthorizedRoute::HQInstanceList,
-        )
-        .expect(expectation);
-    router
+pub fn router() -> Router<AppState> {
+    use AuthorizedRoute as R;
+    Router::new()
+        .route(&R::ListModels.to_string(), post(list_models))
+        .route(&R::ModelPreview.to_string(), post(model_preview))
+        .route(&R::AgentModelCP.to_string(), post(agent_model_cp))
+        .route(&R::CommandList.to_string(), post(command_list))
+        .route(&R::CommandDelete.to_string(), post(command_delete))
+        .route(&R::TemplateList.to_string(), post(template_list))
+        .route(&R::TemplateWrite.to_string(), post(template_write))
+        .route(&R::TemplateDelete.to_string(), post(template_delete))
+        .route(&R::TemplateRead.to_string(), post(template_read))
+        .route(&R::HQInstanceLaunch.to_string(), post(instance_launch))
+        .route(&R::HQInstanceControl.to_string(), post(instance_control))
+        .route(&R::HQInstanceList.to_string(), post(instance_list))
 }
 
-pub async fn handle_authorized(
-    repos: Arc<ApiRepos>,
-    clients: &ApiClients<'_, ctx::Context>,
-    router: Arc<Router<AuthorizedRoute>>,
-    ctx: &ctx::Context,
-    event: HttpEvent,
-) -> Result<ServerResponse, DomainError> {
-    let path = event.path().to_string();
-    let route = router.at(&path);
-    let payload = event.body()?;
-    let resp: Result<dto::response::Response<serde_json::Value>, DomainError> = match route {
-        Err(x) => Err(DomainError::Prerequisite(x.to_string())),
-        Ok(matched) => match matched.value {
-            AuthorizedRoute::ListModels => {
-                let svc = GetListSvc::new(clients, payload.try_into()?);
-                svc.exec().await.to_result()
-            }
-            AuthorizedRoute::ModelPreview => {
-                let svc = PreviewSvc::new(clients, payload.try_into()?);
-                svc.exec().await.to_result()
-            }
-            AuthorizedRoute::AgentModelCP => {
-                let svc = CPModelSvc::new(repos.as_ref(), payload.try_into()?);
-                svc.exec().await.to_result()
-            }
-            AuthorizedRoute::CommandList => {
-                let svc = ListCommand::new(repos.as_ref(), payload.try_into()?);
-                svc.exec().await.to_result()
-            }
-            AuthorizedRoute::CommandDelete => {
-                let svc = DeleteCommand::new(repos.as_ref(), payload.try_into()?);
-                svc.exec().await.to_result()
-            }
-            AuthorizedRoute::TemplateWrite => {
-                let svc = TemplateWriteSvc::new(repos.as_ref(), ctx, payload.try_into()?);
-                svc.exec().await.to_result()
-            }
-            AuthorizedRoute::TemplateDelete => {
-                let svc = TemplateDeleteSvc::new(repos.as_ref(), ctx, payload.try_into()?);
-                svc.exec().await.to_result()
-            }
-            AuthorizedRoute::TemplateList => {
-                let svc = TemplateListSvc::new(repos.as_ref(), ctx);
-                svc.exec().await.to_result()
-            }
-            AuthorizedRoute::TemplateRead => {
-                let svc = TemplateReadSvc::new(repos.as_ref(), ctx, payload.try_into()?);
-                svc.exec().await.to_result()
-            }
-            AuthorizedRoute::HQInstanceLaunch => {
-                let svc = LaunchCompute::new(clients, repos.as_ref(), ctx, payload.try_into()?);
-                svc.exec().await.to_result()
-            }
-            AuthorizedRoute::HQInstanceControl => {
-                let svc = ManageCompute::new(clients, payload.try_into()?);
-                svc.exec().await.to_result()
-            }
-            AuthorizedRoute::HQInstanceList => {
-                let svc = ListCompute::new(clients, payload.try_into()?);
-                svc.exec().await.to_result()
-            }
-        },
-    };
-    resp.and_then(yes)
+async fn list_models(State(app): State<AppState>, Ctx(ctx): Ctx, Payload(p): Payload) -> Reply {
+    let clients = app.clients.start(&ctx);
+    reply(GetListSvc::new(&clients, p.try_into()?).exec().await)
+}
+
+async fn model_preview(State(app): State<AppState>, Ctx(ctx): Ctx, Payload(p): Payload) -> Reply {
+    let clients = app.clients.start(&ctx);
+    reply(PreviewSvc::new(&clients, p.try_into()?).exec().await)
+}
+
+async fn agent_model_cp(State(app): State<AppState>, Payload(p): Payload) -> Reply {
+    reply(
+        CPModelSvc::new(app.repos.as_ref(), p.try_into()?)
+            .exec()
+            .await,
+    )
+}
+
+async fn command_list(State(app): State<AppState>, Payload(p): Payload) -> Reply {
+    reply(
+        ListCommand::new(app.repos.as_ref(), p.try_into()?)
+            .exec()
+            .await,
+    )
+}
+
+async fn command_delete(State(app): State<AppState>, Payload(p): Payload) -> Reply {
+    reply(
+        DeleteCommand::new(app.repos.as_ref(), p.try_into()?)
+            .exec()
+            .await,
+    )
+}
+
+async fn template_list(State(app): State<AppState>, Ctx(ctx): Ctx) -> Reply {
+    reply(TemplateListSvc::new(app.repos.as_ref(), &ctx).exec().await)
+}
+
+async fn template_write(State(app): State<AppState>, Ctx(ctx): Ctx, Payload(p): Payload) -> Reply {
+    reply(
+        TemplateWriteSvc::new(app.repos.as_ref(), &ctx, p.try_into()?)
+            .exec()
+            .await,
+    )
+}
+
+async fn template_delete(State(app): State<AppState>, Ctx(ctx): Ctx, Payload(p): Payload) -> Reply {
+    reply(
+        TemplateDeleteSvc::new(app.repos.as_ref(), &ctx, p.try_into()?)
+            .exec()
+            .await,
+    )
+}
+
+async fn template_read(State(app): State<AppState>, Ctx(ctx): Ctx, Payload(p): Payload) -> Reply {
+    reply(
+        TemplateReadSvc::new(app.repos.as_ref(), &ctx, p.try_into()?)
+            .exec()
+            .await,
+    )
+}
+
+async fn instance_launch(State(app): State<AppState>, Ctx(ctx): Ctx, Payload(p): Payload) -> Reply {
+    let clients = app.clients.start(&ctx);
+    reply(
+        LaunchCompute::new(&clients, app.repos.as_ref(), &ctx, p.try_into()?)
+            .exec()
+            .await,
+    )
+}
+
+async fn instance_control(
+    State(app): State<AppState>,
+    Ctx(ctx): Ctx,
+    Payload(p): Payload,
+) -> Reply {
+    let clients = app.clients.start(&ctx);
+    reply(ManageCompute::new(&clients, p.try_into()?).exec().await)
+}
+
+async fn instance_list(State(app): State<AppState>, Ctx(ctx): Ctx, Payload(p): Payload) -> Reply {
+    let clients = app.clients.start(&ctx);
+    reply(ListCompute::new(&clients, p.try_into()?).exec().await)
 }
