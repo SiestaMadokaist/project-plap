@@ -11,6 +11,9 @@ terraform/terraform.tfstate
 terraform/terraform.tfstate.backup
 terraform/*.tfvars
 terraform/*.tfvars.json
+terraform/local/.terraform/
+terraform/local/terraform.tfstate
+terraform/local/terraform.tfstate.backup
 
 # ide / tools
 .claude/

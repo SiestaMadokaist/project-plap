@@ -10,7 +10,7 @@ http:
     type: json
     data: |-
       {
-        "address": "0x1234",
+        "address": "0xef5864d650441d5a5f696cd0e4f19b116fa22180",
         "iat": {{iat}},
         "exp": {{exp}}
       }
@@ -22,6 +22,13 @@ runtime:
         const now = Math.floor(Date.now() / 1000); // unix seconds
         bru.setVar("iat", now - 5);
         bru.setVar("exp", now + 3600);
+    - type: after-response
+      code: |-
+        bru.setVar("auth_code", res.body.data.code);
+        bru.setVar("auth_server_sign", res.body.data.server_sign);
+        bru.setVar("auth_address", res.body.data.address);
+
+        console.log(`Get Challenge: auth_code: ${bru.getVar("auth_code")}`);
 
 settings:
   encodeUrl: true

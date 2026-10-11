@@ -11,11 +11,11 @@ http:
     data: |-
       {
         "challenge": {
-          "address": "0x0000000000000000000000000000000000000000",
+          "address": "{{auth_address}}",
           "iat": 1760000000,
           "exp": 1760000060,
-          "code": "<code from challenge>",
-          "server_sign": "<server_sign from challenge>"
+          "code": "{{auth_code}}",
+          "server_sign": "{{auth_server_sign}}"
         },
         "client_sign": "0x<wallet signature of the challenge>"
       }
@@ -26,5 +26,4 @@ settings:
   followRedirects: true
   maxRedirects: 5
 
-docs: |-
-  Submit the signed challenge. Copy the returned token into the environment's token variable.
+docs: Submit the signed challenge. Copy the returned token into the environment's token variable.

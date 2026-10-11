@@ -14,7 +14,7 @@ API_URL                  = $(shell cd terraform && terraform output -raw api_url
 .PHONY: all verify check lint fmt test typos build package plan deploy run \
         invoke-api invoke-ws invoke-cron tf-init clean deploy-bin \
         build-api package-api deploy-api frontend-serve frontend-build frontend-deploy \
-        coverage coverage-summary coverage-lcov
+        coverage coverage-summary coverage-lcov dynamo dynamo-tables
 
 all: verify build
 
@@ -56,8 +56,11 @@ coverage-lcov:
 # --- build & package ---
 # Requires: cargo-lambda (cargo install cargo-lambda)
 
+# extra cargo flags for the lambda builds. Empty by default so local builds stay fast;
+# the deploy targets below set it (target-specific variables reach their prerequisites).
+FEATURES ?=
 build:
-	cargo lambda build -p backend --release --arm64 --bin api --bin ws --bin cron
+	cargo lambda build -p backend --release --arm64 $(FEATURES) --bin api --bin ws --bin cron
 
 # Each function ships its own dotenv at the zip root, loaded via ENV_PATH (see lambda.tf).
 # api needs the auth/storage vars in .env.api; ws/cron run on .env.production.
@@ -73,7 +76,7 @@ package: build
 # --- deploy just the api function (skips ws/cron, still WIP) ---
 
 build-api:
-	cargo lambda build -p backend --release --arm64 --bin api
+	cargo lambda build -p backend --release --arm64 $(FEATURES) --bin api
 
 package-api: build-api
 	mkdir -p $(DIST_DIR)
@@ -81,8 +84,9 @@ package-api: build-api
 	rm -f $(DIST_DIR)/api.zip
 	zip -j $(DIST_DIR)/api.zip target/lambda/api/bootstrap .env.api
 
-deploy-api: package-api
-	cd terraform && terraform apply -target=aws_lambda_function.api -auto-approve $(TF_VARS)
+# for now deprecated because the migration from direct aws lambda logic to axum-server
+# deploy-api: package-api
+# 	cd terraform && terraform apply -target=aws_lambda_function.api -auto-approve $(TF_VARS)
 
 # --- standalone binary deploy (e.g. diffusion-agent on EC2) ---
 
@@ -122,8 +126,16 @@ frontend-deploy: frontend-build
 # Starts a local Lambda API server on http://localhost:9000
 # Then use make invoke-* or curl/wscat to test
 
+# existing local DynamoDB container (host port 40000 -> 8000)
+dynamo:
+	docker start dynamodb-local && dynamodb-admin --dynamo-endpoint=http://localhost:40000
+
+# create the tables from terraform/dynamodb.tf in the local container (run `make dynamo` first)
+dynamo-tables:
+	cd terraform/local && terraform init && terraform apply
+
 run-api:
-	ENV_PATH=.env.api cargo run -p backend --bin api
+	ENV_PATH=.env.api.localhost cargo run -p backend --bin api
 
 invoke-api:
 	@cargo lambda invoke api --invoke-address 127.0.0.1 --data-file /tmp/api.json
@@ -142,6 +154,8 @@ invoke-cron:
 
 tf-init:
 	cd terraform && terraform init
+
+plan deploy deploy-api: FEATURES := --features remote-ec2
 
 plan: package
 	cd terraform && terraform plan $(TF_VARS)
