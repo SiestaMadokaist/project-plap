@@ -32,8 +32,15 @@ interface SavingAccount {
      */
     readonly destination: Address;
 
-    // delegated to gnosis (?)
+    /**
+     * only used if destination got vulnerable
+     * owner will propose new destination
+     * manager will apply that proposal
+     */
     readonly owner: Address;
+    readonly manager: Address;
+    readonly proposedDestination: Address;
+
 
     buckets: Bucket[];
     totalLocked: Map<TokenAddress, Amount>;
@@ -65,13 +72,25 @@ interface SavingAccount {
      * @param newDst 
      * this doesnt modify any bucket .unlockTs
      * all bucket still locked until its predetermined block.timestamp
-     * @event [UpdateDestination(old:Address,new:Address)]
+     * set proposedDestination = newDst
+     * @event [ProposeDestination(old:Address,new:Address)]
      */
-    setDestination(newDst: Address): void
+    proposeDestination(newDst: Address): void
 
     /**
-     * @validates msg.sender == owner || msg.sender == this.destination
-     * // malas buka gnosis cuman buat initBucket baru.
+     * @manageronly
+     * set destination = newDst
+     * only if proposedDestination = newDst
+     * applyProposal(newDst) instead of applyProposal()
+     * prevents an incident if owner address is compromised
+     * and run the proposeDestination(attackerAddress)
+     * right before applyProposal(newDst) is executed.
+     */
+    applyProposal(newDst: Address): void
+
+    /**
+     * @owneronly || @destinationonly
+     * owner is cold wallet that would be better of not doing anything unless truly necessary.
      * @param {TokenAddress} token
      * limitation: only token can be saved, not native currency
      * smart contract address of the token
@@ -136,33 +155,4 @@ interface SavingAccount {
      */
     withdraw(bucket: BucketNumber, amount: Amount): Amount;
 
-
-    /** --- self destruct mechanism --- */
-    readonly destroyedAt: Timestamp; // initiated with max(uint256);
-    readonly destroyDelay: Uint256; // 7.day in second?
-
-    /** 
-     * @view
-     * self.destroyedAt < block.timestamp
-     */
-    isDestroyed(): boolean;
-
-    /**
-     * @owneronly
-     * in case owner is compromised.
-     * seeing your money being frozen is emotionally more satisfying
-     * than seeing your money being stolen
-     * destroyedAt = block.timestamp + self.destroyDelay
-     * @event [SelfDestructInitiated]
-     * offchain server will track this event and send an email alarming of this event
-     * with an exponential backoff starting from 1 day.
-     */
-    initSelfDestruct(): void
-
-    /**
-     * @validates isDestroyed() == false
-     * self.destroyedAt = max(uint256)
-     * @owneronly
-     */
-    cancelSelfDestruct(): void
 }
