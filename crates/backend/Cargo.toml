@@ -21,7 +21,6 @@ path = "src/bin/diffusions/main.rs"
 required-features = ["datatransfer", "remote-ec2"]
 
 [features]
-arkhamstep = ["dep:sqlx"]
 datatransfer = []
 future = []
 # everything that talks to EC2 (compute engine + on-instance agent). Off by default:
@@ -29,22 +28,21 @@ future = []
 remote-ec2 = ["dep:aws-sdk-ec2"]
 
 [dependencies]
-domain = { path = "../domain" }
-dto = { path = "../dto" }
-pkg = { path = "../pkg" }
+domain = { workspace = true }
+dto = { workspace = true }
+pkg = { workspace = true }
 lambda_runtime = "0.13"
 tokio = { version = "1", features = ["macros", "process", "rt-multi-thread", "net"] }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde = { workspace = true }
+serde_json = { workspace = true }
 tracing = "0.1"
-sqlx = { version = "0.9", features = ["postgres", "runtime-tokio", "tls-rustls"], optional = true }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 async-openai = "0.27"
 aws-config = { version = "1", features = ["behavior-version-latest"] }
 aws-sdk-dynamodb = "1"
 serde_dynamo = { version = "4", features = ["aws-sdk-dynamodb+1"] }
-thiserror = "2"
-chrono = { version = "0.4", features = ["serde"] }
+thiserror = { workspace = true }
+chrono = { workspace = true }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
 scraper = { version = "0.22" }
 async-trait = "0.1"
@@ -56,7 +54,7 @@ notify = "8.2.0"
 jsonwebtoken = { version = "11.0.0", features = ["rust_crypto"] }
 k256 = { version = "0.14.0", features = ["ecdsa"] }
 sha3 = "0.12.0"
-hex = "0.4.3"
+hex = { workspace = true }
 base64 = "0.22"
 # ureq transport (not the default reqwest one) keeps sentry off a second copy of
 # reqwest/hyper — it runs on its own background thread, blocking, no tokio.
@@ -69,12 +67,7 @@ tower-http = { version = "0.6", features = ["cors"] }
 rstest = "0.23"
 pretty_assertions = "1"
 mockall = "0.13"
-pkg = { path = "../pkg", features = ["test-util"] }
+pkg = { workspace = true, features = ["test-util"] }
 
-[lints.rust]
-# every rustc/clippy warning is a hard error, everywhere (cargo check/build/clippy,
-# rust-analyzer, CI). priority = -1 so the specific clippy allows below still win.
-warnings = { level = "deny", priority = -1 }
-
-[lints.clippy]
-let_and_return = "allow"
+[lints]
+workspace = true

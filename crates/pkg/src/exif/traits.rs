@@ -12,10 +12,10 @@ pub trait ExifTraits {
     fn checkpoint(&self) -> Result<&str, ExifError>;
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ExifError {
     InvalidRange,
-    ParsingFailed,
+    ParsingFailed(String),
     NotExtracted,
 }
 impl std::error::Error for ExifError {}

@@ -25,19 +25,30 @@ Test: could the frontend call this? If it needs a secret, the network or the clo
 
 Check after each phase: `cargo tree -p frontend` must not show `k256`, `jsonwebtoken`, `aws-*` or `reqwest`.
 
-## Phase 1: workspace hygiene (mechanical, low risk)
+## Phase 1: workspace hygiene (DONE, not compiled)
 
-- Add `[workspace.dependencies]` for `serde`, `serde_json`, `chrono`, `thiserror`, `tracing`, `hex`, `anyhow` and use `{ workspace = true }` in every crate.
-- Add `[workspace.lints]` (move the `warnings = deny` policy from `backend`) and opt every crate in.
-- Find and remove leftovers: `sqlx`/`arkhamstep`, the duplicate `future` feature, `notify`, unused `jsonwebtoken`/`k256`/`sha3` duplicates between `pkg` and `backend`.
+- Root `Cargo.toml` now has `[workspace.dependencies]` (`domain`, `dto`, `pkg`, `serde`, `serde_json`, `chrono`, `thiserror`, `hex`) and `[workspace.lints]` (the `warnings = deny` policy moved from `backend`). Every crate uses `{ workspace = true }` and has `[lints] workspace = true`.
+- Removed unused `sqlx` and the `arkhamstep` feature from `backend`.
+- Left alone on purpose: `backend`'s `jsonwebtoken`/`k256`/`sha3`/`hex` (the crypto code in `pkg/auth` still needs a home, see Phase 2), `notify` and the `future` feature (both still used).
+- Not made workspace deps because only one crate uses them: `tracing`, `anyhow`, `uuid`, `jsonwebtoken`.
+- Side effect: the deny-warnings policy now applies to `domain`, `dto`, `pkg` and `frontend` too, not just `backend`.
 
-## Phase 2: slim `pkg` so the wasm build stops pulling crypto
+## Phase 2: dissolve `pkg` so the wasm build stops pulling crypto
 
-- Split `pkg` by reason to change:
-  - leaf types crate (keep the name `pkg` or rename to `types`): `Timestamp`, `Second`, `MilliSecond`, ids, `URL`, `json_type!`/`id_type!`/`displayable!` macros. No crypto, wasm-safe.
+There is no separate "types" crate. After the split, nothing is left that has to sit below `domain`, so the leaf types fold into `domain`.
+
+- Where each part of `pkg` goes:
+  - time and units (`Timestamp`, `Second`, `MilliSecond`), ids, `URL`, small value types (`Username`, `AuthClaims` if `domain` needs them): into `domain`.
+  - `id_type!`, `displayable!` macros: into `domain` (exported from there). `json_type!`: into `dto` (it is wire-level).
   - auth/crypto (`auth/ecdsa`, `jsonwebtoken`, `k256`, `sha3`, `getrandom`, `uuid`): `backend` only. The wallet signs in JS, so the frontend only handles signature strings.
-  - integrations (`civitai`, `comfy`, `exif`): move into `backend` (or an `integrations` crate if the diffusion agent needs them separately).
-- `domain` stops importing `pkg::civitai` and `pkg::auth`. If `domain` needs `AuthClaims` or `Username`, move those small value types into the leaf crate.
+  - `comfy`, `exif`: into `backend` (or an `integrations` crate if the diffusion agent needs them separately).
+  - `civitai`: split it, don't move it whole:
+    - `typing::VersionId` is only an alias for `InferenceModelId`; delete it and use `InferenceModelId` directly (this removes `domain`'s `pkg::civitai` import in `commands/network.rs`).
+    - `typing::ModelCategory` is a comfyui concern (its own comment says so): into `domain`.
+    - `typing::ModelId`, `BaseModel`, `dto::ModelVersionDTO`, `dto::ModelDetailDTO` are civitai's API shapes: into `backend/src/infras/civitai/`.
+    - The port `ports/clients/inference_model_provider.rs` and `usecases/agent/h_network.rs` currently name `ModelVersionDTO`. Give the port a provider-neutral return type (in `domain` or `application`) and map `ModelVersionDTO` into it inside the civitai client.
+- Once `pkg` is gone, `domain`, `dto`, `frontend` and `backend` drop their `pkg` dependency.
+- Shared logic that must run on both sides goes where its rule belongs: business rules in `domain`, wire-format logic in `dto`. It must be pure (no I/O, clock, secrets or randomness; pass `now` in).
 - Remove from `frontend/Cargo.toml` the `getrandom` 0.2/0.3/0.4 entries and the `.cargo/config.toml` cfg hack once `cargo tree -p frontend` is clean.
 
 ## Phase 3: move logic out of `dto` into `domain`, and secrets into `backend`
@@ -51,7 +62,7 @@ Start with `dto/resources/login.rs` (`ServerChallenge`, `ChallengeAnswer`):
 - `dto/login.rs`: `pub struct ServerChallengeDTO(pub ServerChallenge)` and the payload types. No methods beyond `From`/`TryFrom`.
 - Repeat for other DTOs that hold rules, signing or logging. Audit `dto/src` for `tracing`, `Utc::now`, key handling.
 
-Also: `frontend` should depend on `dto` and the leaf types crate, not on `domain` directly. Re-export from `dto` what the frontend needs (for example `ComputeRegion`).
+Also: `frontend` should depend on `dto` only, not on `domain` directly. Re-export from `dto` what the frontend needs (for example `ComputeRegion`).
 
 ## Phase 4: typed routes (`Endpoint` trait)
 

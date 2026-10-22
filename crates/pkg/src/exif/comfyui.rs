@@ -35,10 +35,8 @@ impl Exif<ComfyUI> {
     pub fn workflow(&self) -> &Result<ExportWeb, ExifError> {
         let memoized = self.memo.workflow.get_or_init(|| {
             let string = self.text();
-            let wf: Result<ExportWeb, ExifError> = serde_json::from_str(&string).map_err(|e| {
-                tracing::error!("Parsing Failed: {}", e);
-                ExifError::ParsingFailed
-            });
+            let wf: Result<ExportWeb, ExifError> =
+                serde_json::from_str(&string).map_err(|e| ExifError::ParsingFailed(e.to_string()));
             wf
         });
         memoized

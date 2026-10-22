@@ -1,3 +1,21 @@
 [workspace]
 resolver = "2"
 members = ["crates/domain", "crates/pkg", "crates/dto", "crates/backend", "crates/frontend"]
+
+[workspace.dependencies]
+domain = { path = "crates/domain" }
+dto = { path = "crates/dto" }
+pkg = { path = "crates/pkg" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "2"
+hex = "0.4"
+
+[workspace.lints.rust]
+# every rustc/clippy warning is a hard error, everywhere (cargo check/build/clippy,
+# rust-analyzer, CI). priority = -1 so the specific clippy allows below still win.
+warnings = { level = "deny", priority = -1 }
+
+[workspace.lints.clippy]
+let_and_return = "allow"
