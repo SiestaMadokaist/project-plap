@@ -11,8 +11,12 @@ use crate::application::ports::repository::{
 };
 use domain::user::User;
 use pkg::{
-    auth::{claims::Username, ecdsa::AddressETH},
-    types::time::{Timestamp, TimestampMS},
+    auth::claims::Username,
+    types::{
+        crypto::Eth0x,
+        strings::StringFormat,
+        time::{Timestamp, TimestampMS},
+    },
 };
 
 /// GSI whose partition key is the `address` attribute.
@@ -31,7 +35,7 @@ struct UserItem {
     // partition key
     username: Username,
     // GSI `address` partition key
-    address: AddressETH,
+    address: Eth0x,
     #[serde(rename = "createdAt")]
     created_at: TimestampMS,
     // absent until activated / first login - kept absent (not NULL) so the
@@ -127,14 +131,15 @@ impl UserRepository for DDBUserRepository {
         Ok(())
     }
 
-    async fn find(&self, address: &AddressETH) -> Result<User, UserError> {
+    async fn find(&self, address: &Eth0x) -> Result<User, UserError> {
+        let s = address.get().as_str().to_string();
         let item = self
             .client
             .query()
             .table_name(&self.table)
             .index_name(ADDRESS_INDEX)
             .key_condition_expression("address = :address")
-            .expression_attribute_values(":address", AttributeValue::S(address.0.clone()))
+            .expression_attribute_values(":address", AttributeValue::S(s.clone()))
             .limit(1)
             .send()
             .await
@@ -143,14 +148,14 @@ impl UserRepository for DDBUserRepository {
             .unwrap_or_default()
             .into_iter()
             .next()
-            .ok_or_else(|| RepositoryError::Conflict(address.0.clone()))?;
+            .ok_or_else(|| RepositoryError::Conflict(s.clone()))?;
 
         let user_item: UserItem =
             from_item(item).map_err(|e| RepositoryError::Serialize(e.to_string()))?;
         Ok(user_item.into())
     }
 
-    async fn login(&self, address: &AddressETH, iat: Timestamp) -> Result<User, UserError> {
+    async fn login(&self, address: &Eth0x, iat: Timestamp) -> Result<User, UserError> {
         let user = self.find(address).await?;
         if user.activated_at.is_none() {
             return Err(RepositoryError::Conflict(format!(

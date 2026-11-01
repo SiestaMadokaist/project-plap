@@ -35,10 +35,8 @@ impl Exif<ComfyUI> {
     pub fn workflow(&self) -> &Result<ExportWeb, ExifError> {
         let memoized = self.memo.workflow.get_or_init(|| {
             let string = self.text();
-            let wf: Result<ExportWeb, ExifError> = serde_json::from_str(&string).map_err(|e| {
-                tracing::error!("Parsing Failed: {}", e);
-                ExifError::ParsingFailed
-            });
+            let wf: Result<ExportWeb, ExifError> =
+                serde_json::from_str(&string).map_err(|e| ExifError::ParsingFailed(e.to_string()));
             wf
         });
         memoized
@@ -103,18 +101,18 @@ impl Exif<ComfyUI> {
 }
 
 impl ExifTraits for Exif<ComfyUI> {
-    fn checkpoint(&self) -> Result<&str, ExifError> {
-        let wf = self.workflow().as_ref().map_err(|x| *x)?;
+    fn checkpoint(&self) -> Result<&str, &ExifError> {
+        let wf = self.workflow().as_ref()?;
         let s = wf.checkpoint().unwrap_or("-");
         Ok(s)
     }
-    fn negative(&self) -> Result<&str, ExifError> {
-        let wf = self.workflow().as_ref().map_err(|x| *x)?;
+    fn negative(&self) -> Result<&str, &ExifError> {
+        let wf = self.workflow().as_ref()?;
         let s = wf.negative().unwrap_or("-");
         Ok(s)
     }
-    fn positive(&self) -> Result<&str, ExifError> {
-        let wf = self.workflow().as_ref().map_err(|x| *x)?;
+    fn positive(&self) -> Result<&str, &ExifError> {
+        let wf = self.workflow().as_ref()?;
         let s = wf.positive().unwrap_or("-");
         Ok(s)
     }
@@ -133,14 +131,14 @@ mod tests {
             "/../../samples/inputs/mocks/saber.comfy.png"
         ))?;
         let exif = Exif::<ComfyUI>::new(data);
-        let checkpoint = exif.checkpoint()?;
+        let checkpoint = exif.checkpoint().unwrap();
         assert_eq!(checkpoint, "cosplayillustriousmi_v20.safetensors");
 
-        let positive = exif.positive()?;
+        let positive = exif.positive().unwrap();
         assert!(positive.starts_with("photorealistic"));
         assert!(positive.ends_with("fate series."));
 
-        let negative = exif.negative()?;
+        let negative = exif.negative().unwrap();
         assert!(negative.starts_with("lowres, bad anatomy"));
         assert!(negative.ends_with("username, blurry"));
 
@@ -155,7 +153,7 @@ mod tests {
         ))?;
         let exif = Exif::<ComfyUI>::new(data);
         let text = exif.text();
-        println!("checkpoint: {}", exif.checkpoint()?);
+        println!("checkpoint: {}", exif.checkpoint().unwrap());
         println!("text: {}", text);
         // let checkpoint = exif.checkpoint()?;
         // assert_eq!(checkpoint, "cosplayillustriousmi_v20.safetensors");
@@ -181,13 +179,13 @@ mod tests {
         let text = exif.text();
         assert_eq!(text, "");
         let checkpoint = exif.checkpoint();
-        assert_matches!(checkpoint, Err(ExifError::ParsingFailed));
+        assert_matches!(checkpoint, Err(ExifError::ParsingFailed(_)));
 
         let positive = exif.positive();
-        assert_matches!(positive, Err(ExifError::ParsingFailed));
+        assert_matches!(positive, Err(ExifError::ParsingFailed(_)));
 
         let negative = exif.negative();
-        assert_matches!(negative, Err(ExifError::ParsingFailed));
+        assert_matches!(negative, Err(ExifError::ParsingFailed(_)));
 
         Ok(())
     }

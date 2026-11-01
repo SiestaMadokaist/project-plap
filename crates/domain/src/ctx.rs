@@ -17,8 +17,7 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn guest(mtrace: Option<TraceId>) -> Self {
-        let trace_id = mtrace.unwrap_or_default();
+    pub fn guest(trace_id: TraceId) -> Self {
         let start_at = chrono::Utc::now();
         Self {
             auth: CtxAuth::Guest,
@@ -26,8 +25,7 @@ impl Context {
             start_at,
         }
     }
-    pub fn new(auth: AuthClaims, mtrace: Option<TraceId>) -> Self {
-        let trace_id = mtrace.unwrap_or_default();
+    pub fn new(auth: AuthClaims, trace_id: TraceId) -> Self {
         let start_at = chrono::Utc::now();
         Self {
             auth: CtxAuth::Authorized(auth),

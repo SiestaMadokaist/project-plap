@@ -1,12 +1,14 @@
-use std::sync::Arc;
-
-use backend::application::{
-    ports::usecase::UsecaseAPI,
-    usecases::translations::{init, run},
+use backend::{
+    application::{
+        ports::usecase::UsecaseAPI,
+        usecases::translations::{init, run},
+    },
+    trace_id,
 };
 use domain::ctx;
 use lambda_runtime::{run, service_fn, Error, LambdaEvent};
 use serde::Deserialize;
+use std::sync::Arc;
 
 mod bootstrap;
 mod env;
@@ -33,7 +35,8 @@ async fn handler(
 ) -> Result<(), Error> {
     let path_params = &event.payload.path_parameters;
     let proxy = &path_params.proxy;
-    let context = &ctx::Context::guest(None);
+    let trace = trace_id(None);
+    let context = &ctx::Context::guest(trace);
     let ctx_client = client.start(context);
     match proxy.as_str() {
         "cron/translate" => {

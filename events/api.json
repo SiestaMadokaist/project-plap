@@ -1,5 +1,0 @@
-{
-  "path": "/models/list",
-  "httpMethod": "POST",
-  "body": "{\"prefix\":\"comfy-playground\"}"
-}

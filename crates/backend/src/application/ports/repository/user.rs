@@ -1,8 +1,8 @@
 use crate::application::ports::repository::error::RepositoryError;
 use domain::user::User;
 use pkg::{
-    auth::{claims::Username, ecdsa::AddressETH},
-    types::time::Timestamp,
+    auth::claims::Username,
+    types::{crypto::Eth0x, time::Timestamp},
 };
 
 pub type UserError = RepositoryError<Username>;
@@ -16,12 +16,12 @@ pub trait UserRepository {
     async fn delete(&self, id: &Username) -> Result<(), UserError>;
 
     /// Look up by wallet address via the `address` GSI.
-    async fn find(&self, address: &AddressETH) -> Result<User, UserError>;
+    async fn find(&self, address: &Eth0x) -> Result<User, UserError>;
 
     /// Record a successful login for the wallet at `address`, stamping `last_login = iat`.
     ///
     /// Fails with `NotFound` if no user has that address, and `Conflict` if the account
     /// isn't activated or if `iat` is not strictly newer than the stored `last_login`
     /// (the latter enforced as a DynamoDB condition, so concurrent logins can't race it).
-    async fn login(&self, address: &AddressETH, iat: Timestamp) -> Result<User, UserError>;
+    async fn login(&self, address: &Eth0x, iat: Timestamp) -> Result<User, UserError>;
 }

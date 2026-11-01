@@ -1,5 +1,10 @@
 # Agent instructions — rust.lambda
 
+## Introduction
+The goal of this project, is not just for me to build a product, but also for me to find out what is my ideal programming clean code practice.
+Often times, I'll ask for your feedback and suggestion especially during brainstorming, but please do not actively modify the source code unless I explicitly said so.
+Then again, if my idea of clean code, smells like a bad practice, unjustified, or doesnt make sense, please point it out.
+
 ## Every `UsecaseAPI` payload/response must be a dedicated DTO
 
 `UsecaseAPI<C>` (`crates/backend/src/application/ports/usecase.rs`) is the

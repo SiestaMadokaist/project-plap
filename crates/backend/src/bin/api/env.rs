@@ -2,7 +2,8 @@ use domain::{commands::compute::ComputeRegion, storage::StoragePrefix};
 use pkg::{
     enums::stage::Stage,
     types::{
-        strings::{Hex, URL},
+        crypto::EthPriv,
+        strings::URL,
         time::{Second, Timestamp},
     },
     utils::{var_or, var_second},
@@ -26,7 +27,7 @@ pub struct ApiEnv {
     pub discord_webhook_url: URL,
 
     pub auth_secret: String,
-    pub auth_privkey: Hex,
+    pub auth_privkey: EthPriv,
     pub auth_challenge_ttl: Second,
     pub auth_session_ttl: Second,
     pub auth_clock_skew: Second,
@@ -63,7 +64,7 @@ impl ApiEnv {
 
             auth_secret: env::var("AUTH_SECRET").expect("AUTH_SECRET must be set"),
             auth_privkey: env::var("AUTH_PRIVKEY")
-                .map(Hex)
+                .map(|x| x.as_str().try_into().expect("AUTH PRIVKEY must be valid"))
                 .expect("AUTH_PRIVKEY must be set"),
             auth_challenge_ttl: var_second("AUTH_CHALLENGE_TTL"),
             auth_session_ttl: var_second("AUTH_SESSION_TTL"),

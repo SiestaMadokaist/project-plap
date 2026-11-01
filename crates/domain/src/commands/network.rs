@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 use crate::storage::{StorageBucket, StoragePath};
-use pkg::civitai;
+use pkg::id;
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -23,9 +23,7 @@ pub enum ModelSrc {
     #[serde(rename = "s3")]
     S3(S3Args),
     #[serde(rename = "civitai")]
-    Civitai(civitai::typing::VersionId),
-    // #[serde(rename = "https")]
-    // Https(URL),
+    Civitai(id::InferenceModelId),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

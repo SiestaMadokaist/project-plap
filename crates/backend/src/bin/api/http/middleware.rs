@@ -4,19 +4,15 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Response},
 };
-use backend::application::ports::clients::{authorizer::Authorizer, container::HasAuthValidator};
+use backend::{
+    application::ports::clients::{authorizer::Authorizer, container::HasAuthValidator},
+    trace_id,
+};
 use domain::{ctx, errors::DomainError};
-use pkg::{auth::claims::JWT, id::TraceId};
+use pkg::auth::claims::JWT;
 use tracing::Instrument;
 
 use super::app::{ApiError, AppState};
-
-fn trace_id(headers: &HeaderMap) -> Option<TraceId> {
-    headers
-        .get("x-trace-id")
-        .and_then(|v| v.to_str().ok())
-        .map(TraceId::new)
-}
 
 /// Bearer token from the `Authorization` header (optional `Bearer ` prefix).
 fn token(headers: &HeaderMap) -> Result<JWT, DomainError> {
@@ -36,10 +32,11 @@ pub async fn authorize(State(app): State<AppState>, req: Request, next: Next) ->
     // read what we need from `req` up front: holding `&req` across the `.await` below
     // would make this future `!Send` (a request body is not `Sync`).
     let token = token(req.headers());
-    let trace_id = trace_id(req.headers());
+    let xtraceid = req.headers().get("x-trace-id");
+    let trace = trace_id(xtraceid.and_then(|x| x.to_str().ok()));
     let built = async {
         let claims = app.clients.authorizer().validate(token?).await?;
-        Ok::<_, DomainError>(ctx::Context::new(claims, trace_id))
+        Ok::<_, DomainError>(ctx::Context::new(claims, trace))
     }
     .await;
     with_ctx(built, req, next).await
@@ -47,7 +44,9 @@ pub async fn authorize(State(app): State<AppState>, req: Request, next: Next) ->
 
 /// Public routes get a guest `Context`.
 pub async fn guest(req: Request, next: Next) -> Response {
-    let built = Ok(ctx::Context::guest(trace_id(req.headers())));
+    let xtraceid = req.headers().get("x-trace-id");
+    let trace = trace_id(xtraceid.and_then(|x| x.to_str().ok()));
+    let built = Ok(ctx::Context::guest(trace));
     with_ctx(built, req, next).await
 }
 

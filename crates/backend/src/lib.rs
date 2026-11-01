@@ -1,3 +1,5 @@
+use pkg::id::{TraceFlag, TraceId};
+
 pub mod application;
 pub mod constant;
 pub mod infras;
@@ -45,4 +47,17 @@ pub fn init_tracing() {
         .with(fmt_layer)
         .with(sentry_tracing::layer())
         .init();
+}
+
+pub fn trace_id(from_header: Option<&str>) -> TraceId {
+    match from_header {
+        Some(s) => {
+            let uid: uuid::Uuid = s.try_into().unwrap_or_else(|_| uuid::Uuid::new_v4());
+            TraceId::new(TraceFlag::RequestHeader, uid)
+        }
+        None => {
+            let uid = uuid::Uuid::new_v4();
+            TraceId::new(TraceFlag::ServerGenerated, uid)
+        }
+    }
 }

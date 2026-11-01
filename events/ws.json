@@ -1,8 +1,0 @@
-{
-  "requestContext": {
-    "routeKey": "$connect",
-    "connectionId": "test-connection-id",
-    "eventType": "CONNECT",
-    "stage": "prod"
-  }
-}

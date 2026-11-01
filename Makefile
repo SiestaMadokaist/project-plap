@@ -11,7 +11,7 @@ FRONTEND_BUCKET          = $(shell cd terraform && terraform output -raw fronten
 FRONTEND_DISTRIBUTION_ID = $(shell cd terraform && terraform output -raw frontend_distribution_id 2>/dev/null)
 API_URL                  = $(shell cd terraform && terraform output -raw api_url 2>/dev/null)
 
-.PHONY: all verify check lint fmt test typos build package plan deploy run \
+.PHONY: all verify check lint fmt test typos build package plan deploy run run-api watch-api \
         invoke-api invoke-ws invoke-cron tf-init clean deploy-bin \
         build-api package-api deploy-api frontend-serve frontend-build frontend-deploy \
         coverage coverage-summary coverage-lcov dynamo dynamo-tables
@@ -136,6 +136,10 @@ dynamo-tables:
 
 run-api:
 	ENV_PATH=.env.api.localhost cargo run -p backend --bin api
+
+# same as run-api, but rebuilds and restarts on source changes (requires: cargo install cargo-watch)
+watch-api:
+	ENV_PATH=.env.api.localhost cargo watch -w crates -w Cargo.toml -x 'run -p backend --bin api'
 
 invoke-api:
 	@cargo lambda invoke api --invoke-address 127.0.0.1 --data-file /tmp/api.json
