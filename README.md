@@ -1,6 +1,20 @@
-# rust-api
+# Project Plap
 
-3 AWS Lambda functions plus a standalone image-generation agent running on an EC2 spot instance, all written in Rust and deployed via Terraform.
+A personal playground repository where I tinker with Rust, practice writing cleaner code, and build random tools for whatever has caught my attention lately.
+---
+
+### What's in here right now
+
+* **ComfyUI Storyboard Runner:** Generates image sequences from templates with dynamic variables, then queues them up to run remotely.
+* **EC2 Spot Worker Manager:** A small control script/service to spin up and tear down cheap AWS Spot instances automatically so running ComfyUI doesn't drain my wallet.
+* **Syosetu Novel Tracker:** Keeps track of light novel chapter updates on Syosetu and pipes new releases through auto-translation.
+
+---
+
+### On the backlog / Planned experiments
+
+* [ ] **Timelocked Savings Wallet:** A simple smart contract to lock away crypto funds until a set date so I can't touch them.
+
 
 ## Components
 

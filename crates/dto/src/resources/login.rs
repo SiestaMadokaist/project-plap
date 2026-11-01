@@ -124,29 +124,6 @@ impl ServerChallenge {
         &self.server_sign
     }
 
-    // /// Mint a challenge for `address` and sign the canonical blob with the server key,
-    // /// so `login` can later confirm - without any stored state - that this server issued
-    // /// it and none of the fields were altered in transit.
-
-    // @deprecated, this function should not be on DTO
-
-    // pub fn new(
-    //     address: Eth0x,
-    //     iat: Timestamp,
-    //     exp: Timestamp,
-    //     code: Challenge,
-    //     signer: &PrivKey,
-    // ) -> Self {
-    //     let server_sign = signer.sign(Challenge::new(Self::sign_blob(&address, iat, exp, &code)));
-    //     Self {
-    //         address,
-    //         iat,
-    //         exp,
-    //         code,
-    //         server_sign,
-    //     }
-    // }
-
     pub fn address(&self) -> &Eth0x {
         &self.address
     }
@@ -158,14 +135,6 @@ impl ServerChallenge {
     pub fn exp(&self) -> Timestamp {
         self.exp
     }
-
-    // @deprecated this fn should not be on DTO
-    // /// True iff `server_sign` is this server's signature over the current field values.
-    // pub fn verify_issued_by(&self, server_pub: &PubKey) -> bool {
-    //     server_pub
-    //         .verify(Challenge::new(self.to_sign()), self.server_sign.clone())
-    //         .unwrap_or(false)
-    // }
 
     // What the wallet is actually asked to sign. Deliberately readable (unlike a
     // `-`-joined blob of raw fields) so a user has something to sanity-check before
