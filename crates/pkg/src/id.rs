@@ -17,7 +17,8 @@ impl TraceId {
 }
 
 impl Default for TraceId {
+    /** @todo: move default implementation to backend specific crates and use uuid.v4() */
     fn default() -> Self {
-        Self(uuid::Uuid::new_v4().to_string())
+        Self("0000-0000-0000-0000".into())
     }
 }

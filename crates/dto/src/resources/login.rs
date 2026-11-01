@@ -5,7 +5,7 @@ use pkg::{
     auth::claims::JWT,
     json_type,
     types::{
-        crypto::{Eth0x, HexSign},
+        crypto::{Eth0x, EthSign},
         error::FormatError,
         hex::{Hex, Zx},
         strings::StringFormat,
@@ -97,11 +97,33 @@ pub struct ServerChallenge {
     // generated from server privkey.sign(code.0) or something.
     // sent as revalidator in client answer
     // server doesnt need state tracker like redis to track active challenge code.
-    server_sign: Hex<Zx>,
+    server_sign: EthSign,
 }
 impl DTO for ServerChallenge {}
 
 impl ServerChallenge {
+    /// Plain assembly of an already-signed challenge. Signing lives in the backend
+    /// (`infras::authorizer`); it signs [`Self::sign_blob`] and hands the result in here.
+    pub fn new(
+        address: Eth0x,
+        iat: Timestamp,
+        exp: Timestamp,
+        code: Challenge,
+        server_sign: EthSign,
+    ) -> Self {
+        Self {
+            address,
+            iat,
+            exp,
+            code,
+            server_sign,
+        }
+    }
+
+    pub fn server_sign(&self) -> &EthSign {
+        &self.server_sign
+    }
+
     // /// Mint a challenge for `address` and sign the canonical blob with the server key,
     // /// so `login` can later confirm - without any stored state - that this server issued
     // /// it and none of the fields were altered in transit.
@@ -150,7 +172,7 @@ impl ServerChallenge {
     // approving; still fully binding on the exact `iat`/`exp` seconds (via lossless
     // second-precision ISO-8601, not just a date) so tampering after the server's
     // `server_sign` still fails `verify_issued_by`.
-    fn sign_blob(address: &Eth0x, iat: Timestamp, exp: Timestamp, code: &Challenge) -> String {
+    pub fn sign_blob(address: &Eth0x, iat: Timestamp, exp: Timestamp, code: &Challenge) -> String {
         format!(
             "Sign in to Project-Plap\n\nAddress: {}\nNonce: {}\nIssued At: {}\nExpires At: {}",
             address.get().as_str(),
@@ -198,7 +220,7 @@ impl ServerChallenge {
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ClientAnswer {
     pub challenge: ServerChallenge,
-    pub client_sign: HexSign,
+    pub client_sign: EthSign,
 }
 impl DTO for ClientAnswer {}
 json_type!(ClientAnswer);

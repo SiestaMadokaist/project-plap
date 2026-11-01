@@ -3,7 +3,7 @@ use leptos::prelude::*;
 use pkg::{
     auth::claims::JWT,
     types::{
-        crypto::{Eth0x, HexSign},
+        crypto::{Eth0x, EthSign},
         error::FormatError,
         strings::URL,
         time::{Second, Timestamp},
@@ -64,7 +64,7 @@ async fn authenticate(step: RwSignal<Step>) -> Result<JWT, String> {
 
     step.set(Step::Signing);
     let signature = wallet::personal_sign(&challenge.sign_message(), &account).await?;
-    let client_sign: HexSign = signature
+    let client_sign: EthSign = signature
         .as_str()
         .try_into()
         .map_err(|x: FormatError| x.to_string())?;

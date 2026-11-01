@@ -1,9 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-use crate::types::{
-    error::FormatError,
-    hex::{Hex, Plain, Zx},
-    strings::StringFormat,
+use crate::{
+    displayable,
+    types::{
+        error::FormatError,
+        hex::{zx, Hex, Plain, Zx},
+        strings::StringFormat,
+    },
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -11,7 +14,60 @@ pub struct Address<S: StringFormat>(S);
 
 pub type Eth0x = Address<Hex<Zx>>;
 pub type EthPlain = Address<Hex<Plain>>;
-pub type HexSign = Hex<Zx>;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct EthSign(Hex<Zx>);
+displayable!(EthSign);
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct EthPriv(Hex<Zx>);
+displayable!(EthPriv);
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct EthPub(Hex<Zx>);
+displayable!(EthPub);
+
+impl TryFrom<&str> for EthSign {
+    type Error = FormatError;
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let z = zx(value)?;
+        Ok(Self(z))
+    }
+}
+
+impl TryFrom<&str> for EthPriv {
+    type Error = FormatError;
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let z = zx(value)?;
+        Ok(Self(z))
+    }
+}
+
+impl TryFrom<&str> for EthPub {
+    type Error = FormatError;
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let z = zx(value)?;
+        Ok(Self(z))
+    }
+}
+
+impl EthSign {
+    pub fn as_hex(&self) -> &Hex<Zx> {
+        &self.0
+    }
+}
+
+impl EthPriv {
+    pub fn as_hex(&self) -> &Hex<Zx> {
+        &self.0
+    }
+}
+
+impl EthPub {
+    pub fn as_hex(&self) -> &Hex<Zx> {
+        &self.0
+    }
+}
 
 impl<S: StringFormat> Address<S> {
     pub fn get(&self) -> &S {

@@ -54,6 +54,7 @@ notify = "8.2.0"
 jsonwebtoken = { version = "11.0.0", features = ["rust_crypto"] }
 k256 = { version = "0.14.0", features = ["ecdsa"] }
 sha3 = "0.12.0"
+getrandom = "0.3"
 hex = { workspace = true }
 base64 = "0.22"
 # ureq transport (not the default reqwest one) keeps sentry off a second copy of

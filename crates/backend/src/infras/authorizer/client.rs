@@ -6,13 +6,16 @@ use dto::resources::login::{ClientAnswer, ReqChallenge, ServerChallenge};
 use pkg::{
     auth::{
         claims::{AuthClaims, Username, JWT},
-        ecdsa::{recover, Challenge, PrivKey, PubKey},
         errors::AuthError,
     },
-    types::time::{Second, Timestamp},
+    types::{
+        crypto::EthPriv,
+        time::{Second, Timestamp},
+    },
 };
 
 use crate::application::ports::clients::authorizer::Authorizer;
+use crate::infras::authorizer::ecdsa::{eip191, random_code, recover, PrivKey, PubKey};
 
 /// Stateless Ethereum-wallet authenticator.
 ///
@@ -42,13 +45,13 @@ pub struct EthAuth {
 impl EthAuth {
     pub fn new(
         secret: String,
-        privkey: Hex,
+        privkey: EthPriv,
         challenge_ttl: Second,
         session_ttl: Second,
         clock_skew: Second,
         min_iat: Timestamp,
     ) -> Result<Self, AuthError> {
-        let privkey = PrivKey::new(privkey)?;
+        let privkey = PrivKey::new(&privkey)?;
         let server_pub = privkey.pubkey();
         Ok(Self {
             secret,
@@ -75,21 +78,25 @@ impl Authorizer for EthAuth {
         if !req.is_valid(&now, &self.clock_skew, &self.session_ttl) {
             return Err(deny("challenge request failed validation"));
         }
-        let exp = now.add(self.challenge_ttl.to_delta());
-        Ok(ServerChallenge::new(
-            req.address().clone(),
-            req.iat(),
-            exp.into(),
-            Challenge::random(),
-            &self.privkey,
-        ))
+        let address = req.address().clone();
+        let (iat, exp): (Timestamp, Timestamp) =
+            (req.iat(), now.add(self.challenge_ttl.to_delta()).into());
+        let code = random_code();
+        // signed raw (not EIP-191 framed): only we ever verify this one, no wallet involved.
+        let blob = ServerChallenge::sign_blob(&address, iat, exp, &code);
+        let server_sign = self.privkey.sign(blob.as_bytes());
+        Ok(ServerChallenge::new(address, iat, exp, code, server_sign))
     }
 
     async fn answer(&self, username: Username, ans: ClientAnswer) -> Result<JWT, DomainError> {
         let sc = &ans.challenge;
 
         // 1. this is a challenge we minted, with its fields intact
-        if !sc.verify_issued_by(&self.server_pub) {
+        let issued_by_us = self
+            .server_pub
+            .verify(sc.sign_message().as_bytes(), sc.server_sign())
+            .unwrap_or(false);
+        if !issued_by_us {
             return Err(deny("challenge signature is not ours"));
         }
         // 2. it hasn't gone stale
@@ -98,15 +105,17 @@ impl Authorizer for EthAuth {
             return Err(deny("challenge has expired"));
         }
         // 3. the answer was signed by the wallet the challenge is bound to
-        let signer = recover(&sc.metamask_msg(), &ans.client_sign).map_err(deny)?;
-        if signer.address().map_err(deny)? != *sc.address() {
+        // the wallet signed the EIP-191 framing of the plain text; recover against the same.
+        let framed = eip191(&sc.sign_message());
+        let signer = recover(&framed, &ans.client_sign).map_err(deny)?;
+        if signer.address().map_err(deny)?.get().s != sc.address().get().s {
             return Err(deny("answer was signed by a different address"));
         }
 
         // 4. issue the session token
         let claims = AuthClaims {
             username,
-            sub: sc.address().hex().0,
+            sub: sc.address().get().s.clone(),
             iat: now.into(),
             exp: now.add(self.session_ttl.to_delta()).into(),
         };
@@ -124,7 +133,7 @@ impl Authorizer for EthAuth {
 
 #[cfg(test)]
 mod tests {
-    use pkg::auth::ecdsa::AddressETH;
+    use pkg::types::crypto::{Eth0x, EthSign};
 
     use super::*;
 
@@ -137,10 +146,18 @@ mod tests {
         Username("username".into())
     }
 
+    fn priv_of(hex: &str) -> EthPriv {
+        EthPriv::try_from(hex).unwrap()
+    }
+
+    fn client_address() -> Eth0x {
+        Eth0x::eth(&format!("0x{CLIENT_ADDRESS}")).unwrap()
+    }
+
     fn eth(challenge_ttl: i64, min_iat: i64) -> EthAuth {
         EthAuth::new(
             "hs256-test-secret".into(),
-            Hex(SERVER_PRIVKEY.into()),
+            priv_of(SERVER_PRIVKEY),
             Second(challenge_ttl),
             Second(86_400),
             Second(60),
@@ -150,19 +167,20 @@ mod tests {
     }
 
     fn client() -> PrivKey {
-        PrivKey::new(Hex(CLIENT_PRIVKEY.into())).unwrap()
+        PrivKey::new(&priv_of(CLIENT_PRIVKEY)).unwrap()
     }
 
     fn req() -> ReqChallenge {
         ReqChallenge::new(
-            AddressETH(CLIENT_ADDRESS.into()),
+            client_address(),
             Timestamp::now(),
             Second(3_600),
         )
     }
 
     fn answer_with(signer: &PrivKey, challenge: ServerChallenge) -> ClientAnswer {
-        let client_sign = signer.sign(challenge.metamask_msg());
+        // what a wallet's personal_sign does: frame, hash, sign.
+        let client_sign: EthSign = signer.sign(&eip191(&challenge.sign_message()));
         ClientAnswer {
             challenge,
             client_sign,
@@ -188,7 +206,7 @@ mod tests {
         let auth = eth(300, 0);
         let sc = auth.challenge(req()).await.unwrap();
 
-        let intruder = PrivKey::new(Hex(SERVER_PRIVKEY.into())).unwrap();
+        let intruder = PrivKey::new(&priv_of(SERVER_PRIVKEY)).unwrap();
         let out = auth.answer(username(), answer_with(&intruder, sc)).await;
 
         assert!(matches!(out, Err(DomainError::NotAllowed(_))));
@@ -199,7 +217,7 @@ mod tests {
         let ours = eth(300, 0);
         let theirs = EthAuth::new(
             "other".into(),
-            Hex(CLIENT_PRIVKEY.into()),
+            priv_of(CLIENT_PRIVKEY),
             Second(300),
             Second(86_400),
             Second(60),
@@ -259,7 +277,7 @@ mod tests {
     async fn challenge_rejects_a_request_with_too_much_clock_skew() {
         let auth = eth(300, 0);
         let skewed = ReqChallenge::new(
-            AddressETH(CLIENT_ADDRESS.into()),
+            client_address(),
             Timestamp(Timestamp::now().0 + 3_600),
             Second(3_600),
         );

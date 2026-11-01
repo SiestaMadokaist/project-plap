@@ -15,7 +15,19 @@ impl HexPrefix for Plain {}
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Hex<P: HexPrefix> {
     pub s: String,
+    // used to block manually creating
+    // creation must use try_into so it got validated before creation
     p: PhantomData<P>,
+}
+
+pub fn zx(s: &str) -> Result<Hex<Zx>, FormatError> {
+    if s.starts_with("0x") {
+        let hx: Hex<Zx> = s.try_into()?;
+        Ok(hx)
+    } else {
+        let hx: Hex<Plain> = s.try_into()?;
+        Ok(hx.zx())
+    }
 }
 
 impl Hex<Zx> {
@@ -57,9 +69,6 @@ impl StringFormat for Hex<Zx> {
     fn as_str(&self) -> &str {
         &self.s
     }
-    // pub fn to_bytes(&self) -> Result<Vec<u8>, hex::FromHexError> {
-    //     hex::decode(&self.s)
-    // }
 }
 
 /** this hex must start without 0x */
