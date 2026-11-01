@@ -16,6 +16,7 @@ use pkg::{
 
 use crate::application::ports::clients::authorizer::Authorizer;
 use crate::infras::authorizer::ecdsa::{eip191, random_code, recover, PrivKey, PubKey};
+use crate::infras::authorizer::jwt;
 
 /// Stateless Ethereum-wallet authenticator.
 ///
@@ -119,11 +120,11 @@ impl Authorizer for EthAuth {
             iat: now.into(),
             exp: now.add(self.session_ttl.to_delta()).into(),
         };
-        JWT::sign(&claims, self.secret.as_bytes()).map_err(deny)
+        jwt::sign(&claims, self.secret.as_bytes()).map_err(deny)
     }
 
     async fn validate(&self, jwt: JWT) -> Result<AuthClaims, DomainError> {
-        let claims = jwt.decode(self.secret.as_bytes()).map_err(deny)?;
+        let claims = jwt::decode_claims(&jwt, self.secret.as_bytes()).map_err(deny)?;
         if claims.iat.0 < self.min_iat.0 {
             return Err(deny("token predates the revocation cutoff"));
         }
@@ -171,11 +172,7 @@ mod tests {
     }
 
     fn req() -> ReqChallenge {
-        ReqChallenge::new(
-            client_address(),
-            Timestamp::now(),
-            Second(3_600),
-        )
+        ReqChallenge::new(client_address(), Timestamp::now(), Second(3_600))
     }
 
     fn answer_with(signer: &PrivKey, challenge: ServerChallenge) -> ClientAnswer {

@@ -1,15 +1,13 @@
-use jsonwebtoken::{
-    decode, encode, errors::ErrorKind, Algorithm, DecodingKey, EncodingKey, Header, Validation,
-};
 use serde::{Deserialize, Serialize};
 
-use crate::{auth::errors::AuthError, displayable, id_type, types::time::Timestamp};
+use crate::{displayable, id_type, types::time::Timestamp};
 
 id_type!(Username);
 
 /// Payload of an issued session token. The HS256 MAC over these fields (keyed by the
-/// server `secret`) is the only integrity check `JWT::decode` performs - there is no
-/// separate asymmetric signature here, unlike the challenge exchange.
+/// server `secret`) is the only integrity check performed on it - there is no
+/// separate asymmetric signature here, unlike the challenge exchange. Signing and
+/// decoding live in the backend (`infras::authorizer::jwt`); this crate only carries the data.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AuthClaims {
     pub username: Username,
@@ -24,29 +22,3 @@ pub struct AuthClaims {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct JWT(pub String);
 displayable!(JWT);
-
-impl JWT {
-    /// Encode and HS256-sign `claims` with `secret`.
-    pub fn sign(claims: &AuthClaims, secret: &[u8]) -> Result<Self, AuthError> {
-        encode(
-            &Header::default(),
-            claims,
-            &EncodingKey::from_secret(secret),
-        )
-        .map(JWT)
-        .map_err(|e| AuthError::TokenIssue(e.to_string()))
-    }
-
-    /// Verify the HS256 signature and `exp` with `secret`, returning the claims.
-    pub fn decode(&self, secret: &[u8]) -> Result<AuthClaims, AuthError> {
-        let mut validation = Validation::new(Algorithm::HS256);
-        // no `aud` claim is issued, so don't require/validate one
-        validation.validate_aud = false;
-        decode::<AuthClaims>(&self.0, &DecodingKey::from_secret(secret), &validation)
-            .map(|data| data.claims)
-            .map_err(|e| match e.kind() {
-                ErrorKind::ExpiredSignature => AuthError::Expired,
-                _ => AuthError::TokenIssue(e.to_string()),
-            })
-    }
-}
