@@ -76,16 +76,16 @@ mod tests {
     use crate::commands::compute::{ComputeArgs, ComputeCommand, ComputeRegion};
 
     #[test]
-    fn shape_test() -> anyhow::Result<()> {
+    fn shape_test() {
         let buffer = std::fs::read(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../../samples/inputs/jsons/domain/commands/compute.json"
-        ))?;
-        let command: ComputeArgs = serde_json::from_slice(&buffer)?;
+        ))
+        .expect("file not found");
+        let command: ComputeArgs = serde_json::from_slice(&buffer).expect("failed to serialize");
         assert_eq!(command.command, ComputeCommand::Terminate);
         assert_eq!(command.region, ComputeRegion::AWSUsEast1);
         assert_eq!(command.instance_id.0, "test123");
-        Ok(())
     }
 }
 

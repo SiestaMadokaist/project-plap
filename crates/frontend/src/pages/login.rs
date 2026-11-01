@@ -1,12 +1,11 @@
 use dto::resources::login::{ClientAnswer, ReqChallenge};
 use leptos::prelude::*;
 use pkg::{
-    auth::{
-        claims::JWT,
-        ecdsa::{AddressETH, HexSign},
-    },
+    auth::claims::JWT,
     types::{
-        strings::{Hex, URL},
+        crypto::{Eth0x, HexSign},
+        error::FormatError,
+        strings::URL,
         time::{Second, Timestamp},
     },
 };
@@ -51,7 +50,8 @@ async fn authenticate(step: RwSignal<Step>) -> Result<JWT, String> {
 
     step.set(Step::Connecting);
     let account = wallet::connect().await?; // "0x…", mixed-case
-    let address = AddressETH(account.trim_start_matches("0x").to_lowercase());
+    let address: Eth0x = Eth0x::eth(account.as_str()).map_err(|x| x.to_string())?;
+    // let address = AddressETH(account.trim_start_matches("0x").to_lowercase());
 
     step.set(Step::Requesting);
     let api = AuthApi::new(URL(ENV.api_base.to_string()));
@@ -64,8 +64,10 @@ async fn authenticate(step: RwSignal<Step>) -> Result<JWT, String> {
 
     step.set(Step::Signing);
     let signature = wallet::personal_sign(&challenge.sign_message(), &account).await?;
-    let client_sign = HexSign::new(Hex(signature))
-        .map_err(|e| format!("wallet returned a malformed signature ({e:?})"))?;
+    let client_sign: HexSign = signature
+        .as_str()
+        .try_into()
+        .map_err(|x: FormatError| x.to_string())?;
 
     step.set(Step::Verifying);
     let answer = ClientAnswer {

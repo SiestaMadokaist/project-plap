@@ -3838,6 +3838,7 @@ name = "pkg"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "hex",
  "jsonwebtoken",
  "serde",
  "serde_json",

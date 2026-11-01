@@ -9,10 +9,7 @@ use pkg::{
         ecdsa::{recover, Challenge, PrivKey, PubKey},
         errors::AuthError,
     },
-    types::{
-        strings::Hex,
-        time::{Second, Timestamp},
-    },
+    types::time::{Second, Timestamp},
 };
 
 use crate::application::ports::clients::authorizer::Authorizer;

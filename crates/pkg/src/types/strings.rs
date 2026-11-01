@@ -1,9 +1,13 @@
 use serde::{Deserialize, Serialize};
 
-use crate::macros::displayable;
-
+use crate::{macros::displayable, types::error::FormatError};
 #[derive(Clone, Serialize, Deserialize)]
 pub struct CommaSeparated(pub String);
+
+pub trait StringFormat {
+    fn validate(s: &str) -> Result<(), FormatError>;
+    fn as_str(&self) -> &str;
+}
 
 impl CommaSeparated {
     pub fn split(&self) -> Vec<&str> {
@@ -25,17 +29,3 @@ impl URL {
     }
 }
 displayable!(URL);
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct Hex(pub String);
-displayable!(Hex);
-
-impl Hex {
-    pub fn from_bytes(_bytes: &[u8]) -> Self {
-        todo!()
-    }
-
-    pub fn to_bytes(&self) -> Result<Vec<u8>, hex::FromHexError> {
-        hex::decode(&self.0)
-    }
-}
